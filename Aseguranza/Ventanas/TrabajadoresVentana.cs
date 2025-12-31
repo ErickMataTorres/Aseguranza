@@ -55,22 +55,40 @@ namespace Aseguranza.Ventanas
         {
             txtNoReloj.Text = trabajadorActual!.NoReloj.ToString();
             txtNoReloj.Enabled = false;
-            txtNombre.Text = trabajadorActual!.Nombre;
-            cbLocalidad.SelectedValue = trabajadorActual!.IdLocalidad;
-            cbTurno.SelectedValue = trabajadorActual!.IdTurno;
-            cbPlanta.SelectedValue = trabajadorActual!.IdPlanta;
-            cbLinea.SelectedValue = trabajadorActual!.IdLinea;
 
-            // Cargar imagen SIN bloquear archivo
-            if (File.Exists(trabajadorActual!.RutaFoto!))
+            txtNombre.Text = trabajadorActual.Nombre;
+            cbLocalidad.SelectedValue = trabajadorActual.IdLocalidad;
+            cbTurno.SelectedValue = trabajadorActual.IdTurno;
+            cbPlanta.SelectedValue = trabajadorActual.IdPlanta;
+            cbLinea.SelectedValue = trabajadorActual.IdLinea;
+
+            // Si el trabajador ya tiene foto guardada
+            if (!string.IsNullOrEmpty(trabajadorActual.RutaFoto) &&
+                File.Exists(trabajadorActual.RutaFoto))
             {
-                using (var fs = new FileStream(trabajadorActual.RutaFoto, FileMode.Open, FileAccess.Read))
+                // Liberar imagen previa si existiera
+                if (pictureBox1.Image != null)
+                {
+                    pictureBox1.Image.Dispose();
+                    pictureBox1.Image = null;
+                }
+
+                using (var fs = new FileStream(
+                    trabajadorActual.RutaFoto,
+                    FileMode.Open,
+                    FileAccess.Read))
                 {
                     pictureBox1.Image = Image.FromStream(fs);
                 }
+
                 pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+
+                // 🔴 CLAVE: marcar que ya existe una foto válida
+                rutaFotoSeleccionada = trabajadorActual.RutaFoto;
+                capturaDesdeCamara = false;
             }
         }
+
 
         private void CargarComboBox()
         {
@@ -186,12 +204,12 @@ namespace Aseguranza.Ventanas
         private void btnAceptar_Click(object sender, EventArgs e)
         {
             if (!ValidarInformacion())
-            {
                 return;
-            }
-            Clases.Trabajador trabajador = this.trabajadorActual ?? new Clases.Trabajador();
-            trabajador.NoReloj = int.Parse(txtNoReloj.Text.ToUpper().Trim());
-            trabajador.Nombre = txtNombre.Text.ToUpper().Trim();
+
+            Clases.Trabajador trabajador = trabajadorActual ?? new Clases.Trabajador();
+
+            trabajador.NoReloj = int.Parse(txtNoReloj.Text.Trim());
+            trabajador.Nombre = txtNombre.Text.Trim().ToUpper();
 
             string carpetaFotos = @"C:\Aseguranza\Fotos\";
             Directory.CreateDirectory(carpetaFotos);
@@ -199,37 +217,72 @@ namespace Aseguranza.Ventanas
             string nombreArchivo = $"{trabajador.NoReloj}_{trabajador.Nombre}.jpg";
             string rutaDestino = Path.Combine(carpetaFotos, nombreArchivo);
 
+            // =========================
+            // MANEJO CORRECTO DE FOTO
+            // =========================
+
             if (capturaDesdeCamara && fotoCapturada != null)
             {
-                fotoCapturada.Save(rutaDestino, System.Drawing.Imaging.ImageFormat.Jpeg);
+                // Foto nueva desde cámara
+                fotoCapturada.Save(
+                    rutaDestino,
+                    System.Drawing.Imaging.ImageFormat.Jpeg);
+
+                trabajador.RutaFoto = rutaDestino;
             }
             else if (!string.IsNullOrEmpty(rutaFotoSeleccionada))
             {
-                File.Copy(rutaFotoSeleccionada, rutaDestino, true);
+                // Foto seleccionada o existente
+                if (rutaFotoSeleccionada != rutaDestino)
+                {
+                    File.Copy(rutaFotoSeleccionada, rutaDestino, true);
+                }
+
+                trabajador.RutaFoto = rutaDestino;
+            }
+            else if (trabajadorActual != null)
+            {
+                // 🔴 CLAVE: no cambió la foto, conservar la existente
+                trabajador.RutaFoto = trabajadorActual.RutaFoto;
             }
             else
             {
-                MessageBox.Show("No se ha seleccionado ni capturado una foto.");
+                MessageBox.Show(
+                    "Debe capturar o seleccionar una fotografía.",
+                    "Foto requerida",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
                 return;
             }
 
-            trabajador.RutaFoto = rutaDestino;
+            // =========================
+            // DATOS RESTANTES
+            // =========================
 
             trabajador.IdLocalidad = (int)cbLocalidad.SelectedValue!;
             trabajador.IdTurno = (int)cbTurno.SelectedValue!;
             trabajador.IdLinea = (int)cbLinea.SelectedValue!;
 
-
             Clases.Mensaje respuesta = trabajador.GuardarTrabajador();
+
             if (respuesta.Id == 1 || respuesta.Id == 2)
             {
-                MessageBox.Show(respuesta.Nombre, "Resultado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                MessageBox.Show(
+                    respuesta.Nombre,
+                    "Resultado",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                DialogResult = DialogResult.OK;
+                Close();
             }
             else
             {
-                MessageBox.Show(respuesta.Nombre, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    respuesta.Nombre,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 

@@ -7,7 +7,7 @@ CREATE TABLE Localidad
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-ALTER PROCEDURE spConsultarLocalidades
+CREATE PROCEDURE spConsultarLocalidades
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -43,7 +43,7 @@ CREATE TABLE Turno
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-ALTER PROCEDURE spConsultarTurnos
+CREATE PROCEDURE spConsultarTurnos
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -79,7 +79,7 @@ CREATE TABLE Planta
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-ALTER PROCEDURE spConsultarPlantas
+CREATE PROCEDURE spConsultarPlantas
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -118,7 +118,7 @@ CREATE TABLE Linea
 	CONSTRAINT UQ_Linea_Planta_Nombre
 	UNIQUE (IdPlanta, Nombre)
 )
-ALTER PROCEDURE spConsultarLineas
+CREATE PROCEDURE spConsultarLineas
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -141,7 +141,7 @@ AS
 BEGIN
 	SELECT Id, Nombre FROM Linea WHERE IdPlanta=@IdPlanta
 END
-ALTER PROCEDURE spGuardarLinea
+CREATE PROCEDURE spGuardarLinea
 @Id INT,
 @Nombre VARCHAR(100),
 @IdPlanta INT
@@ -177,7 +177,7 @@ CREATE TABLE Trabajador
 	IdTurno INT NOT NULL FOREIGN KEY REFERENCES Turno(Id),
 	IdLinea INT NOT NULL FOREIGN KEY REFERENCES Linea(Id)
 )
-ALTER PROCEDURE spConsultarTrabajadores
+CREATE PROCEDURE spConsultarTrabajadores
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -211,6 +211,20 @@ BEGIN
 	DELETE FROM Trabajador WHERE Id=@Id
 	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
 END
+CREATE PROCEDURE spConsultarTrabajadorPorNoReloj
+@NoReloj VARCHAR(10)
+AS
+BEGIN
+	IF EXISTS (SELECT Id FROM Trabajador WHERE NoReloj=@NoReloj)
+	BEGIN
+		SELECT Trabajador.Nombre, Trabajador.RutaFoto, Localidad.Nombre, Turno.Nombre, Planta.Nombre, Linea.Nombre FROM Trabajador
+		INNER JOIN Localidad ON Localidad.Id=Trabajador.IdLocalidad INNER JOIN Turno ON Turno.Id=Trabajador.IdTurno
+		INNER JOIN Linea ON Linea.Id=Trabajador.IdLinea INNER JOIN Planta ON Planta.Id=LInea.IdPlanta WHERE Trabajador.NoReloj=@NoReloj;
+	END ELSE
+		BEGIN
+			SELECT 1 AS [Id], 'No existe trabajador con ese número de reloj' AS [Nombre];
+		END
+END
 -------------------------------------------
 
 -------------------------------------------
@@ -219,7 +233,7 @@ CREATE TABLE Certificador
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	IdTrabajador INT NOT NULL FOREIGN KEY REFERENCES Trabajador(Id)
 )
-ALTER PROCEDURE spConsultarCertificadores
+CREATE PROCEDURE spConsultarCertificadores
 AS
 BEGIN
 	SELECT Certificador.Id, Certificador.IdTrabajador, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto,

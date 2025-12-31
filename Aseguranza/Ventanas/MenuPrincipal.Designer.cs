@@ -35,18 +35,19 @@
             plantaToolStripMenuItem = new ToolStripMenuItem();
             lineaToolStripMenuItem = new ToolStripMenuItem();
             trabajadorToolStripMenuItem = new ToolStripMenuItem();
+            certificadorToolStripMenuItem = new ToolStripMenuItem();
             certificacionToolStripMenuItem = new ToolStripMenuItem();
             procesoToolStripMenuItem = new ToolStripMenuItem();
-            certificadorToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // menuStrip1
             // 
+            menuStrip1.ImageScalingSize = new Size(20, 20);
             menuStrip1.Items.AddRange(new ToolStripItem[] { certificacionesToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(784, 24);
+            menuStrip1.Size = new Size(784, 28);
             menuStrip1.TabIndex = 0;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -54,65 +55,66 @@
             // 
             certificacionesToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { certificarToolStripMenuItem, localidadToolStripMenuItem, plantaToolStripMenuItem, lineaToolStripMenuItem, trabajadorToolStripMenuItem, certificadorToolStripMenuItem, certificacionToolStripMenuItem, procesoToolStripMenuItem });
             certificacionesToolStripMenuItem.Name = "certificacionesToolStripMenuItem";
-            certificacionesToolStripMenuItem.Size = new Size(97, 20);
+            certificacionesToolStripMenuItem.Size = new Size(120, 24);
             certificacionesToolStripMenuItem.Text = "Certificaciones";
             // 
             // certificarToolStripMenuItem
             // 
             certificarToolStripMenuItem.Name = "certificarToolStripMenuItem";
-            certificarToolStripMenuItem.Size = new Size(141, 22);
+            certificarToolStripMenuItem.Size = new Size(224, 26);
             certificarToolStripMenuItem.Text = "Localidad";
             certificarToolStripMenuItem.Click += certificarToolStripMenuItem_Click;
             // 
             // localidadToolStripMenuItem
             // 
             localidadToolStripMenuItem.Name = "localidadToolStripMenuItem";
-            localidadToolStripMenuItem.Size = new Size(141, 22);
+            localidadToolStripMenuItem.Size = new Size(224, 26);
             localidadToolStripMenuItem.Text = "Turno";
             localidadToolStripMenuItem.Click += localidadToolStripMenuItem_Click;
             // 
             // plantaToolStripMenuItem
             // 
             plantaToolStripMenuItem.Name = "plantaToolStripMenuItem";
-            plantaToolStripMenuItem.Size = new Size(141, 22);
+            plantaToolStripMenuItem.Size = new Size(224, 26);
             plantaToolStripMenuItem.Text = "Planta";
             plantaToolStripMenuItem.Click += plantaToolStripMenuItem_Click;
             // 
             // lineaToolStripMenuItem
             // 
             lineaToolStripMenuItem.Name = "lineaToolStripMenuItem";
-            lineaToolStripMenuItem.Size = new Size(141, 22);
+            lineaToolStripMenuItem.Size = new Size(224, 26);
             lineaToolStripMenuItem.Text = "Linea";
             lineaToolStripMenuItem.Click += lineaToolStripMenuItem_Click;
             // 
             // trabajadorToolStripMenuItem
             // 
             trabajadorToolStripMenuItem.Name = "trabajadorToolStripMenuItem";
-            trabajadorToolStripMenuItem.Size = new Size(141, 22);
+            trabajadorToolStripMenuItem.Size = new Size(224, 26);
             trabajadorToolStripMenuItem.Text = "Trabajador";
             trabajadorToolStripMenuItem.Click += trabajadorToolStripMenuItem_Click;
+            // 
+            // certificadorToolStripMenuItem
+            // 
+            certificadorToolStripMenuItem.Name = "certificadorToolStripMenuItem";
+            certificadorToolStripMenuItem.Size = new Size(224, 26);
+            certificadorToolStripMenuItem.Text = "Certificador";
+            certificadorToolStripMenuItem.Click += certificadorToolStripMenuItem_Click;
             // 
             // certificacionToolStripMenuItem
             // 
             certificacionToolStripMenuItem.Name = "certificacionToolStripMenuItem";
-            certificacionToolStripMenuItem.Size = new Size(141, 22);
+            certificacionToolStripMenuItem.Size = new Size(224, 26);
             certificacionToolStripMenuItem.Text = "Certificacion";
             // 
             // procesoToolStripMenuItem
             // 
             procesoToolStripMenuItem.Name = "procesoToolStripMenuItem";
-            procesoToolStripMenuItem.Size = new Size(141, 22);
+            procesoToolStripMenuItem.Size = new Size(224, 26);
             procesoToolStripMenuItem.Text = "Proceso";
-            // 
-            // certificadorToolStripMenuItem
-            // 
-            certificadorToolStripMenuItem.Name = "certificadorToolStripMenuItem";
-            certificadorToolStripMenuItem.Size = new Size(141, 22);
-            certificadorToolStripMenuItem.Text = "Certificador";
             // 
             // MenuPrincipal
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(8F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(784, 441);
             Controls.Add(menuStrip1);

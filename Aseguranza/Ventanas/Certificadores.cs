@@ -16,5 +16,15 @@ namespace Aseguranza.Ventanas
         {
             InitializeComponent();
         }
+
+        private void btnRegresar_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void Certificadores_Load(object sender, EventArgs e)
+        {
+            dgvCertificadores.DataSource = Clases.Certificador.ConsultarCertificadores();
+        }
     }
 }

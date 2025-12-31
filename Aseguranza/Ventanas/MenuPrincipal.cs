@@ -43,6 +43,10 @@ namespace Aseguranza
             ventana.ShowDialog();
         }
 
-        
+        private void certificadorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Ventanas.Certificadores ventana = new Ventanas.Certificadores();
+            ventana.ShowDialog();
+        }
     }
 }
