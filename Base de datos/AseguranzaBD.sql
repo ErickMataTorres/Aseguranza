@@ -1,6 +1,5 @@
 CREATE DATABASE AseguranzaBD
 USE AseguranzaBD
-
 -------------------------------------------
 CREATE TABLE Localidad
 (
@@ -183,6 +182,15 @@ AS
 BEGIN
 	SELECT Trabajador.Id, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto, Trabajador.IdLocalidad, Trabajador.IdTurno, Linea.IdPlanta, Trabajador.IdLinea FROM Trabajador
 	INNER JOIN Linea ON Trabajador.IdLinea = Linea.Id  WHERE Trabajador.Nombre LIKE '%'+@TextoBuscar+'%';
+END
+ALTER PROCEDURE spConsultarTrabajador
+@NoReloj VARCHAR(10)
+AS
+BEGIN
+	SELECT Trabajador.Id, Trabajador.Nombre, Trabajador.RutaFoto, Localidad.Id AS [IdLocalidad],Localidad.Nombre as [NombreLocalidad], Turno.Id AS [IdTurno] ,Turno.Nombre AS [NombreTurno], 
+	Planta.Id AS [IdPlanta], Planta.Nombre AS [NombrePlanta], Linea.Id AS [IdLinea], Linea.Nombre AS [NombreLinea] FROM Trabajador INNER JOIN Localidad
+	ON Localidad.Id=Trabajador.IdLocalidad INNER JOIN Turno ON Turno.Id=Trabajador.IdTurno 
+	INNER JOIN Linea ON Linea.Id=Trabajador.IdLinea INNER JOIN Planta ON Planta.Id=Linea.IdPlanta;
 END
 CREATE PROCEDURE spGuardarTrabajador
 @Id INT,
