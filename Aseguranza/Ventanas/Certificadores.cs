@@ -26,5 +26,19 @@ namespace Aseguranza.Ventanas
         {
             dgvCertificadores.DataSource = Clases.Certificador.ConsultarCertificadores();
         }
+
+        private void txtNoReloj_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(e.KeyChar == (char)Keys.Enter)
+            {
+                Clases.Trabajador t = Clases.Trabajador.ConsultarTrabajador(int.Parse(txtNoReloj.Text));
+                lblMostrarNombre.Text = t.Nombre;
+                pictureBox1.ImageLocation = t.RutaFoto;
+                lblMostrarLocalidad.Text = t.NombreLocalidad;
+                lblMostrarTurno.Text = t.NombreTurno;
+                lblMostrarPlanta.Text = t.NombrePlanta;
+                lblMostrarLinea.Text = t.NombreLinea;
+            }
+        }
     }
 }

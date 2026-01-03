@@ -15,10 +15,41 @@ namespace Aseguranza.Clases
         public string? Nombre { get; set; }
         public string? RutaFoto { get; set; }
         public int IdLocalidad { get; set; }
+        public string? NombreLocalidad { get; set; }
         public int IdTurno { get; set; }
+        public string? NombreTurno { get; set; }
         public int IdPlanta { get; set; }
+        public string? NombrePlanta { get; set; }
         public int IdLinea { get; set; }
+        public string? NombreLinea { get; set; }
 
+        public static Trabajador ConsultarTrabajador(int noReloj)
+        {
+            SqlConnection conexion = Conexion.Conectar();
+            SqlCommand command = new SqlCommand("spConsultarTrabajador", conexion);
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.AddWithValue("@NoReloj", noReloj);
+            SqlDataReader dr;
+            Trabajador t = new Trabajador();
+            conexion.Open();
+            dr = command.ExecuteReader();
+            if (dr.Read())
+            {
+                t.Nombre = dr["Nombre"].ToString();
+                t.RutaFoto = dr["RutaFoto"].ToString();
+                t.IdLocalidad = int.Parse(dr["IdLocalidad"].ToString()!);
+                t.NombreLocalidad = dr["NombreLocalidad"].ToString();
+                t.IdTurno = int.Parse(dr["IdTurno"].ToString()!);
+                t.NombreTurno = dr["NombreTurno"].ToString();
+                t.IdPlanta = int.Parse(dr["IdPlanta"].ToString()!);
+                t.NombrePlanta = dr["NombrePlanta"].ToString();
+                t.IdLinea = int.Parse(dr["IdLinea"].ToString()!);
+                t.NombreLinea = dr["NombreLinea"].ToString();
+            }
+            dr.Close();
+            conexion.Close();
+            return t;
+        }
         public static DataTable ConsultarTrabajadores(string textoBuscar)
         {
             SqlConnection conexion = Conexion.Conectar();

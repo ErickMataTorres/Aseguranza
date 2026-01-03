@@ -19,6 +19,11 @@ namespace Aseguranza.Ventanas
 
         private void Localidades_Load(object sender, EventArgs e)
         {
+            IniciarTodo();
+        }
+
+        private void IniciarTodo()
+        {
             dgvLocalidades.DataSource = Clases.Localidad.ConsultarLocalidades(txtBuscar.Text);
             dgvLocalidades.AutoResizeColumns();
             ValidarBotones();

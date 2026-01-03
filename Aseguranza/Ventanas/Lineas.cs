@@ -19,6 +19,10 @@ namespace Aseguranza.Ventanas
 
         private void Lineas_Load(object sender, EventArgs e)
         {
+            IniciarCosas();
+        }
+        private void IniciarCosas()
+        {
             dgvLineas.DataSource = Clases.Linea.ConsultarLineas(string.Empty);
             dgvLineas.AutoResizeColumns();
             ValidarBotones();
