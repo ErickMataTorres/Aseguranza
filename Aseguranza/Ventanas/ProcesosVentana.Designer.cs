@@ -1,6 +1,6 @@
 ﻿namespace Aseguranza.Ventanas
 {
-    partial class LineasVentana
+    partial class ProcesosVentana
     {
         /// <summary>
         /// Required designer variable.
@@ -32,72 +32,90 @@
             btnRegresar = new Button();
             txtNombre = new TextBox();
             lblNombre = new Label();
-            lblPlanta = new Label();
-            cbPlantas = new ComboBox();
+            lblDescripcion = new Label();
+            txtDescripcion = new TextBox();
+            txtVigencia = new TextBox();
+            lblVigencia = new Label();
             SuspendLayout();
             // 
             // btnAceptar
             // 
-            btnAceptar.Location = new Point(111, 120);
+            btnAceptar.Location = new Point(150, 173);
             btnAceptar.Name = "btnAceptar";
             btnAceptar.Size = new Size(88, 39);
-            btnAceptar.TabIndex = 2;
+            btnAceptar.TabIndex = 3;
             btnAceptar.Text = "Aceptar";
             btnAceptar.UseVisualStyleBackColor = true;
             btnAceptar.Click += btnAceptar_Click;
             // 
             // btnRegresar
             // 
-            btnRegresar.Location = new Point(205, 120);
+            btnRegresar.Location = new Point(244, 173);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 3;
+            btnRegresar.TabIndex = 4;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;
             // 
             // txtNombre
             // 
-            txtNombre.Location = new Point(78, 70);
+            txtNombre.Location = new Point(138, 28);
             txtNombre.Name = "txtNombre";
-            txtNombre.Size = new Size(291, 21);
-            txtNombre.TabIndex = 1;
-            txtNombre.KeyPress += txtNombre_KeyPress;
+            txtNombre.Size = new Size(326, 21);
+            txtNombre.TabIndex = 0;
             // 
             // lblNombre
             // 
             lblNombre.AutoSize = true;
-            lblNombre.Location = new Point(17, 73);
+            lblNombre.Location = new Point(77, 31);
             lblNombre.Name = "lblNombre";
             lblNombre.Size = new Size(55, 15);
             lblNombre.TabIndex = 9;
             lblNombre.Text = "Nombre:";
             // 
-            // lblPlanta
+            // lblDescripcion
             // 
-            lblPlanta.AutoSize = true;
-            lblPlanta.Location = new Point(27, 36);
-            lblPlanta.Name = "lblPlanta";
-            lblPlanta.Size = new Size(45, 15);
-            lblPlanta.TabIndex = 13;
-            lblPlanta.Text = "Planta:";
+            lblDescripcion.AutoSize = true;
+            lblDescripcion.Location = new Point(56, 79);
+            lblDescripcion.Name = "lblDescripcion";
+            lblDescripcion.Size = new Size(76, 15);
+            lblDescripcion.TabIndex = 13;
+            lblDescripcion.Text = "Descripción:";
             // 
-            // cbPlantas
+            // txtDescripcion
             // 
-            cbPlantas.DropDownStyle = ComboBoxStyle.DropDownList;
-            cbPlantas.FormattingEnabled = true;
-            cbPlantas.Location = new Point(78, 33);
-            cbPlantas.Name = "cbPlantas";
-            cbPlantas.Size = new Size(291, 23);
-            cbPlantas.TabIndex = 0;
+            txtDescripcion.Location = new Point(138, 76);
+            txtDescripcion.Name = "txtDescripcion";
+            txtDescripcion.Size = new Size(326, 21);
+            txtDescripcion.TabIndex = 1;
             // 
-            // LineasVentana
+            // txtVigencia
+            // 
+            txtVigencia.Location = new Point(138, 124);
+            txtVigencia.Name = "txtVigencia";
+            txtVigencia.Size = new Size(326, 21);
+            txtVigencia.TabIndex = 2;
+            txtVigencia.KeyPress += textBox2_KeyPress;
+            // 
+            // lblVigencia
+            // 
+            lblVigencia.AutoSize = true;
+            lblVigencia.Location = new Point(16, 127);
+            lblVigencia.Name = "lblVigencia";
+            lblVigencia.Size = new Size(116, 15);
+            lblVigencia.TabIndex = 15;
+            lblVigencia.Text = "Vigencia en meses:";
+            // 
+            // ProcesosVentana
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(404, 199);
-            Controls.Add(cbPlantas);
-            Controls.Add(lblPlanta);
+            ClientSize = new Size(496, 244);
+            Controls.Add(txtVigencia);
+            Controls.Add(lblVigencia);
+            Controls.Add(txtDescripcion);
+            Controls.Add(lblDescripcion);
             Controls.Add(btnAceptar);
             Controls.Add(btnRegresar);
             Controls.Add(txtNombre);
@@ -106,10 +124,10 @@
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             MinimizeBox = false;
-            Name = "LineasVentana";
+            Name = "ProcesosVentana";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Lineas";
-            Load += LineasVentana_Load;
+            Text = "Procesos";
+            Load += ProcesosVentana_Load;
             ResumeLayout(false);
             PerformLayout();
         }
@@ -120,7 +138,9 @@
         private Button btnRegresar;
         private TextBox txtNombre;
         private Label lblNombre;
-        private Label lblPlanta;
-        private ComboBox cbPlantas;
+        private Label lblDescripcion;
+        private TextBox txtDescripcion;
+        private TextBox txtVigencia;
+        private Label lblVigencia;
     }
 }

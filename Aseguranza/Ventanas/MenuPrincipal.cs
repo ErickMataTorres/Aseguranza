@@ -48,5 +48,17 @@ namespace Aseguranza
             Ventanas.Certificadores ventana = new Ventanas.Certificadores();
             ventana.ShowDialog();
         }
+
+        private void procesoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Ventanas.Procesos ventana = new Ventanas.Procesos();
+            ventana.ShowDialog();
+        }
+
+        private void certificacionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Ventanas.Certificaciones ventana = new Ventanas.Certificaciones();
+            ventana.ShowDialog();
+        }
     }
 }

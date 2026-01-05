@@ -31,6 +31,11 @@ namespace Aseguranza.Ventanas
 
         private void btnAceptar_Click(object sender, EventArgs e)
         {
+            if (txtNombre.Text == string.Empty)
+            {
+                MessageBox.Show("El nombre del turno no puede estar vacío.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             Clases.Turno turno = this.turnoActual ?? new Clases.Turno();
             turno.Nombre = txtNombre.Text.ToUpper().Trim();
             Clases.Mensaje respuesta = turno.GuardarTurno();
@@ -49,6 +54,14 @@ namespace Aseguranza.Ventanas
         private void btnRegresar_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void txtNombre_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(e.KeyChar == (char)Keys.Enter)
+            {
+                btnAceptar_Click(sender, e);
+            }
         }
     }
 }

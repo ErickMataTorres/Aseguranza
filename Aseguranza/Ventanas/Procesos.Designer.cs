@@ -1,6 +1,6 @@
 ﻿namespace Aseguranza.Ventanas
 {
-    partial class Plantas
+    partial class Procesos
     {
         /// <summary>
         /// Required designer variable.
@@ -28,19 +28,34 @@
         /// </summary>
         private void InitializeComponent()
         {
+            dgvProcesos = new DataGridView();
             btnRegresar = new Button();
             btnBorrar = new Button();
             btnModificar = new Button();
             btnAgregar = new Button();
             txtBuscar = new TextBox();
             lblBuscar = new Label();
-            dgvPlantas = new DataGridView();
-            ((System.ComponentModel.ISupportInitialize)dgvPlantas).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dgvProcesos).BeginInit();
             SuspendLayout();
+            // 
+            // dgvProcesos
+            // 
+            dgvProcesos.AllowUserToAddRows = false;
+            dgvProcesos.AllowUserToDeleteRows = false;
+            dgvProcesos.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvProcesos.Location = new Point(12, 39);
+            dgvProcesos.MultiSelect = false;
+            dgvProcesos.Name = "dgvProcesos";
+            dgvProcesos.ReadOnly = true;
+            dgvProcesos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvProcesos.Size = new Size(776, 283);
+            dgvProcesos.TabIndex = 14;
+            dgvProcesos.TabStop = false;
+            dgvProcesos.CellDoubleClick += dgvProcesos_CellDoubleClick;
             // 
             // btnRegresar
             // 
-            btnRegresar.Location = new Point(431, 323);
+            btnRegresar.Location = new Point(700, 328);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
             btnRegresar.TabIndex = 4;
@@ -50,7 +65,7 @@
             // 
             // btnBorrar
             // 
-            btnBorrar.Location = new Point(200, 323);
+            btnBorrar.Location = new Point(200, 328);
             btnBorrar.Name = "btnBorrar";
             btnBorrar.Size = new Size(88, 39);
             btnBorrar.TabIndex = 3;
@@ -60,7 +75,7 @@
             // 
             // btnModificar
             // 
-            btnModificar.Location = new Point(106, 323);
+            btnModificar.Location = new Point(106, 328);
             btnModificar.Name = "btnModificar";
             btnModificar.Size = new Size(88, 39);
             btnModificar.TabIndex = 2;
@@ -70,7 +85,7 @@
             // 
             // btnAgregar
             // 
-            btnAgregar.Location = new Point(12, 323);
+            btnAgregar.Location = new Point(12, 328);
             btnAgregar.Name = "btnAgregar";
             btnAgregar.Size = new Size(88, 39);
             btnAgregar.TabIndex = 1;
@@ -80,69 +95,54 @@
             // 
             // txtBuscar
             // 
-            txtBuscar.Location = new Point(67, 7);
+            txtBuscar.Location = new Point(67, 12);
             txtBuscar.Name = "txtBuscar";
-            txtBuscar.Size = new Size(452, 21);
+            txtBuscar.Size = new Size(721, 21);
             txtBuscar.TabIndex = 0;
             txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
             // lblBuscar
             // 
             lblBuscar.AutoSize = true;
-            lblBuscar.Location = new Point(12, 10);
+            lblBuscar.Location = new Point(12, 15);
             lblBuscar.Name = "lblBuscar";
             lblBuscar.Size = new Size(49, 15);
-            lblBuscar.TabIndex = 8;
+            lblBuscar.TabIndex = 10;
             lblBuscar.Text = "Buscar:";
             // 
-            // dgvPlantas
-            // 
-            dgvPlantas.AllowUserToAddRows = false;
-            dgvPlantas.AllowUserToDeleteRows = false;
-            dgvPlantas.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvPlantas.Location = new Point(12, 34);
-            dgvPlantas.MultiSelect = false;
-            dgvPlantas.Name = "dgvPlantas";
-            dgvPlantas.ReadOnly = true;
-            dgvPlantas.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvPlantas.Size = new Size(507, 283);
-            dgvPlantas.TabIndex = 6;
-            dgvPlantas.TabStop = false;
-            dgvPlantas.CellDoubleClick += dgvPlantas_CellDoubleClick;
-            // 
-            // Plantas
+            // Procesos
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(531, 369);
+            ClientSize = new Size(800, 378);
+            Controls.Add(dgvProcesos);
             Controls.Add(btnRegresar);
             Controls.Add(btnBorrar);
             Controls.Add(btnModificar);
             Controls.Add(btnAgregar);
             Controls.Add(txtBuscar);
             Controls.Add(lblBuscar);
-            Controls.Add(dgvPlantas);
             Font = new Font("Arial", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             MinimizeBox = false;
-            Name = "Plantas";
+            Name = "Procesos";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Plantas";
-            Load += Plantas_Load;
-            ((System.ComponentModel.ISupportInitialize)dgvPlantas).EndInit();
+            Text = "Procesos";
+            Load += Procesos_Load;
+            ((System.ComponentModel.ISupportInitialize)dgvProcesos).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
+        private DataGridView dgvProcesos;
         private Button btnRegresar;
         private Button btnBorrar;
         private Button btnModificar;
         private Button btnAgregar;
         private TextBox txtBuscar;
         private Label lblBuscar;
-        private DataGridView dgvPlantas;
     }
 }

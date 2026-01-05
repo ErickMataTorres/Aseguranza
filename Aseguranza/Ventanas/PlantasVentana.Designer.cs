@@ -60,6 +60,7 @@
             txtNombre.Name = "txtNombre";
             txtNombre.Size = new Size(317, 21);
             txtNombre.TabIndex = 10;
+            txtNombre.KeyPress += txtNombre_KeyPress;
             // 
             // lblNombre
             // 

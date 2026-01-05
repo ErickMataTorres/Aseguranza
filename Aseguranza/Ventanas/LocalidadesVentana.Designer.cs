@@ -40,6 +40,8 @@
             txtNombre.Name = "txtNombre";
             txtNombre.Size = new Size(317, 21);
             txtNombre.TabIndex = 3;
+            txtNombre.TextChanged += txtNombre_TextChanged;
+            txtNombre.KeyPress += txtNombre_KeyPress;
             // 
             // lblNombre
             // 
@@ -49,6 +51,7 @@
             lblNombre.Size = new Size(55, 15);
             lblNombre.TabIndex = 2;
             lblNombre.Text = "Nombre:";
+            //lblNombre.Click += this.lblNombre_Click;
             // 
             // btnRegresar
             // 
@@ -69,6 +72,7 @@
             btnAceptar.Text = "Aceptar";
             btnAceptar.UseVisualStyleBackColor = true;
             btnAceptar.Click += btnAceptar_Click;
+            btnAceptar.KeyPress += btnAceptar_KeyPress;
             // 
             // LocalidadesVentana
             // 

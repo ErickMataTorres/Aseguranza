@@ -43,7 +43,7 @@
             btnRegresar.Location = new Point(433, 325);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 11;
+            btnRegresar.TabIndex = 4;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click_1;
@@ -53,7 +53,7 @@
             btnBorrar.Location = new Point(202, 325);
             btnBorrar.Name = "btnBorrar";
             btnBorrar.Size = new Size(88, 39);
-            btnBorrar.TabIndex = 10;
+            btnBorrar.TabIndex = 3;
             btnBorrar.Text = "Borrar";
             btnBorrar.UseVisualStyleBackColor = true;
             btnBorrar.Click += btnBorrar_Click;
@@ -63,7 +63,7 @@
             btnModificar.Location = new Point(108, 325);
             btnModificar.Name = "btnModificar";
             btnModificar.Size = new Size(88, 39);
-            btnModificar.TabIndex = 9;
+            btnModificar.TabIndex = 2;
             btnModificar.Text = "Modificar";
             btnModificar.UseVisualStyleBackColor = true;
             btnModificar.Click += btnModificar_Click;
@@ -73,7 +73,7 @@
             btnAgregar.Location = new Point(14, 325);
             btnAgregar.Name = "btnAgregar";
             btnAgregar.Size = new Size(88, 39);
-            btnAgregar.TabIndex = 7;
+            btnAgregar.TabIndex = 1;
             btnAgregar.Text = "Agregar";
             btnAgregar.UseVisualStyleBackColor = true;
             btnAgregar.Click += btnAgregar_Click_1;
@@ -83,7 +83,7 @@
             txtBuscar.Location = new Point(69, 9);
             txtBuscar.Name = "txtBuscar";
             txtBuscar.Size = new Size(452, 21);
-            txtBuscar.TabIndex = 5;
+            txtBuscar.TabIndex = 0;
             txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
             // lblBuscar
@@ -108,6 +108,7 @@
             dgvLineas.Size = new Size(507, 283);
             dgvLineas.TabIndex = 6;
             dgvLineas.TabStop = false;
+            dgvLineas.CellDoubleClick += dgvLineas_CellDoubleClick;
             // 
             // Lineas
             // 

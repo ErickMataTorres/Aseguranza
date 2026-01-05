@@ -57,7 +57,7 @@
             btnRegresar.Location = new Point(722, 478);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 18;
+            btnRegresar.TabIndex = 5;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;
@@ -67,25 +67,28 @@
             btnBorrar.Location = new Point(12, 478);
             btnBorrar.Name = "btnBorrar";
             btnBorrar.Size = new Size(88, 39);
-            btnBorrar.TabIndex = 17;
+            btnBorrar.TabIndex = 4;
             btnBorrar.Text = "Borrar";
             btnBorrar.UseVisualStyleBackColor = true;
+            btnBorrar.Click += btnBorrar_Click;
             // 
             // btnAgregar
             // 
             btnAgregar.Location = new Point(370, 182);
             btnAgregar.Name = "btnAgregar";
             btnAgregar.Size = new Size(88, 39);
-            btnAgregar.TabIndex = 14;
+            btnAgregar.TabIndex = 2;
             btnAgregar.Text = "Agregar";
             btnAgregar.UseVisualStyleBackColor = true;
+            btnAgregar.Click += btnAgregar_Click;
             // 
             // txtBuscar
             // 
             txtBuscar.Location = new Point(67, 229);
             txtBuscar.Name = "txtBuscar";
             txtBuscar.Size = new Size(743, 21);
-            txtBuscar.TabIndex = 12;
+            txtBuscar.TabIndex = 3;
+            txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
             // lblBuscar
             // 
@@ -114,7 +117,7 @@
             // lblPlanta
             // 
             lblPlanta.AutoSize = true;
-            lblPlanta.Location = new Point(30, 131);
+            lblPlanta.Location = new Point(28, 131);
             lblPlanta.Name = "lblPlanta";
             lblPlanta.Size = new Size(45, 15);
             lblPlanta.TabIndex = 26;
@@ -123,7 +126,7 @@
             // lblLinea
             // 
             lblLinea.AutoSize = true;
-            lblLinea.Location = new Point(36, 160);
+            lblLinea.Location = new Point(32, 160);
             lblLinea.Name = "lblLinea";
             lblLinea.Size = new Size(41, 15);
             lblLinea.TabIndex = 25;
@@ -132,7 +135,7 @@
             // lblTurno
             // 
             lblTurno.AutoSize = true;
-            lblTurno.Location = new Point(34, 104);
+            lblTurno.Location = new Point(31, 104);
             lblTurno.Name = "lblTurno";
             lblTurno.Size = new Size(42, 15);
             lblTurno.TabIndex = 24;
@@ -161,7 +164,7 @@
             txtNoReloj.Location = new Point(89, 17);
             txtNoReloj.Name = "txtNoReloj";
             txtNoReloj.Size = new Size(275, 21);
-            txtNoReloj.TabIndex = 20;
+            txtNoReloj.TabIndex = 0;
             txtNoReloj.KeyPress += txtNoReloj_KeyPress;
             // 
             // lblNoReloj
@@ -178,45 +181,40 @@
             lblMostrarNombre.AutoSize = true;
             lblMostrarNombre.Location = new Point(89, 51);
             lblMostrarNombre.Name = "lblMostrarNombre";
-            lblMostrarNombre.Size = new Size(106, 15);
+            lblMostrarNombre.Size = new Size(0, 15);
             lblMostrarNombre.TabIndex = 27;
-            lblMostrarNombre.Text = "lblMostrarNombre";
             // 
             // lblMostrarLocalidad
             // 
             lblMostrarLocalidad.AutoSize = true;
             lblMostrarLocalidad.Location = new Point(89, 78);
             lblMostrarLocalidad.Name = "lblMostrarLocalidad";
-            lblMostrarLocalidad.Size = new Size(115, 15);
+            lblMostrarLocalidad.Size = new Size(0, 15);
             lblMostrarLocalidad.TabIndex = 28;
-            lblMostrarLocalidad.Text = "lblMostrarLocalidad";
             // 
             // lblMostrarTurno
             // 
             lblMostrarTurno.AutoSize = true;
             lblMostrarTurno.Location = new Point(89, 104);
             lblMostrarTurno.Name = "lblMostrarTurno";
-            lblMostrarTurno.Size = new Size(93, 15);
+            lblMostrarTurno.Size = new Size(0, 15);
             lblMostrarTurno.TabIndex = 29;
-            lblMostrarTurno.Text = "lblMostrarTurno";
             // 
             // lblMostrarPlanta
             // 
             lblMostrarPlanta.AutoSize = true;
             lblMostrarPlanta.Location = new Point(89, 131);
             lblMostrarPlanta.Name = "lblMostrarPlanta";
-            lblMostrarPlanta.Size = new Size(96, 15);
+            lblMostrarPlanta.Size = new Size(0, 15);
             lblMostrarPlanta.TabIndex = 30;
-            lblMostrarPlanta.Text = "lblMostrarPlanta";
             // 
             // lblMostrarLinea
             // 
             lblMostrarLinea.AutoSize = true;
             lblMostrarLinea.Location = new Point(89, 160);
             lblMostrarLinea.Name = "lblMostrarLinea";
-            lblMostrarLinea.Size = new Size(92, 15);
+            lblMostrarLinea.Size = new Size(0, 15);
             lblMostrarLinea.TabIndex = 31;
-            lblMostrarLinea.Text = "lblMostrarLinea";
             // 
             // pictureBox1
             // 
@@ -233,9 +231,10 @@
             btnBuscar.Location = new Point(370, 12);
             btnBuscar.Name = "btnBuscar";
             btnBuscar.Size = new Size(88, 39);
-            btnBuscar.TabIndex = 33;
+            btnBuscar.TabIndex = 1;
             btnBuscar.Text = "Buscar";
             btnBuscar.UseVisualStyleBackColor = true;
+            btnBuscar.Click += btnBuscar_Click;
             // 
             // Certificadores
             // 

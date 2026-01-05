@@ -6,7 +6,7 @@ CREATE TABLE Localidad
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-CREATE PROCEDURE spConsultarLocalidades
+ALTER PROCEDURE spConsultarLocalidades
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -27,7 +27,7 @@ BEGIN
 			SELECT '2' AS [Id], 'Se ha modificado correctamente' AS [Nombre];
 		END
 END
-CREATE PROCEDURE spBorrarLocalidad
+ALTER PROCEDURE spBorrarLocalidad
 @Id INT
 AS
 BEGIN
@@ -42,7 +42,7 @@ CREATE TABLE Turno
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-CREATE PROCEDURE spConsultarTurnos
+ALTER PROCEDURE spConsultarTurnos
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -78,7 +78,7 @@ CREATE TABLE Planta
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-CREATE PROCEDURE spConsultarPlantas
+ALTER PROCEDURE spConsultarPlantas
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -117,7 +117,7 @@ CREATE TABLE Linea
 	CONSTRAINT UQ_Linea_Planta_Nombre
 	UNIQUE (IdPlanta, Nombre)
 )
-CREATE PROCEDURE spConsultarLineas
+ALTER PROCEDURE spConsultarLineas
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
@@ -125,13 +125,10 @@ BEGIN
         Linea.Id,
         Linea.Nombre,
         Linea.IdPlanta,
-        Planta.Nombre AS [Planta]
+        Planta.Nombre AS [NombrePlanta]
     FROM Linea
     INNER JOIN Planta ON Linea.IdPlanta = Planta.Id
-	WHERE
-        @TextoBuscar IS NULL
-        OR @TextoBuscar = ''
-        OR Linea.Nombre LIKE '%' + @TextoBuscar + '%'
+	WHERE Linea.Nombre LIKE '%' + @TextoBuscar + '%'
         OR Planta.Nombre LIKE '%' + @TextoBuscar + '%';
 END
 CREATE PROCEDURE spConsultarLineasPorPlanta
@@ -176,22 +173,26 @@ CREATE TABLE Trabajador
 	IdTurno INT NOT NULL FOREIGN KEY REFERENCES Turno(Id),
 	IdLinea INT NOT NULL FOREIGN KEY REFERENCES Linea(Id)
 )
-CREATE PROCEDURE spConsultarTrabajadores
+ALTER PROCEDURE spConsultarTrabajadores
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
-	SELECT Trabajador.Id, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto, Trabajador.IdLocalidad, Trabajador.IdTurno, Linea.IdPlanta, Trabajador.IdLinea FROM Trabajador
-	INNER JOIN Linea ON Trabajador.IdLinea = Linea.Id  WHERE Trabajador.Nombre LIKE '%'+@TextoBuscar+'%';
+	SELECT Trabajador.Id, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto, Trabajador.IdLocalidad, Localidad.Nombre AS [NombreLocalidad], Trabajador.IdTurno, 
+	Turno.Nombre AS [NombreTurno], Linea.IdPlanta, Planta.Nombre AS [NombrePlanta], Trabajador.IdLinea, Linea.Nombre AS [NombreLinea] FROM Trabajador
+	INNER JOIN Localidad ON Localidad.Id = Trabajador.IdLocalidad INNER JOIN Turno ON Turno.Id = Trabajador.IdTurno INNER JOIN Linea ON Linea.Id = Trabajador.IdLinea
+	INNER JOIN Planta ON Planta.Id = Linea.IdPlanta WHERE Trabajador.NoReloj LIKE '%'+@TextoBuscar+'%' OR Trabajador.Nombre LIKE '%'+@TextoBuscar+'%'
+	OR Localidad.Nombre LIKE '%'+@TextoBuscar+'%' OR Turno.Nombre LIKE '%'+@TextoBuscar+'%' OR Planta.Nombre LIKE '%'+@TextoBuscar+'%' OR Linea.Nombre LIKE '%'+@TextoBuscar+'%';
 END
-ALTER PROCEDURE spConsultarTrabajador
-@NoReloj VARCHAR(10)
-AS
-BEGIN
-	SELECT Trabajador.Id, Trabajador.Nombre, Trabajador.RutaFoto, Localidad.Id AS [IdLocalidad],Localidad.Nombre as [NombreLocalidad], Turno.Id AS [IdTurno] ,Turno.Nombre AS [NombreTurno], 
-	Planta.Id AS [IdPlanta], Planta.Nombre AS [NombrePlanta], Linea.Id AS [IdLinea], Linea.Nombre AS [NombreLinea] FROM Trabajador INNER JOIN Localidad
-	ON Localidad.Id=Trabajador.IdLocalidad INNER JOIN Turno ON Turno.Id=Trabajador.IdTurno 
-	INNER JOIN Linea ON Linea.Id=Trabajador.IdLinea INNER JOIN Planta ON Planta.Id=Linea.IdPlanta;
-END
+--ALTER PROCEDURE spConsultarTrabajador
+--@NoReloj VARCHAR(10)
+--AS
+--BEGIN
+--	SELECT Trabajador.Id, Trabajador.Nombre, Trabajador.RutaFoto, Localidad.Id AS [IdLocalidad],Localidad.Nombre as [NombreLocalidad], Turno.Id AS [IdTurno] ,Turno.Nombre AS [NombreTurno], 
+--	Planta.Id AS [IdPlanta], Planta.Nombre AS [NombrePlanta], Linea.Id AS [IdLinea], Linea.Nombre AS [NombreLinea] FROM Trabajador INNER JOIN Localidad
+--	ON Localidad.Id=Trabajador.IdLocalidad INNER JOIN Turno ON Turno.Id=Trabajador.IdTurno 
+--	INNER JOIN Linea ON Linea.Id=Trabajador.IdLinea INNER JOIN Planta ON Planta.Id=Linea.IdPlanta WHERE Trabajador.NoReloj=@NoReloj;
+--END
+
 CREATE PROCEDURE spGuardarTrabajador
 @Id INT,
 @NoReloj VARCHAR(10),
@@ -219,7 +220,7 @@ BEGIN
 	DELETE FROM Trabajador WHERE Id=@Id
 	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
 END
-CREATE PROCEDURE spConsultarTrabajadorPorNoReloj
+ALTER PROCEDURE spConsultarTrabajador
 @NoReloj VARCHAR(10)
 AS
 BEGIN
@@ -233,6 +234,92 @@ BEGIN
 			SELECT 1 AS [Id], 'No existe trabajador con ese número de reloj' AS [Nombre];
 		END
 END
+
+
+CREATE OR ALTER PROCEDURE spConsultarTrabajadoresEstadoCertificacion
+@MostrarPor   VARCHAR(20),
+@TextoBuscar  VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH CTE_Estado AS
+    (
+        SELECT 
+            T.Id,
+            T.NoReloj,
+            T.Nombre,
+            T.RutaFoto,
+
+            T.IdLocalidad,
+            L.Nombre AS NombreLocalidad,
+
+            T.IdTurno,
+            Tu.Nombre AS NombreTurno,
+
+            Li.IdPlanta,
+            P.Nombre AS NombrePlanta,
+
+            T.IdLinea,
+            Li.Nombre AS NombreLinea,
+
+            CASE 
+                WHEN COUNT(C.Id) = 0 THEN 'Sin certificar'
+
+                WHEN SUM(CASE 
+                            WHEN C.FechaVencimiento < CAST(GETDATE() AS DATE) 
+                            THEN 1 ELSE 0 
+                         END) > 0 
+                    THEN 'Vencida'
+
+                WHEN SUM(CASE 
+                            WHEN C.FechaVencimiento 
+                                 BETWEEN CAST(GETDATE() AS DATE) 
+                                 AND DATEADD(DAY, 30, GETDATE()) 
+                            THEN 1 ELSE 0 
+                         END) > 0 
+                    THEN 'Por vencer'
+
+                ELSE 'Vigente'
+            END AS EstadoCertificacion
+
+        FROM Trabajador T
+        INNER JOIN Localidad L ON L.Id = T.IdLocalidad
+        INNER JOIN Turno Tu ON Tu.Id = T.IdTurno
+        INNER JOIN Linea Li ON Li.Id = T.IdLinea
+        INNER JOIN Planta P ON P.Id = Li.IdPlanta
+        LEFT JOIN Certificacion C ON C.IdTrabajador = T.Id
+
+        WHERE 
+            (
+                T.NoReloj LIKE '%' + @TextoBuscar + '%'
+                OR T.Nombre LIKE '%' + @TextoBuscar + '%'
+                OR L.Nombre LIKE '%' + @TextoBuscar + '%'
+                OR Tu.Nombre LIKE '%' + @TextoBuscar + '%'
+                OR P.Nombre LIKE '%' + @TextoBuscar + '%'
+                OR Li.Nombre LIKE '%' + @TextoBuscar + '%'
+                OR @TextoBuscar = ''
+            )
+
+        GROUP BY 
+            T.Id, T.NoReloj, T.Nombre, T.RutaFoto,
+            T.IdLocalidad, L.Nombre,
+            T.IdTurno, Tu.Nombre,
+            Li.IdPlanta, P.Nombre,
+            T.IdLinea, Li.Nombre
+    )
+
+    SELECT *
+    FROM CTE_Estado
+    WHERE
+        @MostrarPor = 'Todas'
+        OR EstadoCertificacion = @MostrarPor
+END
+
+
+
+
+
 -------------------------------------------
 
 -------------------------------------------
@@ -241,13 +328,86 @@ CREATE TABLE Certificador
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	IdTrabajador INT NOT NULL FOREIGN KEY REFERENCES Trabajador(Id)
 )
-CREATE PROCEDURE spConsultarCertificadores
+ALTER PROCEDURE spConsultarCertificadores
+@TextoBuscar VARCHAR(100)
 AS
 BEGIN
-	SELECT Certificador.Id, Certificador.IdTrabajador, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto,
-	Trabajador.IdTurno, Turno.Nombre AS [NombreTurno], Planta.Id AS [IdPlanta], Planta.Nombre AS [NombrePlanta] FROM Certificador INNER JOIN Trabajador ON Certificador.IdTrabajador = Trabajador.Id
+	SELECT Certificador.Id, Certificador.IdTrabajador, Trabajador.NoReloj, Trabajador.Nombre AS [NombreTrabajador], Trabajador.RutaFoto,
+	Trabajador.IdTurno, Turno.Nombre AS [NombreTurno], Planta.Id AS [IdPlanta], Planta.Nombre AS [NombrePlanta], Linea.Id AS [IdLinea], 
+	Linea.Nombre AS [NombreLinea] FROM Certificador INNER JOIN Trabajador ON Certificador.IdTrabajador = Trabajador.Id
 	INNER JOIN Turno ON Turno.Id = Trabajador.IdTurno INNER JOIN Linea ON Linea.Id = Trabajador.IdLinea INNER JOIN Planta ON Planta.Id = Linea.IdPlanta
+	WHERE Trabajador.NoReloj LIKE '%'+@TextoBuscar+'%' OR Trabajador.Nombre LIKE '%'+@TextoBuscar+'%' OR Turno.Nombre LIKE '%'+@TextoBuscar+'%'
+	OR Planta.Nombre LIKE '%'+@TextoBuscar+'%' OR Linea.Nombre LIKE '%'+@TextoBuscar+'%'
 END
+
+ALTER PROCEDURE spGuardarCertificador
+@NoReloj VARCHAR(10)
+AS
+BEGIN
+	DECLARE @IdTrabajador INT
+	SELECT @IdTrabajador = Id FROM Trabajador WHERE NoReloj=@NoReloj;
+
+	IF NOT EXISTS (SELECT 1 FROM Certificador WHERE IdTrabajador=@IdTrabajador)
+	BEGIN
+		INSERT INTO Certificador (IdTrabajador) VALUES (@IdTrabajador);
+		SELECT '1' AS [Id], 'Se ha guardado correctamente' AS [Nombre];
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'El trabajador ya es certificador' AS [Nombre];	
+		END
+END
+
+ALTER PROCEDURE spBorrarCertificador
+@Id INT
+AS
+BEGIN
+	DELETE FROM Certificador WHERE Id=@Id;
+	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+END
+-------------------------------------------
+
+-------------------------------------------
+CREATE TABLE Proceso
+(
+	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+	Nombre VARCHAR(100) NOT NULL,
+	Descripcion VARCHAR(300),
+	VigenciaMeses INT NOT NULL
+)
+
+CREATE PROCEDURE spConsultarProcesos
+@TextoBuscar VARCHAR(100)
+AS
+BEGIN
+	SELECT * FROM Proceso WHERE Nombre LIKE '%'+@TextoBuscar+'%'
+END
+
+CREATE PROCEDURE spGuardarProceso
+@Id INT,
+@Nombre VARCHAR(100),
+@Descripcion VARCHAR(300),
+@VigenciaMeses INT
+AS
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM Proceso WHERE Id=@Id)
+	BEGIN
+		INSERT INTO Proceso (Nombre, Descripcion, VigenciaMeses) VALUES (@Nombre, @Descripcion, @VigenciaMeses);
+		SELECT 1 AS [Id], 'Se ha guardado correctamente' AS [Nombre];
+	END ELSE
+		BEGIN
+			UPDATE Proceso SET Nombre=@Nombre, Descripcion=@Descripcion, VigenciaMeses=@VigenciaMeses WHERE Id=@Id;
+			SELECT 2 AS [Id], 'Se ha modificado correctamente' AS [Nombre];
+		END
+END
+
+CREATE PROCEDURE spBorrarProceso
+@Id INT
+AS
+BEGIN
+	DELETE FROM Proceso WHERE Id=@Id;
+	SELECT 1 AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+END
+
 -------------------------------------------
 
 -------------------------------------------
@@ -267,17 +427,36 @@ CREATE TABLE Certificacion
     CONSTRAINT CK_Fechas_Certificacion
         CHECK (FechaVencimiento > FechaCertificacion)
 )
--------------------------------------------
+
+CREATE OR ALTER PROCEDURE spConsultarCertificacionesPorTrabajador
+    @IdTrabajador INT,
+    @TextoBuscar VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        C.Id,
+        P.Nombre AS Proceso,
+        C.FechaCertificacion,
+        C.FechaVencimiento,
+        DATEDIFF(DAY, GETDATE(), C.FechaVencimiento) AS DiasRestantes,
+        C.Comentario
+    FROM Certificacion C
+    INNER JOIN Proceso P ON P.Id = C.IdProceso
+    WHERE
+        C.IdTrabajador = @IdTrabajador
+        AND (
+            P.Nombre LIKE '%' + @TextoBuscar + '%'
+            OR C.Comentario LIKE '%' + @TextoBuscar + '%'
+        )
+    ORDER BY C.FechaVencimiento;
+END
+
+
 
 -------------------------------------------
-CREATE TABLE Proceso
-(
-	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
-	Nombre VARCHAR(100) NOT NULL,
-	Descripcion VARCHAR(300),
-	VigenciaMeses INT NOT NULL
-)
--------------------------------------------
+
 
 CREATE INDEX IX_Trabajador_IdLinea
 ON Trabajador (IdLinea);

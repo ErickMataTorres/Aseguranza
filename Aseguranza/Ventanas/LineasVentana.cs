@@ -41,9 +41,9 @@ namespace Aseguranza.Ventanas
 
         private void btnAceptar_Click(object sender, EventArgs e)
         {
-            if (cbPlantas.SelectedIndex == -1)
+            if (cbPlantas.SelectedIndex == -1 || txtNombre.Text == string.Empty)
             {
-                MessageBox.Show("Debe seleccionar una planta.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Debe completar los campos", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             Clases.Linea linea = this.lineaActual ?? new Clases.Linea();
@@ -65,6 +65,14 @@ namespace Aseguranza.Ventanas
         private void btnRegresar_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void txtNombre_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(e.KeyChar == (char)Keys.Enter)
+            {
+                btnAceptar_Click(sender, e);
+            }
         }
     }
 }

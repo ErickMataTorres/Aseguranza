@@ -53,7 +53,7 @@ namespace Aseguranza.Ventanas
         }
         private void CargarTrabajador()
         {
-            txtNoReloj.Text = trabajadorActual!.NoReloj.ToString();
+            txtNoReloj.Text = trabajadorActual!.NoReloj;
             txtNoReloj.Enabled = false;
 
             txtNombre.Text = trabajadorActual.Nombre;
@@ -208,7 +208,7 @@ namespace Aseguranza.Ventanas
 
             Clases.Trabajador trabajador = trabajadorActual ?? new Clases.Trabajador();
 
-            trabajador.NoReloj = int.Parse(txtNoReloj.Text.Trim());
+            trabajador.NoReloj = txtNoReloj.Text.Trim();
             trabajador.Nombre = txtNombre.Text.Trim().ToUpper();
 
             string carpetaFotos = @"C:\Aseguranza\Fotos\";

@@ -28,29 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
-            dgvLocalidades = new DataGridView();
             lblBuscar = new Label();
             txtBuscar = new TextBox();
             btnAgregar = new Button();
             btnModificar = new Button();
             btnBorrar = new Button();
             btnRegresar = new Button();
+            dgvLocalidades = new DataGridView();
             ((System.ComponentModel.ISupportInitialize)dgvLocalidades).BeginInit();
             SuspendLayout();
-            // 
-            // dgvLocalidades
-            // 
-            dgvLocalidades.AllowUserToAddRows = false;
-            dgvLocalidades.AllowUserToDeleteRows = false;
-            dgvLocalidades.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvLocalidades.Location = new Point(12, 33);
-            dgvLocalidades.MultiSelect = false;
-            dgvLocalidades.Name = "dgvLocalidades";
-            dgvLocalidades.ReadOnly = true;
-            dgvLocalidades.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvLocalidades.Size = new Size(507, 283);
-            dgvLocalidades.TabIndex = 0;
-            dgvLocalidades.TabStop = false;
             // 
             // lblBuscar
             // 
@@ -110,18 +96,33 @@
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;
             // 
+            // dgvLocalidades
+            // 
+            dgvLocalidades.AllowUserToAddRows = false;
+            dgvLocalidades.AllowUserToDeleteRows = false;
+            dgvLocalidades.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvLocalidades.Location = new Point(12, 33);
+            dgvLocalidades.MultiSelect = false;
+            dgvLocalidades.Name = "dgvLocalidades";
+            dgvLocalidades.ReadOnly = true;
+            dgvLocalidades.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvLocalidades.Size = new Size(507, 283);
+            dgvLocalidades.TabIndex = 7;
+            dgvLocalidades.TabStop = false;
+            dgvLocalidades.CellDoubleClick += dgvLocalidades_CellDoubleClick;
+            // 
             // Localidades
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(533, 371);
+            Controls.Add(dgvLocalidades);
             Controls.Add(btnRegresar);
             Controls.Add(btnBorrar);
             Controls.Add(btnModificar);
             Controls.Add(btnAgregar);
             Controls.Add(txtBuscar);
             Controls.Add(lblBuscar);
-            Controls.Add(dgvLocalidades);
             Font = new Font("Arial", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
@@ -136,13 +137,12 @@
         }
 
         #endregion
-
-        private DataGridView dgvLocalidades;
         private Label lblBuscar;
         private TextBox txtBuscar;
         private Button btnAgregar;
         private Button btnModificar;
         private Button btnBorrar;
         private Button btnRegresar;
+        private DataGridView dgvLocalidades;
     }
 }

@@ -21,6 +21,15 @@ namespace Aseguranza.Ventanas
         {
             dgvTurnos.DataSource = Clases.Turno.ConsultarTurnos(txtBuscar.Text);
             dgvTurnos.AutoResizeColumns();
+            dgvTurnos.Columns["Id"].Visible = false;
+            if (dgvTurnos.Rows.Count > 0)
+            {
+                dgvTurnos.ClearSelection();
+                dgvTurnos.Rows[0].Selected = true;
+                dgvTurnos.CurrentCell = dgvTurnos.Rows[0].Cells
+                    .Cast<DataGridViewCell>()
+                    .First(c => c.Visible);
+            }
             ValidarBotones();
         }
         private void ValidarBotones()
@@ -35,6 +44,7 @@ namespace Aseguranza.Ventanas
                 btnModificar.Enabled = true;
                 btnBorrar.Enabled = true;
             }
+            txtBuscar.Focus();
         }
 
         private void btnRegresar_Click(object sender, EventArgs e)
@@ -92,6 +102,11 @@ namespace Aseguranza.Ventanas
                 dgvTurnos.DataSource = Clases.Turno.ConsultarTurnos(txtBuscar.Text);
                 ValidarBotones();
             }
+        }
+
+        private void dgvTurnos_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            btnModificar_Click(sender, e);
         }
     }
 }

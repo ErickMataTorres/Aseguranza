@@ -25,6 +25,18 @@ namespace Aseguranza.Ventanas
         {
             dgvLineas.DataSource = Clases.Linea.ConsultarLineas(string.Empty);
             dgvLineas.AutoResizeColumns();
+
+            dgvLineas.Columns["Id"].Visible = false;
+            dgvLineas.Columns["IdPlanta"].Visible = false;
+            if (dgvLineas.Rows.Count > 0)
+            {
+                dgvLineas.ClearSelection();
+                dgvLineas.Rows[0].Selected = true;
+                dgvLineas.CurrentCell = dgvLineas.Rows[0].Cells
+                    .Cast<DataGridViewCell>()
+                    .First(c => c.Visible);
+            }
+
             ValidarBotones();
         }
 
@@ -40,6 +52,7 @@ namespace Aseguranza.Ventanas
                 btnModificar.Enabled = true;
                 btnBorrar.Enabled = true;
             }
+            txtBuscar.Focus();
         }
 
         private void btnRegresar_Click(object sender, EventArgs e)
@@ -113,6 +126,11 @@ namespace Aseguranza.Ventanas
                 dgvLineas.DataSource = Clases.Linea.ConsultarLineas(txtBuscar.Text);
                 dgvLineas.AutoResizeColumns();
             }
+        }
+
+        private void dgvLineas_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            btnModificar_Click(sender, e);
         }
     }
 }

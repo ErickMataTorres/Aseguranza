@@ -10,33 +10,32 @@ using System.Windows.Forms;
 
 namespace Aseguranza.Ventanas
 {
-    public partial class Plantas : Form
+    public partial class Procesos : Form
     {
-        public Plantas()
+        public Procesos()
         {
             InitializeComponent();
         }
 
-        private void Plantas_Load(object sender, EventArgs e)
+        private void Procesos_Load(object sender, EventArgs e)
         {
-            dgvPlantas.DataSource = Clases.Planta.ConsultarPlantas(txtBuscar.Text);
-            dgvPlantas.AutoResizeColumns();
-
-            dgvPlantas.Columns["Id"].Visible = false;
-            if (dgvPlantas.Rows.Count > 0)
+            dgvProcesos.DataSource = Clases.Proceso.ConsultarProcesos(txtBuscar.Text);
+            dgvProcesos.AutoResizeColumns();
+            dgvProcesos.Columns["Id"].Visible = false;
+            if (dgvProcesos.Rows.Count > 0)
             {
-                dgvPlantas.ClearSelection();
-                dgvPlantas.Rows[0].Selected = true;
-                dgvPlantas.CurrentCell = dgvPlantas.Rows[0].Cells
+                dgvProcesos.ClearSelection();
+                dgvProcesos.Rows[0].Selected = true;
+                dgvProcesos.CurrentCell = dgvProcesos.Rows[0].Cells
                     .Cast<DataGridViewCell>()
                     .First(c => c.Visible);
             }
-
             ValidarBotones();
         }
+
         private void ValidarBotones()
         {
-            if (dgvPlantas.Rows.Count == 0)
+            if (dgvProcesos.Rows.Count == 0)
             {
                 btnModificar.Enabled = false;
                 btnBorrar.Enabled = false;
@@ -56,25 +55,27 @@ namespace Aseguranza.Ventanas
 
         private void btnAgregar_Click(object sender, EventArgs e)
         {
-            Ventanas.PlantasVentana ventana = new Ventanas.PlantasVentana(null!);
+            Ventanas.ProcesosVentana ventana = new Ventanas.ProcesosVentana(null!);
             ventana.ShowDialog();
             if (ventana.DialogResult == DialogResult.OK)
             {
-                Plantas_Load(sender, e);
+                Procesos_Load(sender, e);
                 ValidarBotones();
             }
         }
 
         private void btnModificar_Click(object sender, EventArgs e)
         {
-            Clases.Planta planta = new Clases.Planta();
-            planta.Id = int.Parse(dgvPlantas.CurrentRow.Cells["Id"].Value.ToString()!);
-            planta.Nombre = dgvPlantas.CurrentRow.Cells["Nombre"].Value.ToString()!;
-            Ventanas.PlantasVentana ventana = new Ventanas.PlantasVentana(planta);
+            Clases.Proceso proceso = new Clases.Proceso();
+            proceso.Id = int.Parse(dgvProcesos.CurrentRow.Cells["Id"].Value.ToString()!);
+            proceso.Nombre = dgvProcesos.CurrentRow.Cells["Nombre"].Value.ToString()!;
+            proceso.Descripcion = dgvProcesos.CurrentRow.Cells["Descripcion"].Value.ToString()!;
+            proceso.VigenciaMeses = int.Parse(dgvProcesos.CurrentRow.Cells["VigenciaMeses"].Value.ToString()!);
+            Ventanas.ProcesosVentana ventana = new Ventanas.ProcesosVentana(proceso);
             ventana.ShowDialog();
             if (ventana.DialogResult == DialogResult.OK)
             {
-                Plantas_Load(sender, e);
+                Procesos_Load(sender, e);
                 ValidarBotones();
             }
         }
@@ -82,12 +83,12 @@ namespace Aseguranza.Ventanas
         private void btnBorrar_Click(object sender, EventArgs e)
         {
             Clases.Mensaje respuesta;
-            if (MessageBox.Show("¿Está seguro de borrar la localidad seleccionada?", caption: "Confirmar borrado", buttons: MessageBoxButtons.YesNo, icon: MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show("¿Está seguro de borrar el proceso seleccionada?", caption: "Confirmar borrado", buttons: MessageBoxButtons.YesNo, icon: MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                int id = int.Parse(dgvPlantas.CurrentRow.Cells["Id"].Value.ToString()!);
-                respuesta = Clases.Planta.BorrarPlanta(id);
+                int id = int.Parse(dgvProcesos.CurrentRow.Cells["Id"].Value.ToString()!);
+                respuesta = Clases.Proceso.BorrarProceso(id);
                 MessageBox.Show(respuesta.Nombre, "Resultado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                dgvPlantas.DataSource = Clases.Planta.ConsultarPlantas(txtBuscar.Text);
+                dgvProcesos.DataSource = Clases.Proceso.ConsultarProcesos(txtBuscar.Text);
                 ValidarBotones();
             }
         }
@@ -96,12 +97,12 @@ namespace Aseguranza.Ventanas
         {
             if (e.KeyChar == (char)Keys.Enter)
             {
-                dgvPlantas.DataSource = Clases.Planta.ConsultarPlantas(txtBuscar.Text.Trim());
-                dgvPlantas.AutoResizeColumns();
+                dgvProcesos.DataSource = Clases.Proceso.ConsultarProcesos(txtBuscar.Text);
+                ValidarBotones();
             }
         }
 
-        private void dgvPlantas_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        private void dgvProcesos_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             btnModificar_Click(sender, e);
         }

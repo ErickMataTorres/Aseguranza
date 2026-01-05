@@ -31,6 +31,11 @@ namespace Aseguranza.Ventanas
 
         private void btnAceptar_Click(object sender, EventArgs e)
         {
+            if (txtNombre.Text == string.Empty)
+            {
+                MessageBox.Show("El nombre de la planta no puede estar vacío.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             Clases.Planta planta = this.plantaActual ?? new Clases.Planta();
             planta.Nombre = txtNombre.Text.ToUpper().Trim();
             Clases.Mensaje respuesta = planta.GuardarPlanta();
@@ -49,6 +54,14 @@ namespace Aseguranza.Ventanas
         private void btnRegresar_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void txtNombre_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(e.KeyChar == (char)Keys.Enter)
+            {
+                btnAceptar_Click(sender, e);
+            }
         }
     }
 }

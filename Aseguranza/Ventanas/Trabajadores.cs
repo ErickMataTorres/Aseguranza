@@ -21,6 +21,22 @@ namespace Aseguranza.Ventanas
         {
             dgvTrabajadores.DataSource = Clases.Trabajador.ConsultarTrabajadores(string.Empty);
             dgvTrabajadores.AutoResizeColumns();
+
+            dgvTrabajadores.Columns["Id"].Visible = false;
+            dgvTrabajadores.Columns["RutaFoto"].Visible = false;
+            dgvTrabajadores.Columns["IdLocalidad"].Visible = false;
+            dgvTrabajadores.Columns["IdTurno"].Visible = false;
+            dgvTrabajadores.Columns["IdPlanta"].Visible = false;
+            dgvTrabajadores.Columns["IdLinea"].Visible = false;
+            if (dgvTrabajadores.Rows.Count > 0)
+            {
+                dgvTrabajadores.ClearSelection();
+                dgvTrabajadores.Rows[0].Selected = true;
+                dgvTrabajadores.CurrentCell = dgvTrabajadores.Rows[0].Cells
+                    .Cast<DataGridViewCell>()
+                    .First(c => c.Visible);
+            }
+
             ValidarBotones();
         }
         private void ValidarBotones()
@@ -35,6 +51,7 @@ namespace Aseguranza.Ventanas
                 btnModificar.Enabled = true;
                 btnBorrar.Enabled = true;
             }
+            txtBuscar.Focus();
         }
 
         private void btnRegresar_Click(object sender, EventArgs e)
@@ -57,7 +74,7 @@ namespace Aseguranza.Ventanas
         {
             Clases.Trabajador trabajador = new Clases.Trabajador();
             trabajador.Id = int.Parse(dgvTrabajadores.CurrentRow.Cells["Id"].Value.ToString()!);
-            trabajador.NoReloj = int.Parse(dgvTrabajadores.CurrentRow.Cells["NoReloj"].Value.ToString()!);
+            trabajador.NoReloj = dgvTrabajadores.CurrentRow.Cells["NoReloj"].Value.ToString()!;
             trabajador.Nombre = dgvTrabajadores.CurrentRow.Cells["Nombre"].Value.ToString()!;
             trabajador.RutaFoto = dgvTrabajadores.CurrentRow.Cells["RutaFoto"].Value.ToString()!;
             trabajador.IdLocalidad = int.Parse(dgvTrabajadores.CurrentRow.Cells["IdLocalidad"].Value.ToString()!);
@@ -130,6 +147,11 @@ namespace Aseguranza.Ventanas
                 dgvTrabajadores.AutoResizeColumns();
                 //ValidarBotones();
             }
+        }
+
+        private void dgvTrabajadores_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            btnModificar_Click(sender, e);
         }
     }
 }

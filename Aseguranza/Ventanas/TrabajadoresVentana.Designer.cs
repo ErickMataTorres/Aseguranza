@@ -65,14 +65,14 @@
             txtNoReloj.Location = new Point(104, 31);
             txtNoReloj.Name = "txtNoReloj";
             txtNoReloj.Size = new Size(275, 21);
-            txtNoReloj.TabIndex = 1;
+            txtNoReloj.TabIndex = 0;
             // 
             // txtNombre
             // 
             txtNombre.Location = new Point(104, 86);
             txtNombre.Name = "txtNombre";
             txtNombre.Size = new Size(275, 21);
-            txtNombre.TabIndex = 3;
+            txtNombre.TabIndex = 1;
             // 
             // lblNombre
             // 
@@ -99,7 +99,7 @@
             cbLocalidad.Location = new Point(104, 140);
             cbLocalidad.Name = "cbLocalidad";
             cbLocalidad.Size = new Size(275, 23);
-            cbLocalidad.TabIndex = 5;
+            cbLocalidad.TabIndex = 2;
             // 
             // cbTurno
             // 
@@ -108,7 +108,7 @@
             cbTurno.Location = new Point(104, 198);
             cbTurno.Name = "cbTurno";
             cbTurno.Size = new Size(275, 23);
-            cbTurno.TabIndex = 7;
+            cbTurno.TabIndex = 3;
             // 
             // lblTurno
             // 
@@ -126,7 +126,7 @@
             cbLinea.Location = new Point(104, 301);
             cbLinea.Name = "cbLinea";
             cbLinea.Size = new Size(275, 23);
-            cbLinea.TabIndex = 9;
+            cbLinea.TabIndex = 5;
             // 
             // lblLinea
             // 
@@ -144,7 +144,7 @@
             cbPlanta.Location = new Point(104, 246);
             cbPlanta.Name = "cbPlanta";
             cbPlanta.Size = new Size(275, 23);
-            cbPlanta.TabIndex = 11;
+            cbPlanta.TabIndex = 4;
             cbPlanta.SelectedIndexChanged += cbPlanta_SelectedIndexChanged;
             cbPlanta.SelectedValueChanged += cbPlanta_SelectedValueChanged;
             // 
@@ -172,7 +172,7 @@
             btnIniciarCamara.Location = new Point(385, 285);
             btnIniciarCamara.Name = "btnIniciarCamara";
             btnIniciarCamara.Size = new Size(88, 39);
-            btnIniciarCamara.TabIndex = 13;
+            btnIniciarCamara.TabIndex = 6;
             btnIniciarCamara.Text = "Iniciar camara";
             btnIniciarCamara.UseVisualStyleBackColor = true;
             btnIniciarCamara.Click += btnTomar_Click;
@@ -182,7 +182,7 @@
             btnSeleccionar.Location = new Point(569, 285);
             btnSeleccionar.Name = "btnSeleccionar";
             btnSeleccionar.Size = new Size(88, 39);
-            btnSeleccionar.TabIndex = 14;
+            btnSeleccionar.TabIndex = 8;
             btnSeleccionar.Text = "Seleccionar...";
             btnSeleccionar.UseVisualStyleBackColor = true;
             btnSeleccionar.Click += btnSeleccionar_Click;
@@ -192,7 +192,7 @@
             btnAceptar.Location = new Point(240, 357);
             btnAceptar.Name = "btnAceptar";
             btnAceptar.Size = new Size(88, 39);
-            btnAceptar.TabIndex = 16;
+            btnAceptar.TabIndex = 9;
             btnAceptar.Text = "Aceptar";
             btnAceptar.UseVisualStyleBackColor = true;
             btnAceptar.Click += btnAceptar_Click;
@@ -202,7 +202,7 @@
             btnRegresar.Location = new Point(334, 357);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 15;
+            btnRegresar.TabIndex = 10;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;
@@ -212,7 +212,7 @@
             btnCapturar.Location = new Point(477, 285);
             btnCapturar.Name = "btnCapturar";
             btnCapturar.Size = new Size(88, 39);
-            btnCapturar.TabIndex = 17;
+            btnCapturar.TabIndex = 7;
             btnCapturar.Text = "Capturar";
             btnCapturar.UseVisualStyleBackColor = true;
             btnCapturar.Click += btnCapturar_Click;

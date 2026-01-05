@@ -26,6 +26,16 @@ namespace Aseguranza.Ventanas
         {
             dgvLocalidades.DataSource = Clases.Localidad.ConsultarLocalidades(txtBuscar.Text);
             dgvLocalidades.AutoResizeColumns();
+            dgvLocalidades.Columns["Id"].Visible = false;
+            if (dgvLocalidades.Rows.Count > 0)
+            {
+                dgvLocalidades.ClearSelection();
+                dgvLocalidades.Rows[0].Selected = true;
+                dgvLocalidades.CurrentCell = dgvLocalidades.Rows[0].Cells
+                    .Cast<DataGridViewCell>()
+                    .First(c => c.Visible);
+            }
+
             ValidarBotones();
         }
 
@@ -41,6 +51,7 @@ namespace Aseguranza.Ventanas
                 btnModificar.Enabled = true;
                 btnBorrar.Enabled = true;
             }
+            txtBuscar.Focus();
         }
 
         private void btnRegresar_Click(object sender, EventArgs e)
@@ -98,6 +109,20 @@ namespace Aseguranza.Ventanas
                 dgvLocalidades.DataSource = Clases.Localidad.ConsultarLocalidades(txtBuscar.Text);
                 dgvLocalidades.AutoResizeColumns();
                 //ValidarBotones();
+            }
+        }
+
+        private void dgvLocalidades_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            Clases.Localidad localidad = new Clases.Localidad();
+            localidad.Id = int.Parse(dgvLocalidades.CurrentRow.Cells["Id"].Value.ToString()!);
+            localidad.Nombre = dgvLocalidades.CurrentRow.Cells["Nombre"].Value.ToString()!;
+            Ventanas.LocalidadesVentana ventana = new Ventanas.LocalidadesVentana(localidad);
+            ventana.ShowDialog();
+            if (ventana.DialogResult == DialogResult.OK)
+            {
+                Localidades_Load(sender, e);
+                ValidarBotones();
             }
         }
     }

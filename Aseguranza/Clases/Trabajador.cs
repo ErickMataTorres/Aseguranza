@@ -11,7 +11,7 @@ namespace Aseguranza.Clases
     public class Trabajador
     {
         public int Id { get; set; }
-        public int NoReloj { get; set; }
+        public string? NoReloj { get; set; }
         public string? Nombre { get; set; }
         public string? RutaFoto { get; set; }
         public int IdLocalidad { get; set; }
@@ -23,7 +23,7 @@ namespace Aseguranza.Clases
         public int IdLinea { get; set; }
         public string? NombreLinea { get; set; }
 
-        public static Trabajador ConsultarTrabajador(int noReloj)
+        public static Trabajador ConsultarTrabajador(string noReloj)
         {
             SqlConnection conexion = Conexion.Conectar();
             SqlCommand command = new SqlCommand("spConsultarTrabajador", conexion);
@@ -46,6 +46,10 @@ namespace Aseguranza.Clases
                 t.IdLinea = int.Parse(dr["IdLinea"].ToString()!);
                 t.NombreLinea = dr["NombreLinea"].ToString();
             }
+            else
+            {
+                return null!;
+            }
             dr.Close();
             conexion.Close();
             return t;
@@ -63,6 +67,23 @@ namespace Aseguranza.Clases
             conexion.Close();
             return tabla;
         }
+
+
+        public static DataTable ConsultarTrabajadoresEstadoCertificacion(string mostrarPor, string textoBuscar)
+        {
+            SqlConnection conexion = Conexion.Conectar();
+            DataTable tabla = new DataTable();
+            conexion.Open();
+            SqlCommand command = new SqlCommand("spConsultarTrabajadoresEstadoCertificacion", conexion);
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.AddWithValue("@TextoBuscar", textoBuscar);
+            command.Parameters.AddWithValue("@MostrarPor", mostrarPor);
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            adapter.Fill(tabla);
+            conexion.Close();
+            return tabla;
+        }
+
         public static Clases.Mensaje BorrarTrabajador(int id)
         {
             Clases.Mensaje respuesta = new Clases.Mensaje();
