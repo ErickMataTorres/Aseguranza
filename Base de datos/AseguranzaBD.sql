@@ -437,21 +437,105 @@ BEGIN
 
     SELECT
         C.Id,
+		P.Id AS [IdProceso],
         P.Nombre AS Proceso,
         C.FechaCertificacion,
         C.FechaVencimiento,
         DATEDIFF(DAY, GETDATE(), C.FechaVencimiento) AS DiasRestantes,
-        C.Comentario
+        C.Comentario,
+		C.IdCertificador, Trabajador.Nombre AS [NombreCertificador]
     FROM Certificacion C
     INNER JOIN Proceso P ON P.Id = C.IdProceso
+	INNER JOIN Certificador ON Certificador.Id = C.IdCertificador
+	INNER JOIN Trabajador ON Trabajador.Id = Certificador.IdTrabajador
     WHERE
         C.IdTrabajador = @IdTrabajador
         AND (
             P.Nombre LIKE '%' + @TextoBuscar + '%'
             OR C.Comentario LIKE '%' + @TextoBuscar + '%'
+			OR Trabajador.Nombre LIKE '%' + @TextoBuscar + '%'
         )
     ORDER BY C.FechaVencimiento;
 END
+
+
+CREATE OR ALTER PROCEDURE spGuardarCertificacion
+(
+    @IdTrabajador INT,
+    @IdProceso INT,
+    @FechaCertificacion DATE,
+    @IdCertificador INT,
+    @Comentario VARCHAR(300)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @VigenciaMeses INT;
+    DECLARE @FechaVencimiento DATE;
+
+    -- Obtener vigencia desde Proceso
+    SELECT @VigenciaMeses = VigenciaMeses
+    FROM Proceso
+    WHERE Id = @IdProceso;
+
+    SET @FechaVencimiento =
+        DATEADD(MONTH, @VigenciaMeses, @FechaCertificacion);
+
+    IF EXISTS (
+        SELECT 1
+        FROM Certificacion
+        WHERE IdTrabajador = @IdTrabajador
+          AND IdProceso = @IdProceso
+    )
+    BEGIN
+        -- RENOVAR
+        UPDATE Certificacion
+        SET
+            FechaCertificacion = @FechaCertificacion,
+            FechaVencimiento = @FechaVencimiento,
+            IdCertificador = @IdCertificador,
+            Comentario = @Comentario
+        WHERE
+            IdTrabajador = @IdTrabajador
+            AND IdProceso = @IdProceso;
+
+        SELECT 2 AS [Id], 'Certificación renovada correctamente' AS [Nombre];
+    END
+    ELSE
+    BEGIN
+        -- INSERTAR
+        INSERT INTO Certificacion
+        (
+            IdTrabajador,
+            IdProceso,
+            FechaCertificacion,
+            FechaVencimiento,
+            IdCertificador,
+            Comentario
+        )
+        VALUES
+        (
+            @IdTrabajador,
+            @IdProceso,
+            @FechaCertificacion,
+            @FechaVencimiento,
+            @IdCertificador,
+            @Comentario
+        );
+
+        SELECT 1 AS [Id], 'Certificación registrada correctamente' AS [Nombre];
+    END
+END
+
+CREATE PROCEDURE spBorrarCertificacion
+@Id INT
+AS
+BEGIN
+	DELETE FROM Certificacion WHERE Id=@Id;
+	SELECT 1 AS [Id], 'Certificación borrada correctamente' AS [Nombre];
+END
+
 
 
 

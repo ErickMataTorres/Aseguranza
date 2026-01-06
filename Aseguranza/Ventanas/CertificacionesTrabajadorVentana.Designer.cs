@@ -58,7 +58,7 @@
             cbProcesos.Location = new Point(145, 31);
             cbProcesos.Name = "cbProcesos";
             cbProcesos.Size = new Size(271, 23);
-            cbProcesos.TabIndex = 1;
+            cbProcesos.TabIndex = 0;
             cbProcesos.SelectedIndexChanged += cbProcesos_SelectedIndexChanged;
             // 
             // dtpFechaCertificacion
@@ -66,7 +66,7 @@
             dtpFechaCertificacion.Location = new Point(145, 72);
             dtpFechaCertificacion.Name = "dtpFechaCertificacion";
             dtpFechaCertificacion.Size = new Size(271, 21);
-            dtpFechaCertificacion.TabIndex = 2;
+            dtpFechaCertificacion.TabIndex = 1;
             dtpFechaCertificacion.ValueChanged += dtpFechaCertificacion_ValueChanged;
             // 
             // lblFechaCertificacion
@@ -94,15 +94,17 @@
             dtpFechaVencimiento.Name = "dtpFechaVencimiento";
             dtpFechaVencimiento.Size = new Size(271, 21);
             dtpFechaVencimiento.TabIndex = 4;
+            dtpFechaVencimiento.TabStop = false;
             // 
             // cbCertificadores
             // 
             cbCertificadores.DropDownStyle = ComboBoxStyle.DropDownList;
             cbCertificadores.FormattingEnabled = true;
+            cbCertificadores.ItemHeight = 15;
             cbCertificadores.Location = new Point(145, 161);
             cbCertificadores.Name = "cbCertificadores";
             cbCertificadores.Size = new Size(271, 23);
-            cbCertificadores.TabIndex = 7;
+            cbCertificadores.TabIndex = 2;
             // 
             // lblCertificador
             // 
@@ -128,14 +130,14 @@
             txtComentario.Multiline = true;
             txtComentario.Name = "txtComentario";
             txtComentario.Size = new Size(271, 91);
-            txtComentario.TabIndex = 9;
+            txtComentario.TabIndex = 3;
             // 
             // btnRegresar
             // 
             btnRegresar.Location = new Point(223, 315);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 11;
+            btnRegresar.TabIndex = 5;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;
@@ -145,7 +147,7 @@
             btnAceptar.Location = new Point(129, 315);
             btnAceptar.Name = "btnAceptar";
             btnAceptar.Size = new Size(88, 39);
-            btnAceptar.TabIndex = 10;
+            btnAceptar.TabIndex = 4;
             btnAceptar.Text = "Aceptar";
             btnAceptar.UseVisualStyleBackColor = true;
             btnAceptar.Click += btnAceptar_Click;

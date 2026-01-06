@@ -43,7 +43,7 @@
             btnRegresar.Location = new Point(713, 416);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 3;
+            btnRegresar.TabIndex = 2;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;
@@ -53,7 +53,7 @@
             btnCertificaciones.Location = new Point(3, 416);
             btnCertificaciones.Name = "btnCertificaciones";
             btnCertificaciones.Size = new Size(104, 39);
-            btnCertificaciones.TabIndex = 2;
+            btnCertificaciones.TabIndex = 1;
             btnCertificaciones.Text = "Certificaciones";
             btnCertificaciones.UseVisualStyleBackColor = true;
             btnCertificaciones.Click += btnCertificaciones_Click;
@@ -84,12 +84,14 @@
             dgvTrabajadores.MultiSelect = false;
             dgvTrabajadores.Name = "dgvTrabajadores";
             dgvTrabajadores.ReadOnly = true;
-            dgvTrabajadores.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvTrabajadores.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgvTrabajadores.Size = new Size(798, 377);
             dgvTrabajadores.TabIndex = 14;
             dgvTrabajadores.TabStop = false;
             dgvTrabajadores.CellDoubleClick += dgvTrabajadores_CellDoubleClick;
             dgvTrabajadores.CellFormatting += dgvTrabajadores_CellFormatting;
+            dgvTrabajadores.CellMouseEnter += dgvTrabajadores_CellMouseEnter;
+            dgvTrabajadores.CellMouseLeave += dgvTrabajadores_CellMouseLeave;
             // 
             // lblMostrarPor
             // 
@@ -104,11 +106,11 @@
             // 
             cbMostrarPor.DropDownStyle = ComboBoxStyle.DropDownList;
             cbMostrarPor.FormattingEnabled = true;
-            cbMostrarPor.Items.AddRange(new object[] { "Todas", "Vigentes", "Por vencer", "Vencidas", "Sin certificar" });
+            cbMostrarPor.Items.AddRange(new object[] { "Todas", "Vigente", "Por vencer", "Vencida", "Sin certificar" });
             cbMostrarPor.Location = new Point(81, 6);
             cbMostrarPor.Name = "cbMostrarPor";
             cbMostrarPor.Size = new Size(304, 23);
-            cbMostrarPor.TabIndex = 17;
+            cbMostrarPor.TabIndex = 3;
             // 
             // Certificaciones
             // 

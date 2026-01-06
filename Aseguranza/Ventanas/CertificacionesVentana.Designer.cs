@@ -190,16 +190,18 @@
             dgvCertificaciones.Location = new Point(11, 265);
             dgvCertificaciones.Name = "dgvCertificaciones";
             dgvCertificaciones.ReadOnly = true;
-            dgvCertificaciones.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvCertificaciones.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgvCertificaciones.Size = new Size(853, 193);
             dgvCertificaciones.TabIndex = 47;
+            dgvCertificaciones.TabStop = false;
+            dgvCertificaciones.CellDoubleClick += dgvCertificaciones_CellDoubleClick;
             // 
             // btnRegresar
             // 
             btnRegresar.Location = new Point(776, 464);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 48;
+            btnRegresar.TabIndex = 4;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;
@@ -209,16 +211,17 @@
             btnBorrar.Location = new Point(198, 464);
             btnBorrar.Name = "btnBorrar";
             btnBorrar.Size = new Size(88, 39);
-            btnBorrar.TabIndex = 51;
+            btnBorrar.TabIndex = 3;
             btnBorrar.Text = "Borrar";
             btnBorrar.UseVisualStyleBackColor = true;
+            btnBorrar.Click += btnBorrar_Click_1;
             // 
             // btnModificar
             // 
             btnModificar.Location = new Point(104, 464);
             btnModificar.Name = "btnModificar";
             btnModificar.Size = new Size(88, 39);
-            btnModificar.TabIndex = 50;
+            btnModificar.TabIndex = 2;
             btnModificar.Text = "Modificar / Renovar";
             btnModificar.UseVisualStyleBackColor = true;
             btnModificar.Click += btnModificar_Click_1;
@@ -228,16 +231,18 @@
             btnAgregar.Location = new Point(10, 464);
             btnAgregar.Name = "btnAgregar";
             btnAgregar.Size = new Size(88, 39);
-            btnAgregar.TabIndex = 49;
+            btnAgregar.TabIndex = 1;
             btnAgregar.Text = "Agregar";
             btnAgregar.UseVisualStyleBackColor = true;
+            btnAgregar.Click += btnAgregar_Click_1;
             // 
             // txtBuscar
             // 
             txtBuscar.Location = new Point(65, 238);
             txtBuscar.Name = "txtBuscar";
             txtBuscar.Size = new Size(799, 21);
-            txtBuscar.TabIndex = 52;
+            txtBuscar.TabIndex = 0;
+            txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
             // lblBuscar
             // 

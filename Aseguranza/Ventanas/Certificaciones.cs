@@ -9,6 +9,7 @@ namespace Aseguranza.Ventanas
     public partial class Certificaciones : Form
     {
         private readonly Font _boldFont = new Font("Arial", 9F, FontStyle.Bold);
+        private Color _colorOriginal;
 
         public Certificaciones()
         {
@@ -42,9 +43,14 @@ namespace Aseguranza.Ventanas
 
             dgvTrabajadores.AutoResizeColumns();
 
+            txtBuscar.Focus();
+
             OcultarColumnas();
             SeleccionarPrimeraFila();
         }
+
+
+
 
         // ============================
         // UI HELPERS
@@ -186,6 +192,16 @@ namespace Aseguranza.Ventanas
                     row.DefaultCellStyle.BackColor = Color.LightGray;
                     break;
             }
+        }
+
+        private void dgvTrabajadores_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void dgvTrabajadores_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            
         }
     }
 }

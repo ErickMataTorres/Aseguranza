@@ -26,7 +26,7 @@ namespace Aseguranza.Ventanas
             MostrarDatosTrabajador();
             CargarCertificaciones();
 
-            dgvCertificaciones.DataBindingComplete += dgvCertificaciones_DataBindingComplete;
+            dgvCertificaciones.DataBindingComplete += dgvCertificaciones_DataBindingComplete!;
         }
 
         // =====================================================
@@ -76,6 +76,10 @@ namespace Aseguranza.Ventanas
                 dgvCertificaciones.ClearSelection();
                 dgvCertificaciones.Rows[0].Selected = true;
             }
+
+            txtBuscar.Focus();
+            
+            PintarCertificaciones();
         }
 
         private void OcultarColumnas()
@@ -84,7 +88,8 @@ namespace Aseguranza.Ventanas
             {
                 "Id",
                 "IdProceso",
-                "IdTrabajador"
+                "IdTrabajador",
+                "IdCertificador"
             };
 
             foreach (var col in columnasOcultas)
@@ -100,6 +105,11 @@ namespace Aseguranza.Ventanas
         private void dgvCertificaciones_DataBindingComplete(
             object sender,
             DataGridViewBindingCompleteEventArgs e)
+        {
+            PintarCertificaciones();
+        }
+
+        private void PintarCertificaciones()
         {
             foreach (DataGridViewRow row in dgvCertificaciones.Rows)
             {
@@ -120,6 +130,7 @@ namespace Aseguranza.Ventanas
             }
         }
 
+
         // =====================================================
         // BUSCAR CERTIFICACIONES
         // =====================================================
@@ -137,7 +148,7 @@ namespace Aseguranza.Ventanas
         // =====================================================
         private void btnAgregar_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         private void btnModificar_Click(object sender, EventArgs e)
@@ -148,7 +159,7 @@ namespace Aseguranza.Ventanas
             certificacion.FechaVencimiento = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaVencimiento"].Value.ToString()!);
             certificacion.IdProceso = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdProceso"].Value.ToString()!);
             certificacion.Comentario = dgvCertificaciones.CurrentRow.Cells["Comentario"].Value.ToString()!;
-            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion);
+            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
             ventana.ShowDialog();
             if (ventana.DialogResult == DialogResult.OK)
             {
@@ -158,6 +169,45 @@ namespace Aseguranza.Ventanas
         }
 
         private void btnBorrar_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnRegresar_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void btnModificar_Click_1(object sender, EventArgs e)
+        {
+            Clases.Certificacion certificacion = new Clases.Certificacion();
+            certificacion.Id = int.Parse(dgvCertificaciones.CurrentRow.Cells["Id"].Value.ToString()!);
+            certificacion.FechaCertificacion = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaCertificacion"].Value.ToString()!);
+            certificacion.FechaVencimiento = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaVencimiento"].Value.ToString()!);
+            certificacion.IdProceso = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdProceso"].Value.ToString()!);
+            certificacion.IdCertificador = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdCertificador"].Value.ToString()!);
+            certificacion.Comentario = dgvCertificaciones.CurrentRow.Cells["Comentario"].Value.ToString()!;
+            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
+            ventana.ShowDialog();
+            if (ventana.DialogResult == DialogResult.OK)
+            {
+                CertificacionesVentana_Load(sender, e);
+                //ValidarBotones();
+            }
+        }
+
+        private void btnAgregar_Click_1(object sender, EventArgs e)
+        {
+            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(null!, trabajadorActual);
+            ventana.ShowDialog();
+            if (ventana.DialogResult == DialogResult.OK)
+            {
+                CertificacionesVentana_Load(sender, e);
+                //ValidarBotones();
+            }
+        }
+
+        private void btnBorrar_Click_1(object sender, EventArgs e)
         {
             if (dgvCertificaciones.CurrentRow == null)
                 return;
@@ -176,25 +226,30 @@ namespace Aseguranza.Ventanas
             CargarCertificaciones(txtBuscar.Text.Trim());
         }
 
-        private void btnRegresar_Click(object sender, EventArgs e)
-        {
-            Close();
-        }
-
-        private void btnModificar_Click_1(object sender, EventArgs e)
+        private void dgvCertificaciones_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             Clases.Certificacion certificacion = new Clases.Certificacion();
             certificacion.Id = int.Parse(dgvCertificaciones.CurrentRow.Cells["Id"].Value.ToString()!);
             certificacion.FechaCertificacion = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaCertificacion"].Value.ToString()!);
             certificacion.FechaVencimiento = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaVencimiento"].Value.ToString()!);
             certificacion.IdProceso = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdProceso"].Value.ToString()!);
+            certificacion.IdCertificador = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdCertificador"].Value.ToString()!);
             certificacion.Comentario = dgvCertificaciones.CurrentRow.Cells["Comentario"].Value.ToString()!;
-            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion);
+            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
             ventana.ShowDialog();
             if (ventana.DialogResult == DialogResult.OK)
             {
                 CertificacionesVentana_Load(sender, e);
                 //ValidarBotones();
+            }
+        }
+
+        private void txtBuscar_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(e.KeyChar == (char)Keys.Enter)
+            {
+                CargarCertificaciones(txtBuscar.Text.Trim());
+                e.Handled = true;
             }
         }
     }

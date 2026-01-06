@@ -8,19 +8,21 @@ namespace Aseguranza.Ventanas
     public partial class CertificacionesTrabajadorVentana : Form
     {
         private Clases.Certificacion? certificacionActual;
+        private Clases.Trabajador? trabajadorActual;
 
-        public CertificacionesTrabajadorVentana(Certificacion certificacion)
+        public CertificacionesTrabajadorVentana(Certificacion certificacion, Trabajador trabajador)
         {
             InitializeComponent();
             if(certificacion != null)
             {
                 certificacionActual = certificacion;
-                cbProcesos.SelectedValue = certificacion.IdProceso;
-                dtpFechaCertificacion.Value = certificacion.FechaCertificacion;
-                dtpFechaVencimiento.Value = certificacion.FechaVencimiento;
-                cbCertificadores.SelectedValue = certificacion.IdCertificador;
-                txtComentario.Text = certificacion.Comentario;
+                //cbProcesos.SelectedValue = certificacion.IdProceso;
+                //dtpFechaCertificacion.Value = certificacion.FechaCertificacion;
+                //dtpFechaVencimiento.Value = certificacion.FechaVencimiento;
+                //cbCertificadores.SelectedValue = certificacion.IdCertificador;
+                //txtComentario.Text = certificacion.Comentario;
             }
+            trabajadorActual = trabajador;
         }
         private void CertificacionesTrabajadorVentana_Load(object sender, EventArgs e)
         {
@@ -28,8 +30,25 @@ namespace Aseguranza.Ventanas
             cbProcesos.DisplayMember = "Nombre";
             cbProcesos.ValueMember = "Id";
             cbCertificadores.DataSource = Clases.Certificador.ConsultarCertificadores("");
-            cbCertificadores.DisplayMember = "Nombre";
+            cbCertificadores.DisplayMember = "NombreTrabajador";
             cbCertificadores.ValueMember = "Id";
+
+            if (certificacionActual == null)
+            {
+                cbProcesos.SelectedIndex = -1;
+                dtpFechaCertificacion.Value = DateTime.Today;
+                cbCertificadores.SelectedIndex = -1;
+                txtComentario.Text = string.Empty;
+            }
+            else
+            {
+                cbProcesos.SelectedValue = certificacionActual.IdProceso;
+                dtpFechaCertificacion.Value = certificacionActual.FechaCertificacion;
+                cbCertificadores.SelectedValue = certificacionActual.IdCertificador;
+                txtComentario.Text = certificacionActual.Comentario;
+            }
+            cbProcesos.Focus();
+
         }
 
 
@@ -70,6 +89,51 @@ namespace Aseguranza.Ventanas
         private void btnAceptar_Click(object sender, EventArgs e)
         {
 
+            if (cbProcesos.SelectedIndex == -1 || cbCertificadores.SelectedIndex == -1)
+            {
+                MessageBox.Show(
+                    "Debes seleccionar un proceso y un certificador",
+                    "Validación",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                return;
+            }
+
+            DateTime fechaCert = dtpFechaCertificacion.Value;
+
+            if (fechaCert < new DateTime(1753, 1, 1))
+            {
+                MessageBox.Show(
+                    "La fecha de certificación no es válida",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                return;
+            }
+
+            Clases.Certificacion certificacion = new Clases.Certificacion();
+            certificacion.IdTrabajador = trabajadorActual!.Id;
+            certificacion.IdProceso = Convert.ToInt32(cbProcesos.SelectedValue);
+            certificacion.FechaCertificacion = dtpFechaCertificacion.Value;
+            certificacion.IdCertificador = Convert.ToInt32(cbCertificadores.SelectedValue);
+            certificacion.Comentario = txtComentario.Text.Trim();
+
+            Clases.Mensaje respuesta = certificacion.GuardarCertificacion();
+            if (respuesta.Id == 1 || respuesta.Id == 2)
+            {
+                MessageBox.Show(respuesta.Nombre, "Resultado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+            else
+            {
+                MessageBox.Show(respuesta.Nombre, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            DialogResult = DialogResult.OK;
+            Close();
         }
 
         // =====================================================
