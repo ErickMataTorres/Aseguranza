@@ -161,6 +161,7 @@
             // 
             // txtNoReloj
             // 
+            txtNoReloj.Enabled = false;
             txtNoReloj.Location = new Point(89, 17);
             txtNoReloj.Name = "txtNoReloj";
             txtNoReloj.Size = new Size(275, 21);
@@ -219,9 +220,9 @@
             // pictureBox1
             // 
             pictureBox1.BorderStyle = BorderStyle.FixedSingle;
-            pictureBox1.Location = new Point(538, 12);
+            pictureBox1.Location = new Point(503, 12);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(272, 209);
+            pictureBox1.Size = new Size(305, 209);
             pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox1.TabIndex = 32;
             pictureBox1.TabStop = false;

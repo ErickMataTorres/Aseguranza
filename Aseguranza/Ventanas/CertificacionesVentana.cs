@@ -78,7 +78,7 @@ namespace Aseguranza.Ventanas
             }
 
             txtBuscar.Focus();
-            
+
             PintarCertificaciones();
         }
 
@@ -246,11 +246,17 @@ namespace Aseguranza.Ventanas
 
         private void txtBuscar_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if(e.KeyChar == (char)Keys.Enter)
+            if (e.KeyChar == (char)Keys.Enter)
             {
                 CargarCertificaciones(txtBuscar.Text.Trim());
                 e.Handled = true;
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Ventanas.CredencialCertificacion ventana = new Ventanas.CredencialCertificacion(trabajadorActual);
+            ventana.ShowDialog();
         }
     }
 }

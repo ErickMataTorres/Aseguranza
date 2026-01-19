@@ -92,7 +92,7 @@ namespace Aseguranza.Ventanas
 
         private void btnBorrar_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("¿Está seguro de borrar el trabajador seleccionado?\nTambién se eliminará su foto.", "Confirmar borrado", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            if (MessageBox.Show("¿Está seguro de borrar el trabajador seleccionado?", "Confirmar borrado", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             {
                 return;
             }

@@ -46,6 +46,7 @@ namespace Aseguranza.Ventanas
                 dtpFechaCertificacion.Value = certificacionActual.FechaCertificacion;
                 cbCertificadores.SelectedValue = certificacionActual.IdCertificador;
                 txtComentario.Text = certificacionActual.Comentario;
+                cbProcesos.Enabled = false;
             }
             cbProcesos.Focus();
 
@@ -112,7 +113,7 @@ namespace Aseguranza.Ventanas
                 );
                 return;
             }
-
+            
             Clases.Certificacion certificacion = new Clases.Certificacion();
             certificacion.IdTrabajador = trabajadorActual!.Id;
             certificacion.IdProceso = Convert.ToInt32(cbProcesos.SelectedValue);

@@ -40,7 +40,7 @@
             // 
             // btnRegresar
             // 
-            btnRegresar.Location = new Point(713, 416);
+            btnRegresar.Location = new Point(945, 513);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
             btnRegresar.TabIndex = 2;
@@ -50,7 +50,7 @@
             // 
             // btnCertificaciones
             // 
-            btnCertificaciones.Location = new Point(3, 416);
+            btnCertificaciones.Location = new Point(3, 513);
             btnCertificaciones.Name = "btnCertificaciones";
             btnCertificaciones.Size = new Size(104, 39);
             btnCertificaciones.TabIndex = 1;
@@ -60,16 +60,16 @@
             // 
             // txtBuscar
             // 
-            txtBuscar.Location = new Point(446, 6);
+            txtBuscar.Location = new Point(534, 6);
             txtBuscar.Name = "txtBuscar";
-            txtBuscar.Size = new Size(355, 21);
+            txtBuscar.Size = new Size(499, 21);
             txtBuscar.TabIndex = 0;
             txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
             // lblBuscar
             // 
             lblBuscar.AutoSize = true;
-            lblBuscar.Location = new Point(391, 9);
+            lblBuscar.Location = new Point(479, 9);
             lblBuscar.Name = "lblBuscar";
             lblBuscar.Size = new Size(49, 15);
             lblBuscar.TabIndex = 15;
@@ -85,7 +85,7 @@
             dgvTrabajadores.Name = "dgvTrabajadores";
             dgvTrabajadores.ReadOnly = true;
             dgvTrabajadores.SelectionMode = DataGridViewSelectionMode.CellSelect;
-            dgvTrabajadores.Size = new Size(798, 377);
+            dgvTrabajadores.Size = new Size(1030, 474);
             dgvTrabajadores.TabIndex = 14;
             dgvTrabajadores.TabStop = false;
             dgvTrabajadores.CellDoubleClick += dgvTrabajadores_CellDoubleClick;
@@ -109,14 +109,14 @@
             cbMostrarPor.Items.AddRange(new object[] { "Todas", "Vigente", "Por vencer", "Vencida", "Sin certificar" });
             cbMostrarPor.Location = new Point(81, 6);
             cbMostrarPor.Name = "cbMostrarPor";
-            cbMostrarPor.Size = new Size(304, 23);
+            cbMostrarPor.Size = new Size(392, 23);
             cbMostrarPor.TabIndex = 3;
             // 
             // Certificaciones
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(808, 463);
+            ClientSize = new Size(1045, 558);
             Controls.Add(cbMostrarPor);
             Controls.Add(lblMostrarPor);
             Controls.Add(btnRegresar);

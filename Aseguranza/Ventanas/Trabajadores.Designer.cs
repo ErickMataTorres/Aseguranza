@@ -40,7 +40,7 @@
             // 
             // btnRegresar
             // 
-            btnRegresar.Location = new Point(724, 422);
+            btnRegresar.Location = new Point(945, 507);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
             btnRegresar.TabIndex = 4;
@@ -50,7 +50,7 @@
             // 
             // btnBorrar
             // 
-            btnBorrar.Location = new Point(202, 422);
+            btnBorrar.Location = new Point(200, 507);
             btnBorrar.Name = "btnBorrar";
             btnBorrar.Size = new Size(88, 39);
             btnBorrar.TabIndex = 3;
@@ -60,7 +60,7 @@
             // 
             // btnModificar
             // 
-            btnModificar.Location = new Point(108, 422);
+            btnModificar.Location = new Point(106, 507);
             btnModificar.Name = "btnModificar";
             btnModificar.Size = new Size(88, 39);
             btnModificar.TabIndex = 2;
@@ -70,7 +70,7 @@
             // 
             // btnAgregar
             // 
-            btnAgregar.Location = new Point(14, 422);
+            btnAgregar.Location = new Point(12, 507);
             btnAgregar.Name = "btnAgregar";
             btnAgregar.Size = new Size(88, 39);
             btnAgregar.TabIndex = 1;
@@ -82,7 +82,7 @@
             // 
             txtBuscar.Location = new Point(69, 12);
             txtBuscar.Name = "txtBuscar";
-            txtBuscar.Size = new Size(743, 21);
+            txtBuscar.Size = new Size(964, 21);
             txtBuscar.TabIndex = 0;
             txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
@@ -100,12 +100,12 @@
             dgvTrabajadores.AllowUserToAddRows = false;
             dgvTrabajadores.AllowUserToDeleteRows = false;
             dgvTrabajadores.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvTrabajadores.Location = new Point(14, 39);
+            dgvTrabajadores.Location = new Point(12, 39);
             dgvTrabajadores.MultiSelect = false;
             dgvTrabajadores.Name = "dgvTrabajadores";
             dgvTrabajadores.ReadOnly = true;
             dgvTrabajadores.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvTrabajadores.Size = new Size(798, 377);
+            dgvTrabajadores.Size = new Size(1021, 462);
             dgvTrabajadores.TabIndex = 6;
             dgvTrabajadores.TabStop = false;
             dgvTrabajadores.CellDoubleClick += dgvTrabajadores_CellDoubleClick;
@@ -114,7 +114,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(824, 468);
+            ClientSize = new Size(1045, 558);
             Controls.Add(btnRegresar);
             Controls.Add(btnBorrar);
             Controls.Add(btnModificar);

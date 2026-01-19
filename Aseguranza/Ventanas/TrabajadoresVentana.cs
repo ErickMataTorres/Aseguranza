@@ -211,7 +211,7 @@ namespace Aseguranza.Ventanas
             trabajador.NoReloj = txtNoReloj.Text.Trim();
             trabajador.Nombre = txtNombre.Text.Trim().ToUpper();
 
-            string carpetaFotos = @"C:\Aseguranza\Fotos\";
+            string carpetaFotos = @"C:\Aseguranza\";
             Directory.CreateDirectory(carpetaFotos);
 
             string nombreArchivo = $"{trabajador.NoReloj}_{trabajador.Nombre}.jpg";
@@ -265,7 +265,7 @@ namespace Aseguranza.Ventanas
 
             Clases.Mensaje respuesta = trabajador.GuardarTrabajador();
 
-            if (respuesta.Id == 1 || respuesta.Id == 2)
+            if (respuesta.Id == 1 || respuesta.Id == 3)
             {
                 MessageBox.Show(
                     respuesta.Nombre,

@@ -48,16 +48,20 @@
             btnAgregar = new Button();
             txtBuscar = new TextBox();
             lblBuscar = new Label();
+            pbContec = new PictureBox();
+            lblVerificador = new Label();
+            btnImprimir = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvCertificaciones).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pbContec).BeginInit();
             SuspendLayout();
             // 
             // pictureBox1
             // 
             pictureBox1.BorderStyle = BorderStyle.FixedSingle;
-            pictureBox1.Location = new Point(592, 12);
+            pictureBox1.Location = new Point(728, 12);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(272, 209);
+            pictureBox1.Size = new Size(305, 209);
             pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox1.TabIndex = 45;
             pictureBox1.TabStop = false;
@@ -67,7 +71,7 @@
             lblMostrarLinea.AutoSize = true;
             lblMostrarLinea.Font = new Font("Arial", 11.25F, FontStyle.Bold);
             lblMostrarLinea.ForeColor = SystemColors.ControlText;
-            lblMostrarLinea.Location = new Point(90, 161);
+            lblMostrarLinea.Location = new Point(84, 203);
             lblMostrarLinea.Name = "lblMostrarLinea";
             lblMostrarLinea.Size = new Size(0, 18);
             lblMostrarLinea.TabIndex = 44;
@@ -77,7 +81,7 @@
             lblMostrarPlanta.AutoSize = true;
             lblMostrarPlanta.Font = new Font("Arial", 11.25F, FontStyle.Bold);
             lblMostrarPlanta.ForeColor = SystemColors.ControlText;
-            lblMostrarPlanta.Location = new Point(90, 132);
+            lblMostrarPlanta.Location = new Point(84, 174);
             lblMostrarPlanta.Name = "lblMostrarPlanta";
             lblMostrarPlanta.Size = new Size(0, 18);
             lblMostrarPlanta.TabIndex = 43;
@@ -87,7 +91,7 @@
             lblMostrarTurno.AutoSize = true;
             lblMostrarTurno.Font = new Font("Arial", 11.25F, FontStyle.Bold);
             lblMostrarTurno.ForeColor = SystemColors.ControlText;
-            lblMostrarTurno.Location = new Point(90, 104);
+            lblMostrarTurno.Location = new Point(84, 146);
             lblMostrarTurno.Name = "lblMostrarTurno";
             lblMostrarTurno.Size = new Size(0, 18);
             lblMostrarTurno.TabIndex = 42;
@@ -97,7 +101,7 @@
             lblMostrarLocalidad.AutoSize = true;
             lblMostrarLocalidad.Font = new Font("Arial", 11.25F, FontStyle.Bold);
             lblMostrarLocalidad.ForeColor = SystemColors.ControlText;
-            lblMostrarLocalidad.Location = new Point(90, 79);
+            lblMostrarLocalidad.Location = new Point(84, 121);
             lblMostrarLocalidad.Name = "lblMostrarLocalidad";
             lblMostrarLocalidad.Size = new Size(0, 18);
             lblMostrarLocalidad.TabIndex = 41;
@@ -107,7 +111,7 @@
             lblMostrarNombre.AutoSize = true;
             lblMostrarNombre.Font = new Font("Arial", 11.25F, FontStyle.Bold);
             lblMostrarNombre.ForeColor = SystemColors.ControlText;
-            lblMostrarNombre.Location = new Point(90, 52);
+            lblMostrarNombre.Location = new Point(84, 94);
             lblMostrarNombre.Name = "lblMostrarNombre";
             lblMostrarNombre.Size = new Size(0, 18);
             lblMostrarNombre.TabIndex = 40;
@@ -115,60 +119,60 @@
             // lblPlanta
             // 
             lblPlanta.AutoSize = true;
-            lblPlanta.Font = new Font("Arial", 11.25F);
-            lblPlanta.Location = new Point(31, 132);
+            lblPlanta.Font = new Font("Arial", 11.25F, FontStyle.Bold);
+            lblPlanta.Location = new Point(25, 174);
             lblPlanta.Name = "lblPlanta";
-            lblPlanta.Size = new Size(53, 17);
+            lblPlanta.Size = new Size(56, 18);
             lblPlanta.TabIndex = 39;
             lblPlanta.Text = "Planta:";
             // 
             // lblLinea
             // 
             lblLinea.AutoSize = true;
-            lblLinea.Font = new Font("Arial", 11.25F);
-            lblLinea.Location = new Point(37, 161);
+            lblLinea.Font = new Font("Arial", 11.25F, FontStyle.Bold);
+            lblLinea.Location = new Point(31, 203);
             lblLinea.Name = "lblLinea";
-            lblLinea.Size = new Size(47, 17);
+            lblLinea.Size = new Size(51, 18);
             lblLinea.TabIndex = 38;
             lblLinea.Text = "Linea:";
             // 
             // lblTurno
             // 
             lblTurno.AutoSize = true;
-            lblTurno.Font = new Font("Arial", 11.25F);
-            lblTurno.Location = new Point(35, 105);
+            lblTurno.Font = new Font("Arial", 11.25F, FontStyle.Bold);
+            lblTurno.Location = new Point(29, 147);
             lblTurno.Name = "lblTurno";
-            lblTurno.Size = new Size(49, 17);
+            lblTurno.Size = new Size(54, 18);
             lblTurno.TabIndex = 37;
             lblTurno.Text = "Turno:";
             // 
             // lblLocalidad
             // 
             lblLocalidad.AutoSize = true;
-            lblLocalidad.Font = new Font("Arial", 11.25F);
-            lblLocalidad.Location = new Point(10, 79);
+            lblLocalidad.Font = new Font("Arial", 11.25F, FontStyle.Bold);
+            lblLocalidad.Location = new Point(4, 121);
             lblLocalidad.Name = "lblLocalidad";
-            lblLocalidad.Size = new Size(74, 17);
+            lblLocalidad.Size = new Size(80, 18);
             lblLocalidad.TabIndex = 36;
             lblLocalidad.Text = "Localidad:";
             // 
             // lblNombre
             // 
             lblNombre.AutoSize = true;
-            lblNombre.Font = new Font("Arial", 11.25F);
-            lblNombre.Location = new Point(20, 53);
+            lblNombre.Font = new Font("Arial", 11.25F, FontStyle.Bold);
+            lblNombre.Location = new Point(14, 95);
             lblNombre.Name = "lblNombre";
-            lblNombre.Size = new Size(64, 17);
+            lblNombre.Size = new Size(68, 18);
             lblNombre.TabIndex = 35;
             lblNombre.Text = "Nombre:";
             // 
             // lblNoReloj
             // 
             lblNoReloj.AutoSize = true;
-            lblNoReloj.Font = new Font("Arial", 11.25F);
-            lblNoReloj.Location = new Point(13, 25);
+            lblNoReloj.Font = new Font("Arial", 11.25F, FontStyle.Bold);
+            lblNoReloj.Location = new Point(7, 67);
             lblNoReloj.Name = "lblNoReloj";
-            lblNoReloj.Size = new Size(71, 17);
+            lblNoReloj.Size = new Size(77, 18);
             lblNoReloj.TabIndex = 34;
             lblNoReloj.Text = "No. Reloj:";
             // 
@@ -177,7 +181,7 @@
             lblMostrarNoReloj.AutoSize = true;
             lblMostrarNoReloj.Font = new Font("Arial", 11.25F, FontStyle.Bold);
             lblMostrarNoReloj.ForeColor = SystemColors.ControlText;
-            lblMostrarNoReloj.Location = new Point(90, 24);
+            lblMostrarNoReloj.Location = new Point(84, 66);
             lblMostrarNoReloj.Name = "lblMostrarNoReloj";
             lblMostrarNoReloj.Size = new Size(0, 18);
             lblMostrarNoReloj.TabIndex = 46;
@@ -191,14 +195,14 @@
             dgvCertificaciones.Name = "dgvCertificaciones";
             dgvCertificaciones.ReadOnly = true;
             dgvCertificaciones.SelectionMode = DataGridViewSelectionMode.CellSelect;
-            dgvCertificaciones.Size = new Size(853, 193);
+            dgvCertificaciones.Size = new Size(1022, 236);
             dgvCertificaciones.TabIndex = 47;
             dgvCertificaciones.TabStop = false;
             dgvCertificaciones.CellDoubleClick += dgvCertificaciones_CellDoubleClick;
             // 
             // btnRegresar
             // 
-            btnRegresar.Location = new Point(776, 464);
+            btnRegresar.Location = new Point(945, 507);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
             btnRegresar.TabIndex = 4;
@@ -208,7 +212,7 @@
             // 
             // btnBorrar
             // 
-            btnBorrar.Location = new Point(198, 464);
+            btnBorrar.Location = new Point(200, 507);
             btnBorrar.Name = "btnBorrar";
             btnBorrar.Size = new Size(88, 39);
             btnBorrar.TabIndex = 3;
@@ -218,7 +222,7 @@
             // 
             // btnModificar
             // 
-            btnModificar.Location = new Point(104, 464);
+            btnModificar.Location = new Point(106, 507);
             btnModificar.Name = "btnModificar";
             btnModificar.Size = new Size(88, 39);
             btnModificar.TabIndex = 2;
@@ -228,7 +232,7 @@
             // 
             // btnAgregar
             // 
-            btnAgregar.Location = new Point(10, 464);
+            btnAgregar.Location = new Point(12, 507);
             btnAgregar.Name = "btnAgregar";
             btnAgregar.Size = new Size(88, 39);
             btnAgregar.TabIndex = 1;
@@ -240,7 +244,7 @@
             // 
             txtBuscar.Location = new Point(65, 238);
             txtBuscar.Name = "txtBuscar";
-            txtBuscar.Size = new Size(799, 21);
+            txtBuscar.Size = new Size(968, 21);
             txtBuscar.TabIndex = 0;
             txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
@@ -253,11 +257,47 @@
             lblBuscar.TabIndex = 53;
             lblBuscar.Text = "Buscar:";
             // 
+            // pbContec
+            // 
+            pbContec.BorderStyle = BorderStyle.FixedSingle;
+            pbContec.Image = Properties.Resources.Contec;
+            pbContec.Location = new Point(21, 4);
+            pbContec.Name = "pbContec";
+            pbContec.Size = new Size(60, 56);
+            pbContec.SizeMode = PictureBoxSizeMode.StretchImage;
+            pbContec.TabIndex = 54;
+            pbContec.TabStop = false;
+            // 
+            // lblVerificador
+            // 
+            lblVerificador.AutoSize = true;
+            lblVerificador.BackColor = Color.Navy;
+            lblVerificador.Font = new Font("Arial", 24F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblVerificador.ForeColor = Color.White;
+            lblVerificador.Location = new Point(106, 12);
+            lblVerificador.Name = "lblVerificador";
+            lblVerificador.Size = new Size(469, 37);
+            lblVerificador.TabIndex = 55;
+            lblVerificador.Text = "Verificador de certificaciones";
+            // 
+            // btnImprimir
+            // 
+            btnImprimir.Location = new Point(599, 12);
+            btnImprimir.Name = "btnImprimir";
+            btnImprimir.Size = new Size(88, 39);
+            btnImprimir.TabIndex = 56;
+            btnImprimir.Text = "Imprimir";
+            btnImprimir.UseVisualStyleBackColor = true;
+            btnImprimir.Click += button1_Click;
+            // 
             // CertificacionesVentana
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(876, 511);
+            ClientSize = new Size(1045, 558);
+            Controls.Add(btnImprimir);
+            Controls.Add(lblVerificador);
+            Controls.Add(pbContec);
             Controls.Add(txtBuscar);
             Controls.Add(lblBuscar);
             Controls.Add(btnBorrar);
@@ -288,6 +328,7 @@
             Load += CertificacionesVentana_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvCertificaciones).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pbContec).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -314,5 +355,8 @@
         private Button btnAgregar;
         private TextBox txtBuscar;
         private Label lblBuscar;
+        private PictureBox pbContec;
+        private Label lblVerificador;
+        private Button btnImprimir;
     }
 }

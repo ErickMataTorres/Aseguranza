@@ -126,7 +126,11 @@ namespace Aseguranza.Ventanas
         private void AbrirCertificaciones()
         {
             if (dgvTrabajadores.CurrentRow == null)
+            {
+                MessageBox.Show("Seleccione un trabajador.", "Aviso",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
+            }
 
             DataGridViewRow row = dgvTrabajadores.CurrentRow;
 

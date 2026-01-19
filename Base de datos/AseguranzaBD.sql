@@ -6,17 +6,19 @@ CREATE TABLE Localidad
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-ALTER PROCEDURE spConsultarLocalidades
+CREATE OR ALTER PROCEDURE spConsultarLocalidades
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT * FROM Localidad WHERE Nombre LIKE '%'+@TextoBuscar+'%';
 END
-CREATE PROCEDURE spGuardarLocalidad
+CREATE OR ALTER PROCEDURE spGuardarLocalidad
 @Id INT,
 @Nombre VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	IF NOT EXISTS (SELECT Id FROM Localidad WHERE Id=@Id)
 	BEGIN
 		INSERT INTO Localidad (Nombre) VALUES (@Nombre);
@@ -27,12 +29,19 @@ BEGIN
 			SELECT '2' AS [Id], 'Se ha modificado correctamente' AS [Nombre];
 		END
 END
-ALTER PROCEDURE spBorrarLocalidad
+CREATE OR ALTER PROCEDURE spBorrarLocalidad
 @Id INT
 AS
 BEGIN
-	DELETE FROM Localidad WHERE Id=@Id
-	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+	SET NOCOUNT ON;
+	IF NOT EXISTS (SELECT 1 FROM Trabajador WHERE IdLocalidad=@Id)
+	BEGIN
+		DELETE FROM Localidad WHERE Id=@Id
+		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'No se puede borrar por que hay registros asociados a esta localidad' AS [Nombre];
+		END
 END
 -------------------------------------------
 
@@ -42,17 +51,19 @@ CREATE TABLE Turno
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-ALTER PROCEDURE spConsultarTurnos
+CREATE OR ALTER PROCEDURE spConsultarTurnos
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT * FROM Turno WHERE Nombre LIKE '%'+@TextoBuscar+'%';
 END
-CREATE PROCEDURE spGuardarTurno
+CREATE OR ALTER PROCEDURE spGuardarTurno
 @Id INT,
 @Nombre VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	IF NOT EXISTS (SELECT Id FROM Turno WHERE Id=@Id)
 	BEGIN
 		INSERT INTO Turno (Nombre) VALUES (@Nombre);
@@ -63,12 +74,19 @@ BEGIN
 			SELECT '2' AS [Id], 'Se ha modificado correctamente' AS [Nombre];
 		END
 END
-CREATE PROCEDURE spBorrarTurno
+CREATE OR ALTER PROCEDURE spBorrarTurno
 @Id INT
 AS
 BEGIN
-	DELETE FROM Turno WHERE Id=@Id
-	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+	SET NOCOUNT ON;
+	IF NOT EXISTS (SELECT 1 FROM Trabajador WHERE IdTurno=@Id)
+	BEGIN
+		DELETE FROM Turno WHERE Id=@Id
+		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'No se puede borrar por que hay registros asociados a este turno' AS [Nombre];
+		END
 END
 -------------------------------------------
 
@@ -78,17 +96,19 @@ CREATE TABLE Planta
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	Nombre VARCHAR(100) NOT NULL
 )
-ALTER PROCEDURE spConsultarPlantas
+CREATE OR ALTER PROCEDURE spConsultarPlantas
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT * FROM Planta WHERE Nombre LIKE '%'+@TextoBuscar+'%';
 END
-CREATE PROCEDURE spGuardarPlanta
+CREATE OR ALTER PROCEDURE spGuardarPlanta
 @Id INT,
 @Nombre VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	IF NOT EXISTS (SELECT Id FROM Planta WHERE Id=@Id)
 	BEGIN
 		INSERT INTO Planta (Nombre) VALUES (@Nombre);
@@ -99,12 +119,19 @@ BEGIN
 			SELECT '2' AS [Id], 'Se ha modificado correctamente' AS [Nombre];
 		END
 END
-CREATE PROCEDURE spBorrarPlanta
+CREATE OR ALTER PROCEDURE spBorrarPlanta
 @Id INT
 AS
 BEGIN
-	DELETE FROM Planta WHERE Id=@Id
-	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+	SET NOCOUNT ON;
+	IF NOT EXISTS (SELECT 1 FROM Linea WHERE IdPlanta=@Id)
+	BEGIN
+		DELETE FROM Planta WHERE Id=@Id
+		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'No se puede borrar por que hay registros asociados a esta planta' AS [Nombre];
+		END
 END
 -------------------------------------------
 
@@ -117,10 +144,11 @@ CREATE TABLE Linea
 	CONSTRAINT UQ_Linea_Planta_Nombre
 	UNIQUE (IdPlanta, Nombre)
 )
-ALTER PROCEDURE spConsultarLineas
+CREATE OR ALTER PROCEDURE spConsultarLineas
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT 
         Linea.Id,
         Linea.Nombre,
@@ -131,18 +159,20 @@ BEGIN
 	WHERE Linea.Nombre LIKE '%' + @TextoBuscar + '%'
         OR Planta.Nombre LIKE '%' + @TextoBuscar + '%';
 END
-CREATE PROCEDURE spConsultarLineasPorPlanta
+CREATE OR ALTER PROCEDURE spConsultarLineasPorPlanta
 @IdPlanta INT
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT Id, Nombre FROM Linea WHERE IdPlanta=@IdPlanta
 END
-CREATE PROCEDURE spGuardarLinea
+CREATE OR ALTER PROCEDURE spGuardarLinea
 @Id INT,
 @Nombre VARCHAR(100),
 @IdPlanta INT
 AS
 BEGIN
+	SET NOCOUNT ON;
 	IF NOT EXISTS (SELECT Id FROM Linea WHERE Id=@Id)
 	BEGIN
 		INSERT INTO Linea (Nombre, IdPlanta) VALUES (@Nombre, @IdPlanta);
@@ -153,12 +183,19 @@ BEGIN
 			SELECT '2' AS [Id], 'Se ha modificado correctamente' AS [Nombre];
 		END
 END
-CREATE PROCEDURE spBorrarLinea
+CREATE OR ALTER PROCEDURE spBorrarLinea
 @Id INT
 AS
 BEGIN
-	DELETE FROM Linea WHERE Id=@Id
-	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+	SET NOCOUNT ON;
+	IF NOT EXISTS (SELECT 1 FROM Trabajador WHERE IdLinea=@Id)
+	BEGIN
+		DELETE FROM Linea WHERE Id=@Id
+		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'No se puede borrar por que hay registros asociados a esta linea' AS [Nombre];
+		END
 END
 -------------------------------------------
 
@@ -173,10 +210,11 @@ CREATE TABLE Trabajador
 	IdTurno INT NOT NULL FOREIGN KEY REFERENCES Turno(Id),
 	IdLinea INT NOT NULL FOREIGN KEY REFERENCES Linea(Id)
 )
-ALTER PROCEDURE spConsultarTrabajadores
+CREATE OR ALTER PROCEDURE spConsultarTrabajadores
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT Trabajador.Id, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto, Trabajador.IdLocalidad, Localidad.Nombre AS [NombreLocalidad], Trabajador.IdTurno, 
 	Turno.Nombre AS [NombreTurno], Linea.IdPlanta, Planta.Nombre AS [NombrePlanta], Trabajador.IdLinea, Linea.Nombre AS [NombreLinea] FROM Trabajador
 	INNER JOIN Localidad ON Localidad.Id = Trabajador.IdLocalidad INNER JOIN Turno ON Turno.Id = Trabajador.IdTurno INNER JOIN Linea ON Linea.Id = Trabajador.IdLinea
@@ -193,7 +231,7 @@ END
 --	INNER JOIN Linea ON Linea.Id=Trabajador.IdLinea INNER JOIN Planta ON Planta.Id=Linea.IdPlanta WHERE Trabajador.NoReloj=@NoReloj;
 --END
 
-CREATE PROCEDURE spGuardarTrabajador
+CREATE OR ALTER PROCEDURE spGuardarTrabajador
 @Id INT,
 @NoReloj VARCHAR(10),
 @Nombre VARCHAR(100),
@@ -203,27 +241,44 @@ CREATE PROCEDURE spGuardarTrabajador
 @IdLinea INT
 AS
 BEGIN
+	SET NOCOUNT ON;
 	IF NOT EXISTS (SELECT Id FROM Trabajador WHERE Id=@Id)
 	BEGIN
-		INSERT INTO Trabajador (NoReloj, Nombre, RutaFoto, IdLocalidad, IdTurno, IdLinea) VALUES (@NoReloj, @Nombre, @RutaFoto, @IdLocalidad, @IdTurno, @IdLinea);
-		SELECT '1' AS [Id], 'Se ha registrado correctamente' AS [Nombre];
+		IF NOT EXISTS (SELECT 1 FROM Trabajador WHERE NoReloj=@NoReloj)
+		BEGIN
+			INSERT INTO Trabajador (NoReloj, Nombre, RutaFoto, IdLocalidad, IdTurno, IdLinea) VALUES (@NoReloj, @Nombre, @RutaFoto, @IdLocalidad, @IdTurno, @IdLinea);
+			SELECT '1' AS [Id], 'Se ha registrado correctamente' AS [Nombre];	
+		END	ELSE
+			BEGIN
+				SELECT '2' AS [Id], 'Ya existe un trabajador registrado con ese numero de reloj' AS [Nombre];
+			END
 	END ELSE
 		BEGIN
 			UPDATE Trabajador SET Nombre=@Nombre, RutaFoto=@RutaFoto, IdLocalidad=@IdLocalidad, IdTurno=@IdTurno, IdLinea=@IdLinea WHERE Id=@Id AND NoReloj=@NoReloj;
-			SELECT '2' AS [Id], 'Se ha modificado correctamente' AS [Nombre];
+			SELECT '3' AS [Id], 'Se ha modificado correctamente' AS [Nombre];
 		END
 END
-CREATE PROCEDURE spBorrarTrabajador
+
+CREATE OR ALTER PROCEDURE spBorrarTrabajador
 @Id INT
 AS
 BEGIN
-	DELETE FROM Trabajador WHERE Id=@Id
-	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+	SET NOCOUNT ON;
+	IF NOT EXISTS (SELECT 1 FROM Certificador WHERE IdTrabajador=@Id) AND NOT EXISTS (SELECT 1 FROM Certificacion WHERE IdTrabajador=@Id)
+	BEGIN
+		DELETE FROM Trabajador WHERE Id=@Id
+		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'No se puede borrar por que hay registros asociados a este trabajador' AS [Nombre];
+		END
 END
-ALTER PROCEDURE spConsultarTrabajador
+
+CREATE OR ALTER PROCEDURE spConsultarTrabajador
 @NoReloj VARCHAR(10)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	IF EXISTS (SELECT Id FROM Trabajador WHERE NoReloj=@NoReloj)
 	BEGIN
 		SELECT Trabajador.Nombre, Trabajador.RutaFoto, Localidad.Nombre, Turno.Nombre, Planta.Nombre, Linea.Nombre FROM Trabajador
@@ -316,10 +371,6 @@ BEGIN
         OR EstadoCertificacion = @MostrarPor
 END
 
-
-
-
-
 -------------------------------------------
 
 -------------------------------------------
@@ -328,10 +379,11 @@ CREATE TABLE Certificador
 	Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
 	IdTrabajador INT NOT NULL FOREIGN KEY REFERENCES Trabajador(Id)
 )
-ALTER PROCEDURE spConsultarCertificadores
+CREATE OR ALTER PROCEDURE spConsultarCertificadores
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT Certificador.Id, Certificador.IdTrabajador, Trabajador.NoReloj, Trabajador.Nombre AS [NombreTrabajador], Trabajador.RutaFoto,
 	Trabajador.IdTurno, Turno.Nombre AS [NombreTurno], Planta.Id AS [IdPlanta], Planta.Nombre AS [NombrePlanta], Linea.Id AS [IdLinea], 
 	Linea.Nombre AS [NombreLinea] FROM Certificador INNER JOIN Trabajador ON Certificador.IdTrabajador = Trabajador.Id
@@ -340,10 +392,11 @@ BEGIN
 	OR Planta.Nombre LIKE '%'+@TextoBuscar+'%' OR Linea.Nombre LIKE '%'+@TextoBuscar+'%'
 END
 
-ALTER PROCEDURE spGuardarCertificador
+CREATE OR ALTER PROCEDURE spGuardarCertificador
 @NoReloj VARCHAR(10)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	DECLARE @IdTrabajador INT
 	SELECT @IdTrabajador = Id FROM Trabajador WHERE NoReloj=@NoReloj;
 
@@ -357,12 +410,19 @@ BEGIN
 		END
 END
 
-ALTER PROCEDURE spBorrarCertificador
+CREATE OR ALTER PROCEDURE spBorrarCertificador
 @Id INT
 AS
 BEGIN
-	DELETE FROM Certificador WHERE Id=@Id;
-	SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+	SET NOCOUNT ON;
+	IF NOT EXISTS (SELECT 1 FROM Certificacion WHERE IdCertificador=@Id)
+	BEGIN
+		DELETE FROM Certificador WHERE Id=@Id
+		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'No se puede borrar por que hay registros asociados a este certificador' AS [Nombre];
+		END
 END
 -------------------------------------------
 
@@ -375,20 +435,22 @@ CREATE TABLE Proceso
 	VigenciaMeses INT NOT NULL
 )
 
-CREATE PROCEDURE spConsultarProcesos
+CREATE OR ALTER PROCEDURE spConsultarProcesos
 @TextoBuscar VARCHAR(100)
 AS
 BEGIN
+	SET NOCOUNT ON;
 	SELECT * FROM Proceso WHERE Nombre LIKE '%'+@TextoBuscar+'%'
 END
 
-CREATE PROCEDURE spGuardarProceso
+CREATE OR ALTER PROCEDURE spGuardarProceso
 @Id INT,
 @Nombre VARCHAR(100),
 @Descripcion VARCHAR(300),
 @VigenciaMeses INT
 AS
 BEGIN
+	SET NOCOUNT ON;
 	IF NOT EXISTS (SELECT 1 FROM Proceso WHERE Id=@Id)
 	BEGIN
 		INSERT INTO Proceso (Nombre, Descripcion, VigenciaMeses) VALUES (@Nombre, @Descripcion, @VigenciaMeses);
@@ -400,12 +462,19 @@ BEGIN
 		END
 END
 
-CREATE PROCEDURE spBorrarProceso
+CREATE OR ALTER PROCEDURE spBorrarProceso
 @Id INT
 AS
 BEGIN
-	DELETE FROM Proceso WHERE Id=@Id;
-	SELECT 1 AS [Id], 'Se ha borrado correctamente' AS [Nombre];
+	SET NOCOUNT ON;
+	IF NOT EXISTS (SELECT 1 FROM Certificacion WHERE IdProceso=@Id)
+	BEGIN
+		DELETE FROM Proceso WHERE Id=@Id
+		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
+	END ELSE
+		BEGIN
+			SELECT '2' AS [Id], 'No se puede borrar por que hay registros asociados a este proceso' AS [Nombre];
+		END
 END
 
 -------------------------------------------
@@ -528,19 +597,16 @@ BEGIN
     END
 END
 
-CREATE PROCEDURE spBorrarCertificacion
+CREATE OR ALTER PROCEDURE spBorrarCertificacion
 @Id INT
 AS
 BEGIN
+	SET NOCOUNT ON;
 	DELETE FROM Certificacion WHERE Id=@Id;
 	SELECT 1 AS [Id], 'Certificación borrada correctamente' AS [Nombre];
 END
 
-
-
-
 -------------------------------------------
-
 
 CREATE INDEX IX_Trabajador_IdLinea
 ON Trabajador (IdLinea);
@@ -550,7 +616,6 @@ ON Trabajador (IdTurno);
 
 CREATE INDEX IX_Trabajador_IdLocalidad
 ON Trabajador (IdLocalidad);
-
 
 CREATE INDEX IX_Linea_IdPlanta
 ON Linea (IdPlanta);
