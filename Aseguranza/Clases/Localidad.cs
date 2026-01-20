@@ -13,6 +13,7 @@ namespace Aseguranza.Clases
     {
         public int Id { get; set; }
         public string? Nombre { get; set; }
+
         public static DataTable ConsultarLocalidades(string textoBuscar)
         {
             SqlConnection conexion = Conexion.Conectar();

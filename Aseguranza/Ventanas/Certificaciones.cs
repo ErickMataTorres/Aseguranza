@@ -46,7 +46,7 @@ namespace Aseguranza.Ventanas
             txtBuscar.Focus();
 
             OcultarColumnas();
-            SeleccionarPrimeraFila();
+            SeleccionarPrimero();
         }
 
 
@@ -74,7 +74,7 @@ namespace Aseguranza.Ventanas
             }
         }
 
-        private void SeleccionarPrimeraFila()
+        private void SeleccionarPrimero()
         {
             if (dgvTrabajadores.Rows.Count == 0)
                 return;
@@ -127,7 +127,7 @@ namespace Aseguranza.Ventanas
         {
             if (dgvTrabajadores.CurrentRow == null)
             {
-                MessageBox.Show("Seleccione un trabajador.", "Aviso",
+                MessageBox.Show("No existe trabajador.", "Aviso",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }

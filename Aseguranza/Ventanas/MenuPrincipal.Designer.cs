@@ -61,56 +61,56 @@
             // certificarToolStripMenuItem
             // 
             certificarToolStripMenuItem.Name = "certificarToolStripMenuItem";
-            certificarToolStripMenuItem.Size = new Size(180, 22);
+            certificarToolStripMenuItem.Size = new Size(141, 22);
             certificarToolStripMenuItem.Text = "Localidad";
             certificarToolStripMenuItem.Click += certificarToolStripMenuItem_Click;
             // 
             // localidadToolStripMenuItem
             // 
             localidadToolStripMenuItem.Name = "localidadToolStripMenuItem";
-            localidadToolStripMenuItem.Size = new Size(180, 22);
+            localidadToolStripMenuItem.Size = new Size(141, 22);
             localidadToolStripMenuItem.Text = "Turno";
             localidadToolStripMenuItem.Click += localidadToolStripMenuItem_Click;
             // 
             // plantaToolStripMenuItem
             // 
             plantaToolStripMenuItem.Name = "plantaToolStripMenuItem";
-            plantaToolStripMenuItem.Size = new Size(180, 22);
+            plantaToolStripMenuItem.Size = new Size(141, 22);
             plantaToolStripMenuItem.Text = "Planta";
             plantaToolStripMenuItem.Click += plantaToolStripMenuItem_Click;
             // 
             // lineaToolStripMenuItem
             // 
             lineaToolStripMenuItem.Name = "lineaToolStripMenuItem";
-            lineaToolStripMenuItem.Size = new Size(180, 22);
+            lineaToolStripMenuItem.Size = new Size(141, 22);
             lineaToolStripMenuItem.Text = "Linea";
             lineaToolStripMenuItem.Click += lineaToolStripMenuItem_Click;
             // 
             // trabajadorToolStripMenuItem
             // 
             trabajadorToolStripMenuItem.Name = "trabajadorToolStripMenuItem";
-            trabajadorToolStripMenuItem.Size = new Size(180, 22);
+            trabajadorToolStripMenuItem.Size = new Size(141, 22);
             trabajadorToolStripMenuItem.Text = "Trabajador";
             trabajadorToolStripMenuItem.Click += trabajadorToolStripMenuItem_Click;
             // 
             // certificadorToolStripMenuItem
             // 
             certificadorToolStripMenuItem.Name = "certificadorToolStripMenuItem";
-            certificadorToolStripMenuItem.Size = new Size(180, 22);
+            certificadorToolStripMenuItem.Size = new Size(141, 22);
             certificadorToolStripMenuItem.Text = "Certificador";
             certificadorToolStripMenuItem.Click += certificadorToolStripMenuItem_Click;
             // 
             // procesoToolStripMenuItem
             // 
             procesoToolStripMenuItem.Name = "procesoToolStripMenuItem";
-            procesoToolStripMenuItem.Size = new Size(180, 22);
+            procesoToolStripMenuItem.Size = new Size(141, 22);
             procesoToolStripMenuItem.Text = "Proceso";
             procesoToolStripMenuItem.Click += procesoToolStripMenuItem_Click;
             // 
             // certificacionToolStripMenuItem
             // 
             certificacionToolStripMenuItem.Name = "certificacionToolStripMenuItem";
-            certificacionToolStripMenuItem.Size = new Size(180, 22);
+            certificacionToolStripMenuItem.Size = new Size(141, 22);
             certificacionToolStripMenuItem.Text = "Certificacion";
             certificacionToolStripMenuItem.Click += certificacionToolStripMenuItem_Click;
             // 
@@ -128,6 +128,7 @@
             Name = "MenuPrincipal";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Menu";
+            Load += MenuPrincipal_Load;
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ResumeLayout(false);

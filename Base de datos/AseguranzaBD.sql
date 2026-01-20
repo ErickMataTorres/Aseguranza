@@ -1,3 +1,8 @@
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AseguranzaBD')
+BEGIN
+    CREATE DATABASE AseguranzaBD;
+END
+GO
 CREATE DATABASE AseguranzaBD
 USE AseguranzaBD
 -------------------------------------------

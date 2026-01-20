@@ -11,7 +11,7 @@ namespace Aseguranza.Clases
     {
         public static SqlConnection Conectar()
         {
-            string cadena = @"Server = A;Database = AseguranzaBD;Trusted_Connection = True;Encrypt = True;TrustServerCertificate = True;";
+            string cadena = @"Server = .\SQLEXPRESS;Database = AseguranzaBD;Trusted_Connection = True;Encrypt = True;TrustServerCertificate = True;";
             SqlConnection conexion = new SqlConnection(cadena);
             return conexion;
         }

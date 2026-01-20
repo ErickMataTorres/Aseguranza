@@ -1,3 +1,7 @@
+using Aseguranza.Clases;
+using Microsoft.Data.SqlClient;
+using System.Configuration;
+
 namespace Aseguranza
 {
     public partial class MenuPrincipal : Form
@@ -60,5 +64,65 @@ namespace Aseguranza
             Ventanas.Certificaciones ventana = new Ventanas.Certificaciones();
             ventana.ShowDialog();
         }
+
+        private void MenuPrincipal_Load(object sender, EventArgs e)
+        {
+            //try
+            //{
+            //    InicializadorBD.Inicializar();
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show(
+            //        "Error inicializando la base de datos:\n" + ex.Message,
+            //        "Error crítico",
+            //        MessageBoxButtons.OK,
+            //        MessageBoxIcon.Error
+            //    );
+
+            //    Application.Exit();
+            //}
+        }
+        public static void VerificarBaseDatos()
+        {
+            string masterConn =
+                @"Server=.\SQLEXPRESS;Database=master;Trusted_Connection=True;";
+
+            string scriptPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Database",
+                "AseguranzaBD.sql"
+            );
+
+            if (!File.Exists(scriptPath))
+                throw new Exception("No se encontró el script de la base de datos.");
+
+            string script = File.ReadAllText(scriptPath);
+
+            using (SqlConnection conn = new SqlConnection(masterConn))
+            {
+                conn.Open();
+
+                string checkDb = @"
+            IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AseguranzaBD')
+            BEGIN
+                CREATE DATABASE AseguranzaBD;
+            END";
+
+                new SqlCommand(checkDb, conn).ExecuteNonQuery();
+            }
+
+            // Ejecutar script completo
+            string dbConn =
+                @"Server=.\SQLEXPRESS;Database=AseguranzaBD;Trusted_Connection=True;";
+
+            using (SqlConnection conn = new SqlConnection(dbConn))
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand(script, conn);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
     }
 }

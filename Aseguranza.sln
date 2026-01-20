@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aseguranza", "Aseguranza\Aseguranza.csproj", "{C47C4C9D-F548-4628-A75F-A933DA3B46E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aseguranza", "Aseguranza\Aseguranza.csproj", "{C47C4C9D-F548-4628-A75F-A933DA3B46E6}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AseguranzaInstaller", "AseguranzaInstaller\AseguranzaInstaller.vdproj", "{753AC567-7D02-4965-BB9B-88557A959A3E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,8 @@ Global
 		{C47C4C9D-F548-4628-A75F-A933DA3B46E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C47C4C9D-F548-4628-A75F-A933DA3B46E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C47C4C9D-F548-4628-A75F-A933DA3B46E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{753AC567-7D02-4965-BB9B-88557A959A3E}.Debug|Any CPU.ActiveCfg = Debug
+		{753AC567-7D02-4965-BB9B-88557A959A3E}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

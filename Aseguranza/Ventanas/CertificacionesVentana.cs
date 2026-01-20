@@ -26,7 +26,21 @@ namespace Aseguranza.Ventanas
             MostrarDatosTrabajador();
             CargarCertificaciones();
 
+
             dgvCertificaciones.DataBindingComplete += dgvCertificaciones_DataBindingComplete!;
+            SeleccionarPrimero();
+        }
+        private void SeleccionarPrimero()
+        {
+            if (dgvCertificaciones.Rows.Count == 0)
+                return;
+
+            dgvCertificaciones.ClearSelection();
+            dgvCertificaciones.Rows[0].Selected = true;
+
+            dgvCertificaciones.CurrentCell = dgvCertificaciones.Rows[0].Cells
+                .Cast<DataGridViewCell>()
+                .First(c => c.Visible);
         }
 
         // =====================================================
@@ -75,6 +89,15 @@ namespace Aseguranza.Ventanas
             {
                 dgvCertificaciones.ClearSelection();
                 dgvCertificaciones.Rows[0].Selected = true;
+                btnModificar.Enabled = true;
+                btnBorrar.Enabled = true;
+                btnImprimir.Enabled = true;
+            }
+            else
+            {
+                btnModificar.Enabled = false;
+                btnBorrar.Enabled = false;
+                btnImprimir.Enabled = false;
             }
 
             txtBuscar.Focus();
@@ -180,6 +203,8 @@ namespace Aseguranza.Ventanas
 
         private void btnModificar_Click_1(object sender, EventArgs e)
         {
+            if (dgvCertificaciones.CurrentRow == null)
+                return;
             Clases.Certificacion certificacion = new Clases.Certificacion();
             certificacion.Id = int.Parse(dgvCertificaciones.CurrentRow.Cells["Id"].Value.ToString()!);
             certificacion.FechaCertificacion = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaCertificacion"].Value.ToString()!);
