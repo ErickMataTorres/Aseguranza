@@ -18,6 +18,18 @@ namespace Aseguranza.Clases
         public int IdCertificador { get; set; }
         public string? Comentario { get; set; }
 
+        public static DataTable ConsultarVerificacionNoReloj(string noReloj)
+        {
+            SqlConnection conexion = Clases.Conexion.Conectar();
+            SqlCommand command = new SqlCommand("spConsultarVerificacionNoReloj", conexion);
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.AddWithValue("@NoReloj", noReloj);
+            SqlDataAdapter da = new SqlDataAdapter(command);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            return dt;
+        }
+
         public static DataTable ConsultarCertificacionesPorTrabajador(int idTrabajador, string textoBuscar)
         {
             SqlConnection conexion = Clases.Conexion.Conectar();

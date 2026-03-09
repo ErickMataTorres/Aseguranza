@@ -1,0 +1,399 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Credencial de Certificación Industrial</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #ffffff;
+        }
+
+        body {
+            background: #e5e5e5;
+            padding: 6mm;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-bottom: 5mm;
+        }
+
+        .btn-print {
+            background: #243f95;
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .sheet {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .cut-area {
+            width: 194mm;
+            padding: 2mm 1mm;
+            border: 0.35mm dashed #666;
+            background: #fff;
+        }
+
+        .cut-marks {
+            width: 192mm;
+            margin: 0 auto 1.5mm auto;
+            display: flex;
+            justify-content: space-between;
+            font-size: 2.4mm;
+            color: #666;
+            line-height: 1;
+        }
+
+            .cut-marks.bottom {
+                margin: 1.5mm auto 0 auto;
+            }
+
+        .cards-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0.5mm;
+        }
+
+        .card {
+            width: 95mm;
+            height: 65mm;
+            border: 0.6mm solid #000;
+            border-radius: 4.2mm;
+            background: #efefef;
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 95mm;
+        }
+
+        .top-notch {
+            position: absolute;
+            top: 0.8mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14mm;
+            height: 3.8mm;
+            border: 0.45mm solid #000;
+            border-radius: 0.9mm;
+            background: #fff;
+            z-index: 2;
+        }
+
+        .inner-pad {
+            padding: 5.8mm 2.2mm 2.2mm 2.2mm;
+            height: 100%;
+        }
+
+        .inner-title {
+            background: #243f95;
+            color: #fff;
+            text-align: center;
+            font-weight: 800;
+            font-size: 2.9mm;
+            line-height: 1.1;
+            padding: 1.1mm 0.8mm;
+            margin-top: 0.6mm;
+            margin-bottom: 1.9mm;
+        }
+
+        .front-layout {
+            display: grid;
+            grid-template-columns: 1fr 22mm;
+            gap: 2mm;
+            height: calc(100% - 9mm);
+        }
+
+        .front-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .reloj-box,
+        .name-box {
+            border: 0.3mm solid #000;
+            background: #efefef;
+            padding: 1.1mm;
+        }
+
+        .reloj-box {
+            min-height: 9.5mm;
+            margin-bottom: 1.5mm;
+        }
+
+        .name-box {
+            min-height: 11mm;
+            margin-bottom: 1.8mm;
+        }
+
+        .label {
+            font-size: 2.75mm;
+            font-weight: 800;
+            color: #000;
+            line-height: 1.05;
+        }
+
+        .reloj-value {
+            font-size: 3.5mm;
+            font-weight: 800;
+            color: #1f51e5;
+            line-height: 1.1;
+            margin-top: 0.45mm;
+        }
+
+        .name-value {
+            font-size: 3.15mm;
+            font-weight: 800;
+            font-style: italic;
+            color: #1f51e5;
+            line-height: 1.1;
+            margin-top: 0.5mm;
+            word-break: break-word;
+        }
+
+        .proc-title {
+            text-align: center;
+            font-size: 2.9mm;
+            font-weight: 800;
+            margin-bottom: 1.5mm;
+            line-height: 1.05;
+        }
+
+        .process-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.1mm;
+        }
+
+            .process-grid > div {
+                border: 0.3mm solid #000;
+                min-height: 6mm;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font-size: 2.3mm;
+                font-weight: 800;
+                line-height: 1;
+                padding: 0.45mm;
+                background: #fff;
+                color: #000;
+            }
+
+        .photo-box {
+            width: 22mm;
+            height: 29mm;
+            border: 0.35mm solid #000;
+            background: #fff;
+            overflow: hidden;
+            align-self: start;
+            margin-top: 0.3mm;
+        }
+
+            .photo-box img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+        .footer-note {
+            position: absolute;
+            left: 2.2mm;
+            bottom: 2mm;
+            font-size: 2.4mm;
+            font-weight: 800;
+            color: #000;
+            line-height: 1;
+        }
+
+        .back-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .back-table-wrap {
+            flex: 1;
+            padding-bottom: 6mm;
+        }
+
+        .back-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            background: #efefef;
+            margin-top: 0.3mm;
+        }
+
+            .back-table th,
+            .back-table td {
+                border: 0.25mm solid #000;
+                text-align: center;
+                padding: 0.3mm 0.2mm;
+                font-size: 2.2mm;
+                line-height: 1.05;
+                height: 5.1mm;
+                word-break: break-word;
+                overflow: hidden;
+            }
+
+            .back-table thead th {
+                background: #243f95;
+                color: #fff;
+                font-weight: 800;
+                font-size: 2.1mm;
+                height: 5.6mm;
+            }
+
+            .back-table th:nth-child(1),
+            .back-table td:nth-child(1) {
+                width: 8%;
+            }
+
+            .back-table th:nth-child(2),
+            .back-table td:nth-child(2) {
+                width: 22%;
+            }
+
+            .back-table th:nth-child(3),
+            .back-table td:nth-child(3) {
+                width: 18%;
+            }
+
+            .back-table th:nth-child(4),
+            .back-table td:nth-child(4) {
+                width: 32%;
+            }
+
+            .back-table th:nth-child(5),
+            .back-table td:nth-child(5) {
+                width: 20%;
+            }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .cut-area {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">Imprimir</button>
+    </div>
+
+    <div class="sheet">
+        <div class="cut-area">
+
+            <div class="cut-marks">
+                <span>✂</span>
+                <span>✂</span>
+            </div>
+
+            <div class="cards-row">
+                <!-- FRENTE -->
+                <div class="card">
+                    <div class="top-notch"></div>
+                    <div class="inner-pad">
+                        <div class="inner-title">CERTIFICACION DE PROCESOS CRITICOS</div>
+
+                        <div class="front-layout">
+                            <div class="front-left">
+                                <div class="reloj-box">
+                                    <div class="label">NO. RELOJ:</div>
+                                    <div class="reloj-value">{{RELOJ}}</div>
+                                </div>
+
+                                <div class="name-box">
+                                    <div class="label">NOMBRE:</div>
+                                    <div class="name-value">{{NOMBRE}}</div>
+                                </div>
+
+                                <div class="proc-title">PROCESOS CERTIFICADOS:</div>
+
+                                <div class="process-grid">
+                                    {{PROCESOS_CERTIFICADOS}}
+                                </div>
+                            </div>
+
+                            <div class="photo-box">
+                                {{FOTO_HTML}}
+                            </div>
+                        </div>
+
+                        <div class="footer-note">EC06 I01 CTS MCH-35 &nbsp; REV.2</div>
+                    </div>
+                </div>
+
+                <!-- REVERSO -->
+                <div class="card">
+                    <div class="top-notch"></div>
+                    <div class="inner-pad">
+                        <div class="back-content">
+                            <div class="back-table-wrap">
+                                <table class="back-table">
+                                    <thead>
+                                        <tr>
+                                            <th>NO.</th>
+                                            <th>PROCESO</th>
+                                            <th>FECHA CERT</th>
+                                            <th>CERTIFICADOR</th>
+                                            <th>VIGENCIA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{TABLA_PROCESOS}}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="footer-note">EC06 I01 CTS MCH-35 &nbsp; REV.2 (Reverso)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cut-marks bottom">
+                <span>✂</span>
+                <span>✂</span>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

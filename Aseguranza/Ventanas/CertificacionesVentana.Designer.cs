@@ -205,7 +205,7 @@
             btnRegresar.Location = new Point(945, 507);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
-            btnRegresar.TabIndex = 4;
+            btnRegresar.TabIndex = 5;
             btnRegresar.Text = "Regresar";
             btnRegresar.UseVisualStyleBackColor = true;
             btnRegresar.Click += btnRegresar_Click;

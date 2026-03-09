@@ -1,4 +1,4 @@
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AseguranzaBD')
+锘縄F NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AseguranzaBD')
 BEGIN
     CREATE DATABASE AseguranzaBD;
 END
@@ -220,7 +220,7 @@ CREATE OR ALTER PROCEDURE spConsultarTrabajadores
 AS
 BEGIN
 	SET NOCOUNT ON;
-	SELECT Trabajador.Id, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto, Trabajador.IdLocalidad, Localidad.Nombre AS [NombreLocalidad], Trabajador.IdTurno, 
+	SELECT TOP(100) Trabajador.Id, Trabajador.NoReloj, Trabajador.Nombre, Trabajador.RutaFoto, Trabajador.IdLocalidad, Localidad.Nombre AS [NombreLocalidad], Trabajador.IdTurno, 
 	Turno.Nombre AS [NombreTurno], Linea.IdPlanta, Planta.Nombre AS [NombrePlanta], Trabajador.IdLinea, Linea.Nombre AS [NombreLinea] FROM Trabajador
 	INNER JOIN Localidad ON Localidad.Id = Trabajador.IdLocalidad INNER JOIN Turno ON Turno.Id = Trabajador.IdTurno INNER JOIN Linea ON Linea.Id = Trabajador.IdLinea
 	INNER JOIN Planta ON Planta.Id = Linea.IdPlanta WHERE Trabajador.NoReloj LIKE '%'+@TextoBuscar+'%' OR Trabajador.Nombre LIKE '%'+@TextoBuscar+'%'
@@ -291,7 +291,7 @@ BEGIN
 		INNER JOIN Linea ON Linea.Id=Trabajador.IdLinea INNER JOIN Planta ON Planta.Id=LInea.IdPlanta WHERE Trabajador.NoReloj=@NoReloj;
 	END ELSE
 		BEGIN
-			SELECT 1 AS [Id], 'No existe trabajador con ese n鷐ero de reloj' AS [Nombre];
+			SELECT 1 AS [Id], 'No existe trabajador con ese n煤mero de reloj' AS [Nombre];
 		END
 END
 
@@ -305,7 +305,7 @@ BEGIN
 
     ;WITH CTE_Estado AS
     (
-        SELECT 
+        SELECT TOP(100) 
             T.Id,
             T.NoReloj,
             T.Nombre,
@@ -497,7 +497,7 @@ CREATE TABLE Certificacion
 	    CONSTRAINT UQ_Certificacion_Trabajador_Proceso
         UNIQUE (IdTrabajador, IdProceso),
 
-    --  Validaci髇 de fechas (opcional)
+    --  Validaci贸n de fechas (opcional)
     CONSTRAINT CK_Fechas_Certificacion
         CHECK (FechaVencimiento > FechaCertificacion)
 )
@@ -532,6 +532,50 @@ BEGIN
     ORDER BY C.FechaVencimiento;
 END
 
+CREATE OR ALTER PROCEDURE spConsultarVerificacionNoReloj
+    @NoReloj VARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        C.Id,
+        T.Id AS IdTrabajador,
+        T.Nombre,
+        T.RutaFoto,
+
+        P.Id AS IdProceso,
+        P.Nombre AS Proceso,
+
+        C.FechaCertificacion,
+        C.FechaVencimiento,
+        CASE 
+            WHEN C.FechaVencimiento IS NULL THEN NULL
+            ELSE DATEDIFF(DAY, GETDATE(), C.FechaVencimiento)
+        END AS DiasRestantes,
+
+        C.Comentario,
+
+        C.IdCertificador,
+        TCert.Nombre AS NombreCertificador
+
+    FROM Trabajador T
+    LEFT JOIN Certificacion C
+        ON C.IdTrabajador = T.Id
+    LEFT JOIN Proceso P
+        ON P.Id = C.IdProceso
+    LEFT JOIN Certificador Cert
+        ON Cert.Id = C.IdCertificador
+    LEFT JOIN Trabajador TCert
+        ON TCert.Id = Cert.IdTrabajador
+
+    WHERE
+        T.NoReloj = @NoReloj
+
+    ORDER BY C.FechaVencimiento;
+END
+
+EXECUTE spConsultarVerificacionNoReloj '123456789'
 
 CREATE OR ALTER PROCEDURE spGuardarCertificacion
 (
@@ -574,7 +618,7 @@ BEGIN
             IdTrabajador = @IdTrabajador
             AND IdProceso = @IdProceso;
 
-        SELECT 2 AS [Id], 'Certificaci髇 renovada correctamente' AS [Nombre];
+        SELECT 2 AS [Id], 'Certificaci贸n renovada correctamente' AS [Nombre];
     END
     ELSE
     BEGIN
@@ -598,7 +642,7 @@ BEGIN
             @Comentario
         );
 
-        SELECT 1 AS [Id], 'Certificaci髇 registrada correctamente' AS [Nombre];
+        SELECT 1 AS [Id], 'Certificaci贸n registrada correctamente' AS [Nombre];
     END
 END
 
@@ -608,7 +652,7 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 	DELETE FROM Certificacion WHERE Id=@Id;
-	SELECT 1 AS [Id], 'Certificaci髇 borrada correctamente' AS [Nombre];
+	SELECT 1 AS [Id], 'Certificaci贸n borrada correctamente' AS [Nombre];
 END
 
 -------------------------------------------
@@ -636,3 +680,198 @@ ON Certificacion (IdProceso);
 
 CREATE INDEX IX_Certificacion_FechaVencimiento
 ON Certificacion (FechaVencimiento);
+
+
+INSERT INTO Trabajador
+(NoReloj, Nombre, RutaFoto, IdLocalidad, IdTurno, IdLinea)
+VALUES
+(95001,'HERNANDEZ LOPEZ, JUAN CARLOS','C:\Aseguranza\95001_HERNANDEZ LOPEZ, JUAN CARLOS.jpg',1036,1005,1025),
+(95002,'GARCIA RAMIREZ, ANA MARIA','C:\Aseguranza\95002_GARCIA RAMIREZ, ANA MARIA.jpg',1036,1005,1026),
+(95003,'MARTINEZ SOTO, LUIS ANGEL','C:\Aseguranza\95003_MARTINEZ SOTO, LUIS ANGEL.jpg',1036,1005,1027),
+(95004,'PEREZ CASTILLO, MARIA ELENA','C:\Aseguranza\95004_PEREZ CASTILLO, MARIA ELENA.jpg',1036,1005,1028),
+(95005,'LOPEZ HERNANDEZ, JOSE ANTONIO','C:\Aseguranza\95005_LOPEZ HERNANDEZ, JOSE ANTONIO.jpg',1036,1005,1030),
+
+(95006,'RAMOS FLORES, KARLA ITZEL','C:\Aseguranza\95006_RAMOS FLORES, KARLA ITZEL.jpg',1036,1005,1031),
+(95007,'CRUZ GOMEZ, MIGUEL ANGEL','C:\Aseguranza\95007_CRUZ GOMEZ, MIGUEL ANGEL.jpg',1036,1005,1032),
+(95008,'MENDOZA TORRES, DIANA PAOLA','C:\Aseguranza\95008_MENDOZA TORRES, DIANA PAOLA.jpg',1036,1005,1034),
+(95009,'SALAZAR VEGA, ROBERTO','C:\Aseguranza\95009_SALAZAR VEGA, ROBERTO.jpg',1036,1005,1025),
+(95010,'ORTIZ NAVARRO, CLAUDIA','C:\Aseguranza\95010_ORTIZ NAVARRO, CLAUDIA.jpg',1036,1005,1026),
+
+-- -------- 20
+(95011,'CASTRO LUNA, FRANCISCO','C:\Aseguranza\95011_CASTRO LUNA, FRANCISCO.jpg',1036,1005,1027),
+(95012,'VELAZQUEZ RIOS, PAOLA','C:\Aseguranza\95012_VELAZQUEZ RIOS, PAOLA.jpg',1036,1005,1028),
+(95013,'AGUILAR MORALES, ERNESTO','C:\Aseguranza\95013_AGUILAR MORALES, ERNESTO.jpg',1036,1005,1030),
+(95014,'SANCHEZ PACHECO, LAURA','C:\Aseguranza\95014_SANCHEZ PACHECO, LAURA.jpg',1036,1005,1031),
+(95015,'ROMERO BARRERA, HUGO','C:\Aseguranza\95015_ROMERO BARRERA, HUGO.jpg',1036,1005,1032),
+
+(95016,'ALVAREZ GUERRERO, MARTHA','C:\Aseguranza\95016_ALVAREZ GUERRERO, MARTHA.jpg',1036,1005,1034),
+(95017,'NAVARRO CAMPOS, OSCAR','C:\Aseguranza\95017_NAVARRO CAMPOS, OSCAR.jpg',1036,1005,1025),
+(95018,'IBARRA RANGEL, PATRICIA','C:\Aseguranza\95018_IBARRA RANGEL, PATRICIA.jpg',1036,1005,1026),
+(95019,'FUENTES MEZA, ALBERTO','C:\Aseguranza\95019_FUENTES MEZA, ALBERTO.jpg',1036,1005,1027),
+(95020,'MEDINA ORTEGA, SILVIA','C:\Aseguranza\95020_MEDINA ORTEGA, SILVIA.jpg',1036,1005,1028),
+
+-- -------- 40
+(95021,'RIVERA VALDEZ, JESUS','C:\Aseguranza\95021_RIVERA VALDEZ, JESUS.jpg',1036,1005,1030),
+(95022,'NUNEZ CARRILLO, ROCIO','C:\Aseguranza\95022_NUNEZ CARRILLO, ROCIO.jpg',1036,1005,1031),
+(95023,'VARGAS SALINAS, DANIEL','C:\Aseguranza\95023_VARGAS SALINAS, DANIEL.jpg',1036,1005,1032),
+(95024,'MORALES REYES, TERESA','C:\Aseguranza\95024_MORALES REYES, TERESA.jpg',1036,1005,1034),
+(95025,'PADILLA CERVANTES, ENRIQUE','C:\Aseguranza\95025_PADILLA CERVANTES, ENRIQUE.jpg',1036,1005,1025),
+
+-- -------- 60
+(95026,'LEON CONTRERAS, FERNANDO','C:\Aseguranza\95026_LEON CONTRERAS, FERNANDO.jpg',1036,1005,1026),
+(95027,'PACHECO ZAMORA, LILIANA','C:\Aseguranza\95027_PACHECO ZAMORA, LILIANA.jpg',1036,1005,1027),
+(95028,'ESTRADA ROSAS, JULIO','C:\Aseguranza\95028_ESTRADA ROSAS, JULIO.jpg',1036,1005,1028),
+(95029,'ZAVALA MONTOYA, VERONICA','C:\Aseguranza\95029_ZAVALA MONTOYA, VERONICA.jpg',1036,1005,1030),
+(95030,'ARIAS BELTRAN, EDUARDO','C:\Aseguranza\95030_ARIAS BELTRAN, EDUARDO.jpg',1036,1005,1031),
+
+-- -------- 80
+(95031,'MEJIA QUINTERO, NORMA','C:\Aseguranza\95031_MEJIA QUINTERO, NORMA.jpg',1036,1005,1032),
+(95032,'CERVANTES MORA, ISRAEL','C:\Aseguranza\95032_CERVANTES MORA, ISRAEL.jpg',1036,1005,1034),
+(95033,'GUZMAN SOLIS, ADRIANA','C:\Aseguranza\95033_GUZMAN SOLIS, ADRIANA.jpg',1036,1005,1025),
+(95034,'ESCOBEDO MENA, RICARDO','C:\Aseguranza\95034_ESCOBEDO MENA, RICARDO.jpg',1036,1005,1026),
+(95035,'MIRANDA SERRANO, FABIOLA','C:\Aseguranza\95035_MIRANDA SERRANO, FABIOLA.jpg',1036,1005,1027),
+
+-- -------- 100
+(95036,'OLIVARES VAZQUEZ, SAUL','C:\Aseguranza\95036_OLIVARES VAZQUEZ, SAUL.jpg',1036,1005,1028),
+(95037,'TAPIA RODRIGUEZ, NOEMI','C:\Aseguranza\95037_TAPIA RODRIGUEZ, NOEMI.jpg',1036,1005,1030),
+(95038,'CORTEZ BECERRA, RAUL','C:\Aseguranza\95038_CORTEZ BECERRA, RAUL.jpg',1036,1005,1031),
+(95039,'SOTO DELGADO, VANESSA','C:\Aseguranza\95039_SOTO DELGADO, VANESSA.jpg',1036,1005,1032),
+(95040,'PALACIOS ROJAS, MARIO','C:\Aseguranza\95040_PALACIOS ROJAS, MARIO.jpg',1036,1005,1034);
+
+SET NOCOUNT ON;
+
+DECLARE @i INT = 1;
+DECLARE @NoReloj INT = 110000; -- AJUSTA SI ES NECESARIO
+
+WHILE @i <= 100000
+BEGIN
+    INSERT INTO Trabajador
+    (
+        NoReloj,
+        Nombre,
+        RutaFoto,
+        IdLocalidad,
+        IdTurno,
+        IdLinea
+    )
+    VALUES
+    (
+        CAST(@NoReloj AS VARCHAR(10)),
+        CONCAT('TRABAJADOR PRUEBA ', @i),
+        CONCAT('C:\Aseguranza\', @NoReloj, '_EMPLEADO PRUEBA ', @i, '.jpg'),
+        1036, -- IdLocalidad
+        1005, -- IdTurno
+        CASE (@i % 8)
+            WHEN 0 THEN 1025
+            WHEN 1 THEN 1026
+            WHEN 2 THEN 1027
+            WHEN 3 THEN 1028
+            WHEN 4 THEN 1030
+            WHEN 5 THEN 1031
+            WHEN 6 THEN 1032
+            WHEN 7 THEN 1034
+        END
+    );
+
+    SET @i += 1;
+    SET @NoReloj += 1;
+END;
+
+
+
+
+SET NOCOUNT ON;
+
+DECLARE @Total INT = 100;
+DECLARE @i INT = 1;
+
+DECLARE @IdTrabajador INT;
+DECLARE @IdProceso INT;
+DECLARE @IdCertificador INT;
+DECLARE @FechaCert DATE;
+DECLARE @Vigencia INT;
+
+-- Cursores simples (controlados)
+DECLARE Trabajadores CURSOR FOR
+SELECT Id FROM Trabajador;
+
+DECLARE Procesos CURSOR FOR
+SELECT Id, VigenciaMeses FROM Proceso;
+
+DECLARE Certificadores CURSOR FOR
+SELECT Id FROM Certificador;
+
+OPEN Trabajadores;
+OPEN Procesos;
+OPEN Certificadores;
+
+FETCH NEXT FROM Trabajadores INTO @IdTrabajador;
+FETCH NEXT FROM Procesos INTO @IdProceso, @Vigencia;
+FETCH NEXT FROM Certificadores INTO @IdCertificador;
+
+WHILE @i <= @Total
+BEGIN
+    IF @IdTrabajador IS NULL
+    BEGIN
+        FETCH NEXT FROM Trabajadores INTO @IdTrabajador;
+        CONTINUE;
+    END
+
+    IF @IdProceso IS NULL
+    BEGIN
+        CLOSE Procesos;
+        OPEN Procesos;
+        FETCH NEXT FROM Procesos INTO @IdProceso, @Vigencia;
+    END
+
+    IF @IdCertificador IS NULL
+    BEGIN
+        CLOSE Certificadores;
+        OPEN Certificadores;
+        FETCH NEXT FROM Certificadores INTO @IdCertificador;
+    END
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM Certificacion
+        WHERE IdTrabajador = @IdTrabajador
+          AND IdProceso = @IdProceso
+    )
+    BEGIN
+        SET @FechaCert = DATEADD(DAY, -(@i % 3), GETDATE());
+
+        INSERT INTO Certificacion
+        (
+            IdTrabajador,
+            IdProceso,
+            FechaCertificacion,
+            FechaVencimiento,
+            IdCertificador,
+            Comentario
+        )
+        VALUES
+        (
+            @IdTrabajador,
+            @IdProceso,
+            @FechaCert,
+            DATEADD(MONTH, @Vigencia, @FechaCert),
+            @IdCertificador,
+            CONCAT('Certificaci贸n de prueba ', @i)
+        );
+
+        SET @i += 1;
+    END
+
+    FETCH NEXT FROM Trabajadores INTO @IdTrabajador;
+    FETCH NEXT FROM Procesos INTO @IdProceso, @Vigencia;
+    FETCH NEXT FROM Certificadores INTO @IdCertificador;
+END
+
+CLOSE Trabajadores;
+CLOSE Procesos;
+CLOSE Certificadores;
+
+DEALLOCATE Trabajadores;
+DEALLOCATE Procesos;
+DEALLOCATE Certificadores;

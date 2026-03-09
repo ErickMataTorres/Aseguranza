@@ -124,5 +124,10 @@ namespace Aseguranza
             }
         }
 
+        private void verificadorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Ventanas.Verificaciones ventana = new Ventanas.Verificaciones();
+            ventana.ShowDialog();
+        }
     }
 }
