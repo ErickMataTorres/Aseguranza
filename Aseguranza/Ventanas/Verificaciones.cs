@@ -133,7 +133,7 @@ namespace Aseguranza.Ventanas
             webViewCertificacion.Location = new Point(123, 138);
             webViewCertificacion.Size = new Size(1034, 645);
 
-            btnImprimirHtml.Location = new Point(1035, 95);
+
         }
 
         private void MostrarVistaCompleta()
@@ -141,10 +141,10 @@ namespace Aseguranza.Ventanas
             pnlAdelante.Visible = true;
             pnlReverso.Visible = true;
 
-            webViewCertificacion.Location = new Point(123, 465);
-            webViewCertificacion.Size = new Size(906, 318);
+            //webViewCertificacion.Location = new Point(123, 465);
+            //webViewCertificacion.Size = new Size(906, 318);
 
-            btnImprimirHtml.Location = new Point(1035, 465);
+
         }
         private void GenerarProcesosCertificados()
         {
@@ -492,17 +492,66 @@ namespace Aseguranza.Ventanas
             return "<span style='font-size:12px;'>SIN FOTO</span>";
         }
 
-        private async Task ImprimirHtmlAsync()
+        private async Task GenerarPdfCredencialAsync()
+        {
+            if (webViewCertificacion.CoreWebView2 == null)
+                await InicializarWebViewAsync();
+
+            string reloj = txtNoReloj.Text.Trim();
+            string nombre = txtNombre.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(reloj) || string.IsNullOrWhiteSpace(nombre))
+            {
+                MessageBox.Show("No hay datos suficientes para generar la credencial.","Información");
+                return;
+            }
+
+            string nombreArchivo = LimpiarTextoParaArchivo(nombre);
+
+            string archivo = $"Credencial_{reloj}_{nombreArchivo}.pdf";
+
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Title = "Guardar credencial";
+                saveFileDialog.Filter = "Archivo PDF (*.pdf)|*.pdf";
+                saveFileDialog.FileName = archivo;
+
+                if (saveFileDialog.ShowDialog() != DialogResult.OK)
+                    return;
+
+                bool resultado = await webViewCertificacion.CoreWebView2.PrintToPdfAsync(saveFileDialog.FileName);
+
+                if (resultado)
+                    MessageBox.Show("Credencial generada correctamente.", "Información");
+                else
+                    MessageBox.Show("No se pudo generar el PDF.", "Información");
+            }
+        }
+        private string LimpiarTextoParaArchivo(string texto)
+        {
+            string limpio = texto.ToUpper().Trim();
+
+            foreach (char c in Path.GetInvalidFileNameChars())
+                limpio = limpio.Replace(c.ToString(), "");
+
+            limpio = limpio.Replace(",", "");
+            limpio = limpio.Replace(".", "");
+            limpio = limpio.Replace("  ", " ");
+            limpio = limpio.Replace(" ", "_");
+
+            return limpio;
+        }
+
+        private async void btnImprimirHtml_Click(object sender, EventArgs e)
+        {
+            await GenerarPdfCredencialAsync();
+        }
+        private async Task ImprimirDirectoAsync()
         {
             if (webViewCertificacion.CoreWebView2 == null)
                 await InicializarWebViewAsync();
 
             await webViewCertificacion.CoreWebView2.ExecuteScriptAsync("window.print();");
-        }
-
-        private async void btnImprimirHtml_Click(object sender, EventArgs e)
-        {
-            await ImprimirHtmlAsync();
         }
     }
 }

@@ -61,6 +61,11 @@ namespace Aseguranza.Ventanas
             {
                 btnAceptar_Click(sender, e);
             }
+            // Permitir solo números y la tecla de borrar (Backspace)
+            if (!char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar))
+            {
+                e.Handled = true; // Bloquea la tecla
+            }
         }
 
         private void btnRegresar_Click(object sender, EventArgs e)

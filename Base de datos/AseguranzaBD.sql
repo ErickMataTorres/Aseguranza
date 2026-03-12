@@ -305,7 +305,7 @@ BEGIN
 
     ;WITH CTE_Estado AS
     (
-        SELECT TOP(100) 
+        SELECT TOP(300) 
             T.Id,
             T.NoReloj,
             T.Nombre,
