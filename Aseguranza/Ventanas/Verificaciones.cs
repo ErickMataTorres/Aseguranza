@@ -130,8 +130,8 @@ namespace Aseguranza.Ventanas
             pnlAdelante.Visible = false;
             pnlReverso.Visible = false;
 
-            webViewCertificacion.Location = new Point(123, 138);
-            webViewCertificacion.Size = new Size(1034, 645);
+            //webViewCertificacion.Location = new Point(123, 138);
+            //webViewCertificacion.Size = new Size(1034, 645);
 
 
         }
