@@ -21,16 +21,45 @@ namespace Aseguranza.Ventanas
         {
             await InicializarWebViewAsync();
             MostrarSoloVistaHtml();
+            await MostrarHtmlInicialAsync();
+
+            txtNoReloj.Clear();
+            txtNoReloj.Focus();
+        }
+        private void MostrarSoloVistaHtml()
+        {
+            pnlAdelante.Visible = false;
+            pnlReverso.Visible = false;
+
+            //webViewCertificacion.Location = new Point(123, 138);
+            //webViewCertificacion.Size = new Size(1034, 645);
+
+
+        }
+        private async Task MostrarHtmlInicialAsync()
+        {
+            if (webViewCertificacion.CoreWebView2 == null)
+                await InicializarWebViewAsync();
 
             webViewCertificacion.NavigateToString(@"
-        <html>
-        <body style='font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f3f4f6;'>
-            <div style='text-align:center;color:#374151;'>
-                <h2 style='margin-bottom:8px;'>Vista previa de credencial</h2>
-                <p>Ingrese un número de reloj para generar la credencial.</p>
-            </div>
-        </body>
-        </html>");
+    <html>
+    <body style='font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f3f4f6;'>
+        <div style='text-align:center;color:#374151;'>
+            <h2 style='margin-bottom:8px;'>Vista previa de credencial</h2>
+            <p>Ingrese un número de reloj para generar la credencial.</p>
+        </div>
+    </body>
+    </html>");
+        }
+        private void LimpiarVistaBusqueda()
+        {
+            dgvCertificaciones.DataSource = null;
+            dgvCertificaciones.Columns.Clear();
+
+            txtNombre.Clear();
+            lblMostrarNoReloj.Text = "";
+            lblMostrarNombre.Text = "";
+            flowProcesosCertificados.Controls.Clear();
         }
 
         private async Task InicializarWebViewAsync()
@@ -40,40 +69,49 @@ namespace Aseguranza.Ventanas
 
         private async void txtNoReloj_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == (char)Keys.Enter)
+            if (e.KeyChar != (char)Keys.Enter) return;
+
+            e.Handled = true;
+
+            string noReloj = txtNoReloj.Text.Trim();
+            if (string.IsNullOrWhiteSpace(noReloj))
+                return;
+
+            LimpiarVistaBusqueda();
+
+            DataTable dt = Clases.Certificacion.ConsultarVerificacionNoReloj(noReloj);
+
+            if (dt == null || dt.Rows.Count == 0)
             {
-                DataTable dt = Clases.Certificacion.ConsultarVerificacionNoReloj(txtNoReloj.Text.Trim());
+                MostrarVistaCompleta();
+                await MostrarHtmlInicialAsync();
 
-                if (dt == null || dt.Rows.Count == 0)
-                {
-                    dgvCertificaciones.DataSource = null;
-                    txtNombre.Clear();
-                    lblMostrarNoReloj.Text = "";
-                    lblMostrarNombre.Text = "";
-                    flowProcesosCertificados.Controls.Clear();
+                MessageBox.Show("No se encontraron certificaciones.");
 
-                    // Si no hay datos, puedes volver a mostrar la vista completa
-                    MostrarVistaCompleta();
-
-                    MessageBox.Show("No se encontraron certificaciones.");
-                    return;
-                }
-
-                dgvCertificaciones.DataSource = dt;
-
-                string nombre = dt.Rows[0]["Nombre"]?.ToString() ?? "";
-
-                txtNombre.Text = nombre;
-                lblMostrarNoReloj.Text = txtNoReloj.Text.Trim();
-                lblMostrarNombre.Text = nombre;
-
-                OcultarColumnas();
-                PintarCertificaciones();
-                GenerarProcesosCertificados();
-
-                MostrarSoloVistaHtml();
-                await MostrarCertificacionHtmlAsync();
+                txtNoReloj.SelectAll();
+                txtNoReloj.Focus();
+                return;
             }
+
+            dgvCertificaciones.AutoGenerateColumns = true;
+            dgvCertificaciones.DataSource = dt;
+
+            string nombre = dt.Rows[0]["Nombre"]?.ToString() ?? "";
+
+            txtNombre.Text = nombre;
+            lblMostrarNoReloj.Text = noReloj;
+            lblMostrarNombre.Text = nombre;
+
+            OcultarColumnas();
+            PintarCertificaciones();
+            GenerarProcesosCertificados();
+
+            MostrarSoloVistaHtml();
+            await MostrarCertificacionHtmlAsync();
+
+            // ✅ deja listo el textbox para escribir otro número encima
+            txtNoReloj.SelectAll();
+            txtNoReloj.Focus();
         }
 
         private void txtNoReloj_TextChanged(object sender, EventArgs e)
@@ -124,16 +162,6 @@ namespace Aseguranza.Ventanas
 
                 row.DefaultCellStyle.ForeColor = Color.Black;
             }
-        }
-        private void MostrarSoloVistaHtml()
-        {
-            pnlAdelante.Visible = false;
-            pnlReverso.Visible = false;
-
-            //webViewCertificacion.Location = new Point(123, 138);
-            //webViewCertificacion.Size = new Size(1034, 645);
-
-
         }
 
         private void MostrarVistaCompleta()
@@ -215,7 +243,8 @@ namespace Aseguranza.Ventanas
             if (webViewCertificacion.CoreWebView2 == null)
                 await InicializarWebViewAsync();
 
-            string rutaHtml = Path.Combine(Application.StartupPath, "Plantillas", "Certificacion.html");
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string rutaHtml = Path.Combine(baseDir, "Plantillas", "Certificacion.html");
 
             if (!File.Exists(rutaHtml))
             {
@@ -502,7 +531,7 @@ namespace Aseguranza.Ventanas
 
             if (string.IsNullOrWhiteSpace(reloj) || string.IsNullOrWhiteSpace(nombre))
             {
-                MessageBox.Show("No hay datos suficientes para generar la credencial.","Información");
+                MessageBox.Show("No hay datos suficientes para generar la credencial.", "Información");
                 return;
             }
 

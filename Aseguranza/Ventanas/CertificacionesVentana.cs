@@ -23,11 +23,22 @@ namespace Aseguranza.Ventanas
         // =====================================================
         private void CertificacionesVentana_Load(object sender, EventArgs e)
         {
+            dgvCertificaciones.DataBindingComplete -= dgvCertificaciones_DataBindingComplete!;
+            dgvCertificaciones.DataBindingComplete += dgvCertificaciones_DataBindingComplete!;
+
+            dgvCertificaciones.DataError -= dgvCertificaciones_DataError!;
+            dgvCertificaciones.DataError += dgvCertificaciones_DataError!;
+
+            RefrescarVentana();
+        }
+        private void dgvCertificaciones_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            e.ThrowException = false;
+        }
+        private void RefrescarVentana()
+        {
             MostrarDatosTrabajador();
             CargarCertificaciones();
-
-
-            dgvCertificaciones.DataBindingComplete += dgvCertificaciones_DataBindingComplete!;
             SeleccionarPrimero();
         }
         private void SeleccionarPrimero()
@@ -77,6 +88,10 @@ namespace Aseguranza.Ventanas
         // =====================================================
         private void CargarCertificaciones(string textoBuscar = "")
         {
+            dgvCertificaciones.DataSource = null;
+            dgvCertificaciones.Columns.Clear();
+            dgvCertificaciones.AutoGenerateColumns = true;
+
             dgvCertificaciones.DataSource =
                 Certificacion.ConsultarCertificacionesPorTrabajador(
                     trabajadorActual.Id,
@@ -101,7 +116,6 @@ namespace Aseguranza.Ventanas
             }
 
             txtBuscar.Focus();
-
             PintarCertificaciones();
         }
 
@@ -134,12 +148,18 @@ namespace Aseguranza.Ventanas
 
         private void PintarCertificaciones()
         {
+            if (!dgvCertificaciones.Columns.Contains("DiasRestantes"))
+                return;
+
             foreach (DataGridViewRow row in dgvCertificaciones.Rows)
             {
-                if (row.Cells["DiasRestantes"].Value == null)
+                if (row.IsNewRow) continue;
+
+                object valor = row.Cells["DiasRestantes"].Value;
+                if (valor == null || valor == DBNull.Value)
                     continue;
 
-                int dias = Convert.ToInt32(row.Cells["DiasRestantes"].Value);
+                int dias = Convert.ToInt32(valor);
 
                 if (dias < 0)
                     row.DefaultCellStyle.BackColor = Color.LightCoral;
@@ -176,19 +196,7 @@ namespace Aseguranza.Ventanas
 
         private void btnModificar_Click(object sender, EventArgs e)
         {
-            Clases.Certificacion certificacion = new Clases.Certificacion();
-            certificacion.Id = int.Parse(dgvCertificaciones.CurrentRow.Cells["Id"].Value.ToString()!);
-            certificacion.FechaCertificacion = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaCertificacion"].Value.ToString()!);
-            certificacion.FechaVencimiento = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaVencimiento"].Value.ToString()!);
-            certificacion.IdProceso = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdProceso"].Value.ToString()!);
-            certificacion.Comentario = dgvCertificaciones.CurrentRow.Cells["Comentario"].Value.ToString()!;
-            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
-            ventana.ShowDialog();
-            if (ventana.DialogResult == DialogResult.OK)
-            {
-                CertificacionesVentana_Load(sender, e);
-                //ValidarBotones();
-            }
+
         }
 
         private void btnBorrar_Click(object sender, EventArgs e)
@@ -205,6 +213,7 @@ namespace Aseguranza.Ventanas
         {
             if (dgvCertificaciones.CurrentRow == null)
                 return;
+
             Clases.Certificacion certificacion = new Clases.Certificacion();
             certificacion.Id = int.Parse(dgvCertificaciones.CurrentRow.Cells["Id"].Value.ToString()!);
             certificacion.FechaCertificacion = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaCertificacion"].Value.ToString()!);
@@ -212,23 +221,28 @@ namespace Aseguranza.Ventanas
             certificacion.IdProceso = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdProceso"].Value.ToString()!);
             certificacion.IdCertificador = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdCertificador"].Value.ToString()!);
             certificacion.Comentario = dgvCertificaciones.CurrentRow.Cells["Comentario"].Value.ToString()!;
-            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
+
+            Ventanas.CertificacionesTrabajadorVentana ventana =
+                new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
+
             ventana.ShowDialog();
+
             if (ventana.DialogResult == DialogResult.OK)
             {
-                CertificacionesVentana_Load(sender, e);
-                //ValidarBotones();
+                RefrescarVentana();
             }
         }
 
         private void btnAgregar_Click_1(object sender, EventArgs e)
         {
-            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(null!, trabajadorActual);
+            Ventanas.CertificacionesTrabajadorVentana ventana =
+                new Ventanas.CertificacionesTrabajadorVentana(null!, trabajadorActual);
+
             ventana.ShowDialog();
+
             if (ventana.DialogResult == DialogResult.OK)
             {
-                CertificacionesVentana_Load(sender, e);
-                //ValidarBotones();
+                RefrescarVentana();
             }
         }
 
@@ -253,6 +267,9 @@ namespace Aseguranza.Ventanas
 
         private void dgvCertificaciones_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (dgvCertificaciones.CurrentRow == null)
+                return;
+
             Clases.Certificacion certificacion = new Clases.Certificacion();
             certificacion.Id = int.Parse(dgvCertificaciones.CurrentRow.Cells["Id"].Value.ToString()!);
             certificacion.FechaCertificacion = DateTime.Parse(dgvCertificaciones.CurrentRow.Cells["FechaCertificacion"].Value.ToString()!);
@@ -260,12 +277,15 @@ namespace Aseguranza.Ventanas
             certificacion.IdProceso = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdProceso"].Value.ToString()!);
             certificacion.IdCertificador = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdCertificador"].Value.ToString()!);
             certificacion.Comentario = dgvCertificaciones.CurrentRow.Cells["Comentario"].Value.ToString()!;
-            Ventanas.CertificacionesTrabajadorVentana ventana = new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
+
+            Ventanas.CertificacionesTrabajadorVentana ventana =
+                new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
+
             ventana.ShowDialog();
+
             if (ventana.DialogResult == DialogResult.OK)
             {
-                CertificacionesVentana_Load(sender, e);
-                //ValidarBotones();
+                RefrescarVentana();
             }
         }
 
@@ -277,7 +297,6 @@ namespace Aseguranza.Ventanas
                 e.Handled = true;
             }
         }
-
         private void button1_Click(object sender, EventArgs e)
         {
             Ventanas.CredencialCertificacion ventana = new Ventanas.CredencialCertificacion(trabajadorActual);
