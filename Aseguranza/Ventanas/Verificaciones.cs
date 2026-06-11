@@ -260,7 +260,7 @@ namespace Aseguranza.Ventanas
             html = html.Replace("{{RELOJ}}", reloj);
             html = html.Replace("{{EMPLEADO}}", nombre);
             html = html.Replace("{{NOMBRE}}", nombre);
-            html = html.Replace("{{PROCESOS_CERTIFICADOS}}", GenerarProcesosCertificadosHtmlFijos());
+            html = html.Replace("{{PROCESOS_CERTIFICADOS}}", GenerarProcesosCertificadosHtmlDinamicos());
             html = html.Replace("{{FOTO_HTML}}", ObtenerFotoHtml());
             html = html.Replace("{{TABLA_PROCESOS}}", GenerarTablaProcesosHtml());
 
@@ -299,6 +299,83 @@ namespace Aseguranza.Ventanas
 '>
     {System.Net.WebUtility.HtmlEncode(proceso)}
 </div>");
+            }
+
+            return sb.ToString();
+        }
+
+        private string GenerarProcesosCertificadosHtmlDinamicos()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if (!dgvCertificaciones.Columns.Contains("Proceso"))
+                return "";
+
+            if (!dgvCertificaciones.Columns.Contains("DiasRestantes"))
+                return "";
+
+            HashSet<string> procesosMostrados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (DataGridViewRow row in dgvCertificaciones.Rows)
+            {
+                if (row.IsNewRow)
+                    continue;
+
+                string proceso = row.Cells["Proceso"]?.Value?.ToString()?.Trim() ?? "";
+
+                if (string.IsNullOrWhiteSpace(proceso))
+                    continue;
+
+                if (!procesosMostrados.Add(proceso))
+                    continue;
+
+                object diasObj = row.Cells["DiasRestantes"]?.Value;
+
+                if (diasObj == null || diasObj == DBNull.Value)
+                    continue;
+
+                int diasRestantes = Convert.ToInt32(diasObj);
+
+                string colorFondo = ObtenerColorHtmlPorVencimiento(diasRestantes);
+                string procesoHtml = System.Net.WebUtility.HtmlEncode(proceso);
+
+                sb.Append($@"
+            <div style='
+                display:inline-block;
+                min-width:80px;
+                padding:5px 8px;
+                margin:3px;
+                border-radius:4px;
+                background:{colorFondo};
+                color:white;
+                font-weight:800;
+                font-size:11px;
+                text-align:center;
+                border:1px solid #222;
+            '>
+                {procesoHtml}
+            </div>
+        ");
+            }
+
+            if (sb.Length == 0)
+            {
+                return @"
+            <div style='
+                display:inline-block;
+                padding:5px 8px;
+                margin:3px;
+                border-radius:4px;
+                background:#dc2626;
+                color:white;
+                font-weight:800;
+                font-size:11px;
+                text-align:center;
+                border:1px solid #222;
+            '>
+                SIN CERTIFICACIONES
+            </div>
+        ";
             }
 
             return sb.ToString();

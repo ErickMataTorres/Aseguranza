@@ -51,6 +51,8 @@
             pbContec = new PictureBox();
             lblVerificador = new Label();
             btnImprimir = new Button();
+            btnExpediente = new Button();
+            btnAnular = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvCertificaciones).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pbContec).BeginInit();
@@ -199,6 +201,7 @@
             dgvCertificaciones.TabIndex = 47;
             dgvCertificaciones.TabStop = false;
             dgvCertificaciones.CellDoubleClick += dgvCertificaciones_CellDoubleClick;
+            dgvCertificaciones.DataBindingComplete += dgvCertificaciones_DataBindingComplete_1;
             // 
             // btnRegresar
             // 
@@ -290,11 +293,33 @@
             btnImprimir.UseVisualStyleBackColor = true;
             btnImprimir.Click += button1_Click;
             // 
+            // btnExpediente
+            // 
+            btnExpediente.Location = new Point(294, 507);
+            btnExpediente.Name = "btnExpediente";
+            btnExpediente.Size = new Size(88, 39);
+            btnExpediente.TabIndex = 57;
+            btnExpediente.Text = "Expediente";
+            btnExpediente.UseVisualStyleBackColor = true;
+            btnExpediente.Click += btnExpediente_Click;
+            // 
+            // btnAnular
+            // 
+            btnAnular.Location = new Point(388, 507);
+            btnAnular.Name = "btnAnular";
+            btnAnular.Size = new Size(88, 39);
+            btnAnular.TabIndex = 58;
+            btnAnular.Text = "Anular";
+            btnAnular.UseVisualStyleBackColor = true;
+            btnAnular.Click += btnAnular_Click;
+            // 
             // CertificacionesVentana
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1045, 558);
+            Controls.Add(btnAnular);
+            Controls.Add(btnExpediente);
             Controls.Add(btnImprimir);
             Controls.Add(lblVerificador);
             Controls.Add(pbContec);
@@ -358,5 +383,7 @@
         private PictureBox pbContec;
         private Label lblVerificador;
         private Button btnImprimir;
+        private Button btnExpediente;
+        private Button btnAnular;
     }
 }

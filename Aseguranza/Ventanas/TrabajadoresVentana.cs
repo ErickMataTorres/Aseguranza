@@ -211,11 +211,9 @@ namespace Aseguranza.Ventanas
             trabajador.NoReloj = txtNoReloj.Text.Trim();
             trabajador.Nombre = txtNombre.Text.Trim().ToUpper();
 
-            string carpetaFotos = @"C:\Aseguranza\";
-            Directory.CreateDirectory(carpetaFotos);
+            Clases.RutasArchivos.CrearCarpetasTrabajador(trabajador.NoReloj!);
 
-            string nombreArchivo = $"{trabajador.NoReloj}_{trabajador.Nombre}.jpg";
-            string rutaDestino = Path.Combine(carpetaFotos, nombreArchivo);
+            string rutaDestino = Clases.RutasArchivos.ObtenerRutaFotoPerfil(trabajador.NoReloj!);
 
             // =========================
             // MANEJO CORRECTO DE FOTO
@@ -235,7 +233,11 @@ namespace Aseguranza.Ventanas
                 // Foto seleccionada o existente
                 if (rutaFotoSeleccionada != rutaDestino)
                 {
-                    File.Copy(rutaFotoSeleccionada, rutaDestino, true);
+                    using (var fs = new FileStream(rutaFotoSeleccionada, FileMode.Open, FileAccess.Read))
+                    using (var imagenSeleccionada = Image.FromStream(fs))
+                    {
+                        imagenSeleccionada.Save(rutaDestino, System.Drawing.Imaging.ImageFormat.Jpeg);
+                    }
                 }
 
                 trabajador.RutaFoto = rutaDestino;

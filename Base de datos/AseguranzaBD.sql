@@ -297,84 +297,106 @@ END
 
 
 CREATE OR ALTER PROCEDURE spConsultarTrabajadoresEstadoCertificacion
-@MostrarPor   VARCHAR(20),
-@TextoBuscar  VARCHAR(100)
+    @MostrarPor VARCHAR(20),
+    @TextoBuscar VARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     ;WITH CTE_Estado AS
     (
-        SELECT TOP(300) 
+        SELECT TOP(300)
             T.Id,
             T.NoReloj,
             T.Nombre,
             T.RutaFoto,
-
             T.IdLocalidad,
             L.Nombre AS NombreLocalidad,
-
             T.IdTurno,
             Tu.Nombre AS NombreTurno,
-
             Li.IdPlanta,
             P.Nombre AS NombrePlanta,
-
             T.IdLinea,
             Li.Nombre AS NombreLinea,
 
-            CASE 
+            CASE
                 WHEN COUNT(C.Id) = 0 THEN 'Sin certificar'
 
-                WHEN SUM(CASE 
-                            WHEN C.FechaVencimiento < CAST(GETDATE() AS DATE) 
-                            THEN 1 ELSE 0 
-                         END) > 0 
-                    THEN 'Vencida'
+                WHEN SUM(
+                    CASE 
+                        WHEN C.FechaVencimiento < CAST(GETDATE() AS DATE)
+                        THEN 1 ELSE 0 
+                    END
+                ) > 0 THEN 'Vencida'
 
-                WHEN SUM(CASE 
-                            WHEN C.FechaVencimiento 
-                                 BETWEEN CAST(GETDATE() AS DATE) 
-                                 AND DATEADD(DAY, 30, GETDATE()) 
-                            THEN 1 ELSE 0 
-                         END) > 0 
-                    THEN 'Por vencer'
+                WHEN SUM(
+                    CASE 
+                        WHEN C.FechaVencimiento BETWEEN CAST(GETDATE() AS DATE)
+                             AND DATEADD(DAY, 30, CAST(GETDATE() AS DATE))
+                        THEN 1 ELSE 0 
+                    END
+                ) > 0 THEN 'Por vencer'
 
                 ELSE 'Vigente'
             END AS EstadoCertificacion
 
         FROM Trabajador T
-        INNER JOIN Localidad L ON L.Id = T.IdLocalidad
-        INNER JOIN Turno Tu ON Tu.Id = T.IdTurno
-        INNER JOIN Linea Li ON Li.Id = T.IdLinea
-        INNER JOIN Planta P ON P.Id = Li.IdPlanta
-        LEFT JOIN Certificacion C ON C.IdTrabajador = T.Id
+        INNER JOIN Localidad L 
+            ON L.Id = T.IdLocalidad
+        INNER JOIN Turno Tu 
+            ON Tu.Id = T.IdTurno
+        INNER JOIN Linea Li 
+            ON Li.Id = T.IdLinea
+        INNER JOIN Planta P 
+            ON P.Id = Li.IdPlanta
 
-        WHERE 
-            (
-                T.NoReloj LIKE '%' + @TextoBuscar + '%'
-                OR T.Nombre LIKE '%' + @TextoBuscar + '%'
-                OR L.Nombre LIKE '%' + @TextoBuscar + '%'
-                OR Tu.Nombre LIKE '%' + @TextoBuscar + '%'
-                OR P.Nombre LIKE '%' + @TextoBuscar + '%'
-                OR Li.Nombre LIKE '%' + @TextoBuscar + '%'
-                OR @TextoBuscar = ''
-            )
+        LEFT JOIN Certificacion C 
+            ON C.IdTrabajador = T.Id
+           AND NOT EXISTS
+           (
+                SELECT 1
+                FROM CertificacionAnulacion CA
+                WHERE CA.IdCertificacion = C.Id
+                  AND CA.Activa = 1
+                  AND (
+                        CA.EsPermanente = 1
+                        OR CA.FechaFin IS NULL
+                        OR CA.FechaFin >= CAST(GETDATE() AS DATE)
+                      )
+           )
 
-        GROUP BY 
-            T.Id, T.NoReloj, T.Nombre, T.RutaFoto,
-            T.IdLocalidad, L.Nombre,
-            T.IdTurno, Tu.Nombre,
-            Li.IdPlanta, P.Nombre,
-            T.IdLinea, Li.Nombre
+        WHERE
+        (
+            T.NoReloj LIKE '%' + @TextoBuscar + '%'
+            OR T.Nombre LIKE '%' + @TextoBuscar + '%'
+            OR L.Nombre LIKE '%' + @TextoBuscar + '%'
+            OR Tu.Nombre LIKE '%' + @TextoBuscar + '%'
+            OR P.Nombre LIKE '%' + @TextoBuscar + '%'
+            OR Li.Nombre LIKE '%' + @TextoBuscar + '%'
+            OR @TextoBuscar = ''
+        )
+
+        GROUP BY
+            T.Id,
+            T.NoReloj,
+            T.Nombre,
+            T.RutaFoto,
+            T.IdLocalidad,
+            L.Nombre,
+            T.IdTurno,
+            Tu.Nombre,
+            Li.IdPlanta,
+            P.Nombre,
+            T.IdLinea,
+            Li.Nombre
     )
 
     SELECT *
     FROM CTE_Estado
-    WHERE
-        @MostrarPor = 'Todas'
-        OR EstadoCertificacion = @MostrarPor
+    WHERE @MostrarPor = 'Todas'
+       OR EstadoCertificacion = @MostrarPor;
 END
+GO
 
 -------------------------------------------
 
@@ -502,80 +524,147 @@ CREATE TABLE Certificacion
         CHECK (FechaVencimiento > FechaCertificacion)
 )
 
+
 CREATE OR ALTER PROCEDURE spConsultarCertificacionesPorTrabajador
     @IdTrabajador INT,
-    @TextoBuscar VARCHAR(100)
+    @TextoBuscar VARCHAR(100) = ''
 AS
 BEGIN
     SET NOCOUNT ON;
 
     SELECT
         C.Id,
-		P.Id AS [IdProceso],
+        C.IdTrabajador,
+        P.Id AS IdProceso,
         P.Nombre AS Proceso,
         C.FechaCertificacion,
         C.FechaVencimiento,
-        DATEDIFF(DAY, GETDATE(), C.FechaVencimiento) AS DiasRestantes,
+        DATEDIFF(DAY, CAST(GETDATE() AS DATE), C.FechaVencimiento) AS DiasRestantes,
         C.Comentario,
-		C.IdCertificador, Trabajador.Nombre AS [NombreCertificador]
+        C.IdCertificador,
+        TCert.Nombre AS NombreCertificador,
+
+        CASE 
+            WHEN CA.Id IS NOT NULL THEN 1
+            ELSE 0
+        END AS EstaAnulada,
+
+        CA.Id AS IdAnulacion,
+        CA.TipoAnulacion,
+        CA.FechaInicio AS FechaInicioAnulacion,
+        CA.FechaFin AS FechaFinAnulacion,
+        CA.EsPermanente,
+        CA.Comentario AS ComentarioAnulacion
+
     FROM Certificacion C
-    INNER JOIN Proceso P ON P.Id = C.IdProceso
-	INNER JOIN Certificador ON Certificador.Id = C.IdCertificador
-	INNER JOIN Trabajador ON Trabajador.Id = Certificador.IdTrabajador
-    WHERE
-        C.IdTrabajador = @IdTrabajador
-        AND (
-            P.Nombre LIKE '%' + @TextoBuscar + '%'
+    INNER JOIN Proceso P 
+        ON P.Id = C.IdProceso
+    INNER JOIN Certificador Cert 
+        ON Cert.Id = C.IdCertificador
+    INNER JOIN Trabajador TCert 
+        ON TCert.Id = Cert.IdTrabajador
+    OUTER APPLY
+    (
+        SELECT TOP 1
+            A.Id,
+            A.TipoAnulacion,
+            A.FechaInicio,
+            A.FechaFin,
+            A.EsPermanente,
+            A.Comentario
+        FROM CertificacionAnulacion A
+        WHERE A.IdCertificacion = C.Id
+          AND A.Activa = 1
+          AND (
+                A.EsPermanente = 1
+                OR A.FechaFin IS NULL
+                OR A.FechaFin >= CAST(GETDATE() AS DATE)
+              )
+        ORDER BY A.FechaRegistro DESC
+    ) CA
+    WHERE C.IdTrabajador = @IdTrabajador
+      AND (
+            @TextoBuscar = ''
+            OR P.Nombre LIKE '%' + @TextoBuscar + '%'
             OR C.Comentario LIKE '%' + @TextoBuscar + '%'
-			OR Trabajador.Nombre LIKE '%' + @TextoBuscar + '%'
-        )
+            OR TCert.Nombre LIKE '%' + @TextoBuscar + '%'
+            OR CA.Comentario LIKE '%' + @TextoBuscar + '%'
+          )
     ORDER BY C.FechaVencimiento;
 END
+GO
+
+
 
 CREATE OR ALTER PROCEDURE spConsultarVerificacionNoReloj
-    @NoReloj VARCHAR(10)
+    @NoReloj VARCHAR(50)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     SELECT
-        C.Id,
         T.Id AS IdTrabajador,
+        T.NoReloj,
         T.Nombre,
         T.RutaFoto,
 
-        P.Id AS IdProceso,
-        P.Nombre AS Proceso,
+        L.Nombre AS NombreLocalidad,
+        Tu.Nombre AS NombreTurno,
+        Pta.Nombre AS NombrePlanta,
+        Li.Nombre AS NombreLinea,
 
+        C.Id AS IdCertificacion,
+        Pr.Id AS IdProceso,
+        Pr.Nombre AS Proceso,
         C.FechaCertificacion,
         C.FechaVencimiento,
-        CASE 
-            WHEN C.FechaVencimiento IS NULL THEN NULL
-            ELSE DATEDIFF(DAY, GETDATE(), C.FechaVencimiento)
-        END AS DiasRestantes,
-
+        DATEDIFF(DAY, CAST(GETDATE() AS DATE), C.FechaVencimiento) AS DiasRestantes,
         C.Comentario,
 
         C.IdCertificador,
         TCert.Nombre AS NombreCertificador
 
     FROM Trabajador T
+    INNER JOIN Localidad L
+        ON L.Id = T.IdLocalidad
+    INNER JOIN Turno Tu
+        ON Tu.Id = T.IdTurno
+    INNER JOIN Linea Li
+        ON Li.Id = T.IdLinea
+    INNER JOIN Planta Pta
+        ON Pta.Id = Li.IdPlanta
+
     LEFT JOIN Certificacion C
         ON C.IdTrabajador = T.Id
-    LEFT JOIN Proceso P
-        ON P.Id = C.IdProceso
+    LEFT JOIN Proceso Pr
+        ON Pr.Id = C.IdProceso
     LEFT JOIN Certificador Cert
         ON Cert.Id = C.IdCertificador
     LEFT JOIN Trabajador TCert
         ON TCert.Id = Cert.IdTrabajador
 
-    WHERE
-        T.NoReloj = @NoReloj
+    WHERE T.NoReloj = @NoReloj
+      AND (
+            C.Id IS NULL
+            OR NOT EXISTS
+            (
+                SELECT 1
+                FROM CertificacionAnulacion CA
+                WHERE CA.IdCertificacion = C.Id
+                  AND CA.Activa = 1
+                  AND (
+                        CA.EsPermanente = 1
+                        OR CA.FechaFin IS NULL
+                        OR CA.FechaFin >= CAST(GETDATE() AS DATE)
+                      )
+            )
+          )
 
-    ORDER BY C.FechaVencimiento;
+    ORDER BY Pr.Nombre;
 END
+GO
 
-EXECUTE spConsultarVerificacionNoReloj '123456789'
+
 
 CREATE OR ALTER PROCEDURE spGuardarCertificacion
 (
@@ -588,6 +677,33 @@ CREATE OR ALTER PROCEDURE spGuardarCertificacion
 AS
 BEGIN
     SET NOCOUNT ON;
+
+        DECLARE @IdCertificacionExistente INT;
+
+    SELECT @IdCertificacionExistente = Id
+    FROM Certificacion
+    WHERE IdTrabajador = @IdTrabajador
+      AND IdProceso = @IdProceso;
+
+    IF @IdCertificacionExistente IS NOT NULL
+       AND EXISTS
+       (
+            SELECT 1
+            FROM CertificacionAnulacion
+            WHERE IdCertificacion = @IdCertificacionExistente
+              AND Activa = 1
+              AND (
+                    EsPermanente = 1
+                    OR FechaFin IS NULL
+                    OR FechaFin >= CAST(GETDATE() AS DATE)
+                  )
+       )
+    BEGIN
+        SELECT
+            0 AS Id,
+            'Esta certificación se encuentra anulada. No se puede agregar, modificar ni renovar mientras tenga una anulación activa.' AS Nombre;
+        RETURN;
+    END
 
     DECLARE @VigenciaMeses INT;
     DECLARE @FechaVencimiento DATE;
@@ -654,6 +770,365 @@ BEGIN
 	DELETE FROM Certificacion WHERE Id=@Id;
 	SELECT 1 AS [Id], 'Certificación borrada correctamente' AS [Nombre];
 END
+
+-------------------------------------------
+
+-------------------------------------------
+CREATE TABLE ExpedienteTrabajador
+(
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+
+    IdTrabajador INT NOT NULL,
+
+    NombreOriginal VARCHAR(255) NOT NULL,
+    NombreArchivo VARCHAR(255) NOT NULL,
+    Extension VARCHAR(20) NOT NULL,
+    RutaArchivo VARCHAR(500) NOT NULL,
+    TipoArchivo VARCHAR(50) NULL,
+    Comentario VARCHAR(300) NULL,
+
+    Activo BIT NOT NULL DEFAULT 1,
+
+    FechaRegistro DATETIME NOT NULL DEFAULT GETDATE(),
+    FechaModificacion DATETIME NULL,
+
+    CONSTRAINT FK_ExpedienteTrabajador_Trabajador
+        FOREIGN KEY (IdTrabajador) REFERENCES Trabajador(Id)
+);
+GO
+
+CREATE INDEX IX_ExpedienteTrabajador_IdTrabajador
+ON ExpedienteTrabajador(IdTrabajador);
+GO
+
+
+
+CREATE OR ALTER PROCEDURE spConsultarExpedienteTrabajador
+    @IdTrabajador INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        Id,
+        IdTrabajador,
+        NombreOriginal,
+        NombreArchivo,
+        Extension,
+        RutaArchivo,
+        TipoArchivo,
+        Comentario,
+        FechaRegistro,
+        FechaModificacion
+    FROM ExpedienteTrabajador
+    WHERE IdTrabajador = @IdTrabajador
+      AND Activo = 1
+    ORDER BY FechaRegistro DESC;
+END
+GO
+
+
+CREATE OR ALTER PROCEDURE spGuardarExpedienteTrabajador
+    @IdTrabajador INT,
+    @NombreOriginal VARCHAR(255),
+    @NombreArchivo VARCHAR(255),
+    @Extension VARCHAR(20),
+    @RutaArchivo VARCHAR(500),
+    @TipoArchivo VARCHAR(50) = NULL,
+    @Comentario VARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO ExpedienteTrabajador
+    (
+        IdTrabajador,
+        NombreOriginal,
+        NombreArchivo,
+        Extension,
+        RutaArchivo,
+        TipoArchivo,
+        Comentario,
+        Activo,
+        FechaRegistro
+    )
+    VALUES
+    (
+        @IdTrabajador,
+        @NombreOriginal,
+        @NombreArchivo,
+        @Extension,
+        @RutaArchivo,
+        @TipoArchivo,
+        @Comentario,
+        1,
+        GETDATE()
+    );
+
+    SELECT
+        1 AS Id,
+        'Archivo agregado correctamente al expediente.' AS Nombre;
+END
+GO
+
+
+CREATE OR ALTER PROCEDURE spReemplazarExpedienteTrabajador
+    @Id INT,
+    @NombreOriginal VARCHAR(255),
+    @NombreArchivo VARCHAR(255),
+    @Extension VARCHAR(20),
+    @RutaArchivo VARCHAR(500),
+    @TipoArchivo VARCHAR(50) = NULL,
+    @Comentario VARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE ExpedienteTrabajador
+    SET
+        NombreOriginal = @NombreOriginal,
+        NombreArchivo = @NombreArchivo,
+        Extension = @Extension,
+        RutaArchivo = @RutaArchivo,
+        TipoArchivo = @TipoArchivo,
+        Comentario = @Comentario,
+        FechaModificacion = GETDATE()
+    WHERE Id = @Id
+      AND Activo = 1;
+
+    SELECT
+        1 AS Id,
+        'Archivo reemplazado correctamente.' AS Nombre;
+END
+GO
+
+
+
+CREATE OR ALTER PROCEDURE spEliminarExpedienteTrabajador
+    @Id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE ExpedienteTrabajador
+    SET
+        Activo = 0,
+        FechaModificacion = GETDATE()
+    WHERE Id = @Id;
+
+    SELECT
+        1 AS Id,
+        'Archivo eliminado correctamente del expediente.' AS Nombre;
+END
+GO
+
+-------------------------------------------
+
+CREATE TABLE CertificacionAnulacion
+(
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+
+    IdCertificacion INT NOT NULL,
+
+    TipoAnulacion VARCHAR(50) NOT NULL,
+    FechaInicio DATE NOT NULL DEFAULT CAST(GETDATE() AS DATE),
+    FechaFin DATE NULL,
+    EsPermanente BIT NOT NULL DEFAULT 0,
+
+    Comentario VARCHAR(500) NOT NULL,
+
+    Activa BIT NOT NULL DEFAULT 1,
+
+    FechaRegistro DATETIME NOT NULL DEFAULT GETDATE(),
+    FechaModificacion DATETIME NULL,
+
+    CONSTRAINT FK_CertificacionAnulacion_Certificacion
+        FOREIGN KEY (IdCertificacion) REFERENCES Certificacion(Id)
+);
+GO
+
+CREATE INDEX IX_CertificacionAnulacion_IdCertificacion
+ON CertificacionAnulacion(IdCertificacion);
+GO
+
+
+
+
+CREATE OR ALTER PROCEDURE spConsultarAnulacionPorCertificacion
+    @IdCertificacion INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1
+        Id,
+        IdCertificacion,
+        TipoAnulacion,
+        FechaInicio,
+        FechaFin,
+        EsPermanente,
+        Comentario,
+        Activa,
+        FechaRegistro,
+        FechaModificacion
+    FROM CertificacionAnulacion
+    WHERE IdCertificacion = @IdCertificacion
+      AND Activa = 1
+      AND (
+            EsPermanente = 1
+            OR FechaFin IS NULL
+            OR FechaFin >= CAST(GETDATE() AS DATE)
+          )
+    ORDER BY FechaRegistro DESC;
+END
+GO
+
+
+
+CREATE OR ALTER PROCEDURE spGuardarCertificacionAnulacion
+    @IdCertificacion INT,
+    @TipoAnulacion VARCHAR(50),
+    @FechaInicio DATE,
+    @FechaFin DATE = NULL,
+    @EsPermanente BIT,
+    @Comentario VARCHAR(500)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM Certificacion WHERE Id = @IdCertificacion)
+    BEGIN
+        SELECT 0 AS Id, 'No se encontró la certificación seleccionada.' AS Nombre;
+        RETURN;
+    END
+
+    IF @EsPermanente = 0 AND @FechaFin IS NULL
+    BEGIN
+        SELECT 0 AS Id, 'Debe seleccionar una fecha fin para una anulación temporal.' AS Nombre;
+        RETURN;
+    END
+
+    IF @EsPermanente = 0 AND @FechaFin < @FechaInicio
+    BEGIN
+        SELECT 0 AS Id, 'La fecha fin no puede ser menor que la fecha inicio.' AS Nombre;
+        RETURN;
+    END
+
+    IF LTRIM(RTRIM(ISNULL(@Comentario, ''))) = ''
+    BEGIN
+        SELECT 0 AS Id, 'Debe escribir un comentario de la anulación.' AS Nombre;
+        RETURN;
+    END
+
+    UPDATE CertificacionAnulacion
+    SET
+        Activa = 0,
+        FechaModificacion = GETDATE()
+    WHERE IdCertificacion = @IdCertificacion
+      AND Activa = 1;
+
+    INSERT INTO CertificacionAnulacion
+    (
+        IdCertificacion,
+        TipoAnulacion,
+        FechaInicio,
+        FechaFin,
+        EsPermanente,
+        Comentario,
+        Activa,
+        FechaRegistro
+    )
+    VALUES
+    (
+        @IdCertificacion,
+        @TipoAnulacion,
+        @FechaInicio,
+        CASE WHEN @EsPermanente = 1 THEN NULL ELSE @FechaFin END,
+        @EsPermanente,
+        @Comentario,
+        1,
+        GETDATE()
+    );
+
+    SELECT 1 AS Id, 'Certificación anulada correctamente.' AS Nombre;
+END
+GO
+
+
+
+CREATE OR ALTER PROCEDURE spModificarCertificacionAnulacion
+    @Id INT,
+    @TipoAnulacion VARCHAR(50),
+    @FechaInicio DATE,
+    @FechaFin DATE = NULL,
+    @EsPermanente BIT,
+    @Comentario VARCHAR(500)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM CertificacionAnulacion WHERE Id = @Id AND Activa = 1)
+    BEGIN
+        SELECT 0 AS Id, 'No se encontró una anulación activa para modificar.' AS Nombre;
+        RETURN;
+    END
+
+    IF @EsPermanente = 0 AND @FechaFin IS NULL
+    BEGIN
+        SELECT 0 AS Id, 'Debe seleccionar una fecha fin para una anulación temporal.' AS Nombre;
+        RETURN;
+    END
+
+    IF @EsPermanente = 0 AND @FechaFin < @FechaInicio
+    BEGIN
+        SELECT 0 AS Id, 'La fecha fin no puede ser menor que la fecha inicio.' AS Nombre;
+        RETURN;
+    END
+
+    IF LTRIM(RTRIM(ISNULL(@Comentario, ''))) = ''
+    BEGIN
+        SELECT 0 AS Id, 'Debe escribir un comentario de la anulación.' AS Nombre;
+        RETURN;
+    END
+
+    UPDATE CertificacionAnulacion
+    SET
+        TipoAnulacion = @TipoAnulacion,
+        FechaInicio = @FechaInicio,
+        FechaFin = CASE WHEN @EsPermanente = 1 THEN NULL ELSE @FechaFin END,
+        EsPermanente = @EsPermanente,
+        Comentario = @Comentario,
+        FechaModificacion = GETDATE()
+    WHERE Id = @Id
+      AND Activa = 1;
+
+    SELECT 1 AS Id, 'Anulación modificada correctamente.' AS Nombre;
+END
+GO
+
+
+CREATE OR ALTER PROCEDURE spEliminarCertificacionAnulacion
+    @Id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM CertificacionAnulacion WHERE Id = @Id AND Activa = 1)
+    BEGIN
+        SELECT 0 AS Id, 'No se encontró una anulación activa para eliminar.' AS Nombre;
+        RETURN;
+    END
+
+    UPDATE CertificacionAnulacion
+    SET
+        Activa = 0,
+        FechaModificacion = GETDATE()
+    WHERE Id = @Id;
+
+    SELECT 1 AS Id, 'Anulación eliminada correctamente.' AS Nombre;
+END
+GO
+
 
 -------------------------------------------
 
