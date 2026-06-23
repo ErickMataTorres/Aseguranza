@@ -41,16 +41,61 @@ namespace Aseguranza.Ventanas
 
             btnIniciarCamara.Text = "Iniciar cámara";
             btnCapturar.Enabled = false;
+
+            ConfigurarToolTips();
         }
+
+
+        private void ConfigurarToolTips()
+        {
+            ttAyuda.SetToolTip(btnAdjuntar, "Adjuntar un archivo al expediente del trabajador.");
+            ttAyuda.SetToolTip(btnAbrir, "Abrir el archivo seleccionado.");
+            ttAyuda.SetToolTip(btnReemplazar, "Reemplazar el archivo seleccionado por otro.");
+            ttAyuda.SetToolTip(btnEliminar, "Eliminar el archivo seleccionado del expediente.");
+            ttAyuda.SetToolTip(btnRegresar, "Cerrar esta ventana.");
+
+            ttAyuda.SetToolTip(btnIniciarCamara, "Iniciar o detener la cámara.");
+            ttAyuda.SetToolTip(btnCapturar, "Capturar una foto desde la cámara y guardarla en el expediente.");
+            ttAyuda.SetToolTip(btnSeleccionar, "Seleccionar una imagen desde la computadora y guardarla en el expediente.");
+
+            ttAyuda.SetToolTip(txtComentario, "Comentario que se guardará junto con el archivo adjuntado, reemplazado o capturado.");
+            ttAyuda.SetToolTip(
+    dgvExpediente,
+    "Doble clic para abrir un archivo. Clic derecho para más opciones. Los archivos en rojo no se encontraron en la carpeta guardada."
+);
+            ttAyuda.SetToolTip(pbCamara, "Vista previa de imágenes o vista de la cámara.");
+        }
+
 
         private void ConfigurarGrid()
         {
             dgvExpediente.AllowUserToAddRows = false;
             dgvExpediente.AllowUserToDeleteRows = false;
+            dgvExpediente.AllowUserToResizeRows = false;
             dgvExpediente.ReadOnly = true;
             dgvExpediente.MultiSelect = false;
             dgvExpediente.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvExpediente.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvExpediente.RowHeadersVisible = false;
+
+            dgvExpediente.BackgroundColor = Color.WhiteSmoke;
+            dgvExpediente.BorderStyle = BorderStyle.FixedSingle;
+            dgvExpediente.GridColor = Color.LightGray;
+
+            dgvExpediente.EnableHeadersVisualStyles = false;
+            dgvExpediente.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 70, 140);
+            dgvExpediente.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgvExpediente.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            dgvExpediente.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgvExpediente.ColumnHeadersHeight = 32;
+
+            dgvExpediente.DefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            dgvExpediente.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 235, 250);
+            dgvExpediente.DefaultCellStyle.SelectionForeColor = Color.Black;
+
+            dgvExpediente.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
+
+            dgvExpediente.RowTemplate.Height = 28;
         }
 
         private void CargarExpediente()
@@ -58,36 +103,121 @@ namespace Aseguranza.Ventanas
             DataTable dt = Clases.ExpedienteTrabajador.ConsultarExpedienteTrabajador(idTrabajador);
             dgvExpediente.DataSource = dt;
 
-            if (dgvExpediente.Columns.Contains("Id"))
-                dgvExpediente.Columns["Id"].Visible = false;
+            OcultarColumnasExpediente();
+            ConfigurarColumnasExpediente();
 
-            if (dgvExpediente.Columns.Contains("IdTrabajador"))
-                dgvExpediente.Columns["IdTrabajador"].Visible = false;
+            PintarArchivosFaltantes();
 
-            if (dgvExpediente.Columns.Contains("RutaArchivo"))
-                dgvExpediente.Columns["RutaArchivo"].HeaderText = "Ubicación";
+            ActualizarResumenExpediente();
+            ActualizarEstadoBotones();
+            ActualizarArchivoSeleccionado();
+        }
+
+        private void ActualizarArchivoSeleccionado()
+        {
+            if (dgvExpediente.CurrentRow == null || dgvExpediente.Rows.Count == 0)
+            {
+                lblArchivoSeleccionado.Text = "Archivo seleccionado: ninguno";
+                return;
+            }
+
+            string nombreArchivo = "sin nombre";
 
             if (dgvExpediente.Columns.Contains("NombreOriginal"))
-                dgvExpediente.Columns["NombreOriginal"].HeaderText = "Nombre original";
+            {
+                nombreArchivo = dgvExpediente.CurrentRow.Cells["NombreOriginal"].Value?.ToString() ?? "sin nombre";
+            }
 
-            if (dgvExpediente.Columns.Contains("NombreArchivo"))
-                dgvExpediente.Columns["NombreArchivo"].HeaderText = "Archivo guardado";
+            lblArchivoSeleccionado.Text = $"Archivo seleccionado: {nombreArchivo}";
+        }
+
+        private void ActualizarResumenExpediente()
+        {
+            int totalArchivos = dgvExpediente.Rows.Count;
+
+            lblResumenExpediente.Text = totalArchivos == 1
+                ? "Archivos: 1 archivo registrado"
+                : $"Archivos: {totalArchivos} archivos registrados";
+        }
+
+        private void OcultarColumnasExpediente()
+        {
+            string[] columnasOcultas =
+            {
+        "Id",
+        "IdTrabajador",
+        "NombreArchivo"
+    };
+
+            foreach (string columna in columnasOcultas)
+            {
+                if (dgvExpediente.Columns.Contains(columna))
+                    dgvExpediente.Columns[columna].Visible = false;
+            }
+        }
+
+
+        private void ConfigurarColumnasExpediente()
+        {
+            if (dgvExpediente.Columns.Contains("NombreOriginal"))
+            {
+                dgvExpediente.Columns["NombreOriginal"].HeaderText = "Archivo";
+                dgvExpediente.Columns["NombreOriginal"].FillWeight = 180;
+            }
 
             if (dgvExpediente.Columns.Contains("Extension"))
-                dgvExpediente.Columns["Extension"].HeaderText = "Extensión";
+            {
+                dgvExpediente.Columns["Extension"].HeaderText = "Ext.";
+                dgvExpediente.Columns["Extension"].FillWeight = 45;
+                dgvExpediente.Columns["Extension"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
+
+            if (dgvExpediente.Columns.Contains("RutaArchivo"))
+            {
+                dgvExpediente.Columns["RutaArchivo"].HeaderText = "Ubicación";
+                dgvExpediente.Columns["RutaArchivo"].FillWeight = 260;
+            }
 
             if (dgvExpediente.Columns.Contains("TipoArchivo"))
+            {
                 dgvExpediente.Columns["TipoArchivo"].HeaderText = "Tipo";
+                dgvExpediente.Columns["TipoArchivo"].FillWeight = 80;
+                dgvExpediente.Columns["TipoArchivo"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
 
             if (dgvExpediente.Columns.Contains("Comentario"))
+            {
                 dgvExpediente.Columns["Comentario"].HeaderText = "Comentario";
+                dgvExpediente.Columns["Comentario"].FillWeight = 180;
+            }
 
             if (dgvExpediente.Columns.Contains("FechaRegistro"))
+            {
                 dgvExpediente.Columns["FechaRegistro"].HeaderText = "Fecha registro";
+                dgvExpediente.Columns["FechaRegistro"].FillWeight = 100;
+                dgvExpediente.Columns["FechaRegistro"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm";
+                dgvExpediente.Columns["FechaRegistro"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
 
             if (dgvExpediente.Columns.Contains("FechaModificacion"))
+            {
                 dgvExpediente.Columns["FechaModificacion"].HeaderText = "Fecha modificación";
+                dgvExpediente.Columns["FechaModificacion"].FillWeight = 100;
+                dgvExpediente.Columns["FechaModificacion"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm";
+                dgvExpediente.Columns["FechaModificacion"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
         }
+
+        private void ActualizarEstadoBotones()
+        {
+            bool hayArchivoSeleccionado = dgvExpediente.CurrentRow != null
+                && dgvExpediente.Rows.Count > 0;
+
+            btnAbrir.Enabled = hayArchivoSeleccionado;
+            btnReemplazar.Enabled = hayArchivoSeleccionado;
+            btnEliminar.Enabled = hayArchivoSeleccionado;
+        }
+
 
         private void CargarCamaras()
         {
@@ -225,6 +355,8 @@ namespace Aseguranza.Ventanas
 
                 pbCamara.Image?.Dispose();
                 pbCamara.Image = null;
+
+                MostrarVistaPreviaSeleccionada();
             }
             catch
             {
@@ -321,7 +453,7 @@ namespace Aseguranza.Ventanas
             if (!File.Exists(rutaArchivo))
             {
                 MessageBox.Show(
-                    "El archivo no existe en la ubicación guardada.",
+                    $"El archivo no existe en la ubicación guardada.\n\nRuta:\n{rutaArchivo}\n\nEs posible que el archivo haya sido eliminado, movido o que no tenga acceso a la carpeta.",
                     "Archivo no encontrado",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -357,6 +489,24 @@ namespace Aseguranza.Ventanas
                 return;
 
             string? rutaAnterior = ObtenerRutaArchivoSeleccionado();
+
+            string nombreArchivoActual = "archivo seleccionado";
+
+            if (dgvExpediente.CurrentRow != null && dgvExpediente.Columns.Contains("NombreOriginal"))
+            {
+                nombreArchivoActual = dgvExpediente.CurrentRow.Cells["NombreOriginal"].Value?.ToString() ?? "archivo seleccionado";
+            }
+
+            DialogResult confirmacion = MessageBox.Show(
+                $"Va a reemplazar el siguiente archivo:\n\n{nombreArchivoActual}\n\n¿Desea continuar?",
+                "Confirmar reemplazo",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirmacion != DialogResult.Yes)
+                return;
+
+
 
             OpenFileDialog ofd = new OpenFileDialog
             {
@@ -456,8 +606,15 @@ namespace Aseguranza.Ventanas
 
             string? rutaArchivo = ObtenerRutaArchivoSeleccionado();
 
+            string nombreArchivo = "archivo seleccionado";
+
+            if (dgvExpediente.CurrentRow != null && dgvExpediente.Columns.Contains("NombreOriginal"))
+            {
+                nombreArchivo = dgvExpediente.CurrentRow.Cells["NombreOriginal"].Value?.ToString() ?? "archivo seleccionado";
+            }
+
             DialogResult confirmacion = MessageBox.Show(
-                "¿Seguro que desea eliminar este archivo del expediente?",
+                $"¿Seguro que desea eliminar este archivo del expediente?\n\nArchivo:\n{nombreArchivo}",
                 "Confirmar eliminación",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
@@ -741,5 +898,245 @@ namespace Aseguranza.Ventanas
                 pbCamara.Image = null;
             }
         }
+
+        private void dgvExpediente_SelectionChanged(object sender, EventArgs e)
+        {
+            ActualizarEstadoBotones();
+            ActualizarArchivoSeleccionado();
+            MostrarVistaPreviaSeleccionada();
+        }
+
+
+        private void MostrarVistaPreviaSeleccionada()
+        {
+            if (camaraActiva)
+                return;
+
+            string? rutaArchivo = ObtenerRutaArchivoSeleccionadoSinMensaje();
+
+            if (string.IsNullOrWhiteSpace(rutaArchivo))
+            {
+                LimpiarVistaPrevia();
+                return;
+            }
+
+            if (!File.Exists(rutaArchivo))
+            {
+                LimpiarVistaPrevia();
+                return;
+            }
+
+            string extension = Path.GetExtension(rutaArchivo).ToLower();
+
+            if (!EsImagen(extension))
+            {
+                LimpiarVistaPrevia();
+                return;
+            }
+
+            try
+            {
+                using FileStream fs = new FileStream(rutaArchivo, FileMode.Open, FileAccess.Read);
+                using Image imagenTemporal = Image.FromStream(fs);
+                Bitmap imagenClonada = new Bitmap(imagenTemporal);
+
+                pbCamara.Image?.Dispose();
+                pbCamara.Image = imagenClonada;
+            }
+            catch
+            {
+                LimpiarVistaPrevia();
+            }
+        }
+
+        private void LimpiarVistaPrevia()
+        {
+            if (camaraActiva)
+                return;
+
+            pbCamara.Image?.Dispose();
+            pbCamara.Image = null;
+        }
+
+
+        private string? ObtenerRutaArchivoSeleccionadoSinMensaje()
+        {
+            if (dgvExpediente.CurrentRow == null)
+                return null;
+
+            if (!dgvExpediente.Columns.Contains("RutaArchivo"))
+                return null;
+
+            object valor = dgvExpediente.CurrentRow.Cells["RutaArchivo"].Value;
+
+            if (valor == null || valor == DBNull.Value)
+                return null;
+
+            return valor.ToString();
+        }
+
+
+        private bool EsImagen(string extension)
+        {
+            extension = extension.ToLower().Trim();
+
+            return extension == ".jpg"
+                || extension == ".jpeg"
+                || extension == ".png"
+                || extension == ".bmp";
+        }
+
+        private void dgvExpediente_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0)
+                return;
+
+            btnAbrir_Click(sender, e);
+        }
+
+        private void dgvExpediente_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            DataGridView.HitTestInfo hit = dgvExpediente.HitTest(e.X, e.Y);
+
+            if (hit.RowIndex < 0)
+                return;
+
+            dgvExpediente.ClearSelection();
+
+            DataGridViewRow fila = dgvExpediente.Rows[hit.RowIndex];
+            fila.Selected = true;
+
+            DataGridViewCell? celdaVisible = null;
+
+            foreach (DataGridViewCell celda in fila.Cells)
+            {
+                if (celda.Visible)
+                {
+                    celdaVisible = celda;
+                    break;
+                }
+            }
+
+            if (celdaVisible != null)
+            {
+                dgvExpediente.CurrentCell = celdaVisible;
+            }
+        }
+
+        private void cmsExpediente_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            bool hayArchivoSeleccionado = dgvExpediente.CurrentRow != null
+    && dgvExpediente.Rows.Count > 0;
+
+            tsmAbrir.Enabled = hayArchivoSeleccionado;
+            tsmAbrirUbicacion.Enabled = hayArchivoSeleccionado;
+            tsmReemplazar.Enabled = hayArchivoSeleccionado;
+            tsmEliminar.Enabled = hayArchivoSeleccionado;
+            tsmCopiarRuta.Enabled = hayArchivoSeleccionado;
+        }
+
+        private void tsmAbrir_Click(object sender, EventArgs e)
+        {
+            btnAbrir_Click(sender, e);
+        }
+
+        private void tsmReemplazar_Click(object sender, EventArgs e)
+        {
+            btnReemplazar_Click(sender, e);
+        }
+
+        private void tsmEliminar_Click(object sender, EventArgs e)
+        {
+            btnEliminar_Click(sender, e);
+        }
+
+        private void tsmCopiarRuta_Click(object sender, EventArgs e)
+        {
+            string? rutaArchivo = ObtenerRutaArchivoSeleccionadoSinMensaje();
+
+            if (string.IsNullOrWhiteSpace(rutaArchivo))
+                return;
+
+            Clipboard.SetText(rutaArchivo);
+
+            MessageBox.Show(
+                "Ruta copiada al portapapeles.",
+                "Copiar ruta",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        private void tsmAbrirUbicacion_Click(object sender, EventArgs e)
+        {
+            string? rutaArchivo = ObtenerRutaArchivoSeleccionadoSinMensaje();
+
+            if (string.IsNullOrWhiteSpace(rutaArchivo))
+                return;
+
+            if (!File.Exists(rutaArchivo))
+            {
+                MessageBox.Show(
+                    "El archivo no existe en la ubicación guardada.",
+                    "Archivo no encontrado",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{rutaArchivo}\"",
+                    UseShellExecute = true
+                };
+
+                Process.Start(psi);
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(
+                    error.Message,
+                    "Error al abrir ubicación",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        private void PintarArchivosFaltantes()
+        {
+            if (!dgvExpediente.Columns.Contains("RutaArchivo"))
+                return;
+
+            foreach (DataGridViewRow row in dgvExpediente.Rows)
+            {
+                if (row.IsNewRow)
+                    continue;
+
+                object valorRuta = row.Cells["RutaArchivo"].Value;
+
+                if (valorRuta == null || valorRuta == DBNull.Value)
+                    continue;
+
+                string rutaArchivo = valorRuta.ToString() ?? "";
+
+                if (string.IsNullOrWhiteSpace(rutaArchivo))
+                    continue;
+
+                if (!File.Exists(rutaArchivo))
+                {
+                    row.DefaultCellStyle.BackColor = Color.MistyRose;
+                    row.DefaultCellStyle.ForeColor = Color.DarkRed;
+                    row.DefaultCellStyle.SelectionBackColor = Color.LightCoral;
+                    row.DefaultCellStyle.SelectionForeColor = Color.Black;
+                }
+            }
+        }
+
     }
 }

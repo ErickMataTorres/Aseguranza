@@ -6,7 +6,7 @@ namespace Aseguranza.Clases
 {
     public static class RutasArchivos
     {
-        public static string CarpetaRaiz => @"C:\Aseguranza";
+        public static string CarpetaRaiz => ConfiguracionSistema.ObtenerRutaArchivos();
 
         public static string ObtenerCarpetaTrabajador(string noReloj)
         {
@@ -70,5 +70,31 @@ namespace Aseguranza.Clases
 
             return string.IsNullOrWhiteSpace(limpio) ? "SIN_NUMERO_RELOJ" : limpio;
         }
+
+        public static string ObtenerCarpetaTrabajadoresEliminados()
+        {
+            return Path.Combine(CarpetaRaiz, "Trabajadores_Eliminados");
+        }
+
+        public static string MoverCarpetaTrabajadorAEliminados(string noReloj)
+        {
+            string carpetaOrigen = ObtenerCarpetaTrabajador(noReloj);
+
+            if (!Directory.Exists(carpetaOrigen))
+                return "";
+
+            string carpetaEliminados = ObtenerCarpetaTrabajadoresEliminados();
+
+            if (!Directory.Exists(carpetaEliminados))
+                Directory.CreateDirectory(carpetaEliminados);
+
+            string fecha = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string carpetaDestino = Path.Combine(carpetaEliminados, $"{noReloj}_{fecha}");
+
+            Directory.Move(carpetaOrigen, carpetaDestino);
+
+            return carpetaDestino;
+        }
+
     }
 }

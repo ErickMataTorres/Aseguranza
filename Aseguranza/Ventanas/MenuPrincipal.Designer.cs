@@ -91,7 +91,7 @@
             // 
             trabajadorToolStripMenuItem.Name = "trabajadorToolStripMenuItem";
             trabajadorToolStripMenuItem.Size = new Size(180, 22);
-            trabajadorToolStripMenuItem.Text = "Trabajador";
+            trabajadorToolStripMenuItem.Text = "Trabajadores";
             trabajadorToolStripMenuItem.Click += trabajadorToolStripMenuItem_Click;
             // 
             // certificadorToolStripMenuItem
@@ -151,10 +151,10 @@
         private ToolStripMenuItem localidadToolStripMenuItem;
         private ToolStripMenuItem plantaToolStripMenuItem;
         private ToolStripMenuItem lineaToolStripMenuItem;
-        private ToolStripMenuItem trabajadorToolStripMenuItem;
         private ToolStripMenuItem certificacionToolStripMenuItem;
         private ToolStripMenuItem procesoToolStripMenuItem;
         private ToolStripMenuItem certificadorToolStripMenuItem;
         private ToolStripMenuItem verificadorToolStripMenuItem;
+        private ToolStripMenuItem trabajadorToolStripMenuItem;
     }
 }

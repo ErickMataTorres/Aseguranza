@@ -1,4 +1,5 @@
 ﻿using Aseguranza.Clases;
+using System.Drawing;
 using System;
 using System.Windows.Forms;
 
@@ -12,6 +13,7 @@ namespace Aseguranza.Ventanas
         private readonly string proceso;
 
         private CertificacionAnulacion? anulacionActual;
+        private bool tieneAnulacionActivaActual = false;
 
         public CertificacionAnulacionVentana(
             int idCertificacion,
@@ -35,6 +37,21 @@ namespace Aseguranza.Ventanas
             CargarTiposAnulacion();
             ConfigurarEstadoInicial();
             CargarAnulacionActual();
+            ConfigurarToolTips();
+
+            ActualizarResumenAnulacion();
+        }
+
+        private void ConfigurarToolTips()
+        {
+            ttAyuda.SetToolTip(cbTipoAnulacion, "Seleccione cuánto tiempo estará anulada la certificación.");
+            ttAyuda.SetToolTip(dtpFechaInicio, "Fecha desde la cual inicia la anulación.");
+            ttAyuda.SetToolTip(dtpFechaFin, "Fecha hasta la cual estará anulada. Se desactiva si la anulación es permanente.");
+            ttAyuda.SetToolTip(txtComentario, "Explique claramente el motivo de la anulación.");
+            ttAyuda.SetToolTip(btnGuardar, "Guardar o modificar la anulación.");
+            ttAyuda.SetToolTip(btnEliminar, "Eliminar la anulación activa de esta certificación.");
+            ttAyuda.SetToolTip(btnRegresar, "Cerrar esta ventana.");
+            ttAyuda.SetToolTip(lblEstadoAnulacion, "Indica si esta certificación tiene una anulación activa.");
         }
 
         private void CargarTiposAnulacion()
@@ -60,8 +77,10 @@ namespace Aseguranza.Ventanas
             dtpFechaInicio.Enabled = true;
             dtpFechaFin.Enabled = false;
 
-            btnGuardar.Text = "Guardar";
+            btnGuardar.Text = "Guardar anulación";
             btnEliminar.Enabled = false;
+
+            MostrarEstadoAnulacion(false);
         }
 
         private void CargarAnulacionActual()
@@ -71,9 +90,14 @@ namespace Aseguranza.Ventanas
                 anulacionActual = CertificacionAnulacion.ConsultarAnulacionPorCertificacion(idCertificacion);
 
                 if (anulacionActual == null)
+                {
+                    MostrarEstadoAnulacion(false);
                     return;
+                }
 
-                btnGuardar.Text = "Modificar";
+                MostrarEstadoAnulacion(true);
+
+                btnGuardar.Text = "Modificar anulación";
                 btnEliminar.Enabled = true;
 
                 txtComentario.Text = anulacionActual.Comentario ?? "";
@@ -94,7 +118,7 @@ namespace Aseguranza.Ventanas
                         dtpFechaFin.Value = anulacionActual.FechaFin.Value;
                     }
 
-                    dtpFechaFin.Enabled = (cbTipoAnulacion.Text == "Hasta fecha");
+                    dtpFechaFin.Enabled = cbTipoAnulacion.Text == "Hasta fecha";
                 }
             }
             catch (Exception error)
@@ -110,11 +134,13 @@ namespace Aseguranza.Ventanas
         private void cmbTipoAnulacion_SelectedIndexChanged(object sender, EventArgs e)
         {
             ActualizarFechaFinSegunTipo();
+            ActualizarResumenAnulacion();
         }
 
         private void dtpFechaInicio_ValueChanged(object sender, EventArgs e)
         {
             ActualizarFechaFinSegunTipo();
+            ActualizarResumenAnulacion();
         }
 
         private void ActualizarFechaFinSegunTipo()
@@ -200,9 +226,13 @@ namespace Aseguranza.Ventanas
 
             if (respuesta.Id == 1)
             {
+                string accion = anulacionActual == null
+                    ? "guardó"
+                    : "modificó";
+
                 MessageBox.Show(
-                    respuesta.Nombre,
-                    "Resultado",
+                    $"La anulación se {accion} correctamente.\n\nTrabajador:\n{noReloj} - {nombreTrabajador}\n\nProceso:\n{proceso}",
+                    "Anulación registrada",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
 
@@ -273,8 +303,8 @@ namespace Aseguranza.Ventanas
             }
 
             DialogResult confirmacion = MessageBox.Show(
-                "¿Seguro que desea eliminar la anulación de esta certificación?",
-                "Confirmar eliminación",
+                $"¿Seguro que desea eliminar la anulación activa de esta certificación?\n\nTrabajador:\n{noReloj} - {nombreTrabajador}\n\nProceso:\n{proceso}\n\nEsta acción permitirá volver a modificar o renovar la certificación.",
+                "Confirmar eliminación de anulación",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
@@ -286,8 +316,8 @@ namespace Aseguranza.Ventanas
             if (respuesta.Id == 1)
             {
                 MessageBox.Show(
-                    respuesta.Nombre,
-                    "Resultado",
+                    $"La anulación se eliminó correctamente.\n\nTrabajador:\n{noReloj} - {nombreTrabajador}\n\nProceso:\n{proceso}",
+                    "Anulación eliminada",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
 
@@ -307,6 +337,64 @@ namespace Aseguranza.Ventanas
         private void btnRegresar_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void MostrarEstadoAnulacion(bool tieneAnulacionActiva)
+        {
+            tieneAnulacionActivaActual = tieneAnulacionActiva;
+
+            lblEstadoAnulacion.Enabled = true;
+            lblEstadoAnulacion.AutoSize = false;
+            lblEstadoAnulacion.TextAlign = ContentAlignment.MiddleCenter;
+            lblEstadoAnulacion.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+
+            if (tieneAnulacionActiva)
+            {
+                lblEstadoAnulacion.Text = "Estado: Anulación activa";
+                lblEstadoAnulacion.BackColor = Color.FromArgb(228, 209, 255);
+                lblEstadoAnulacion.ForeColor = Color.FromArgb(74, 20, 140);
+            }
+            else
+            {
+                lblEstadoAnulacion.Text = "Estado: Sin anulación activa";
+                lblEstadoAnulacion.BackColor = Color.FromArgb(220, 245, 225);
+                lblEstadoAnulacion.ForeColor = Color.FromArgb(0, 120, 40);
+            }
+
+            lblEstadoAnulacion.Refresh();
+        }
+
+        private void ActualizarResumenAnulacion()
+        {
+            if (cbTipoAnulacion.SelectedItem == null)
+            {
+                lblResumenAnulacion.Text = "Resumen: Sin datos capturados";
+                return;
+            }
+
+            string tipo = cbTipoAnulacion.Text;
+            string fechaInicio = dtpFechaInicio.Value.ToString("dd/MM/yyyy");
+            string fechaFin = tipo == "Permanente"
+                ? "Sin fecha fin"
+                : dtpFechaFin.Value.ToString("dd/MM/yyyy");
+
+            string comentario = txtComentario.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(comentario))
+                comentario = "Sin comentario capturado";
+
+            lblResumenAnulacion.Text =
+                $"Resumen: {tipo} | Inicio: {fechaInicio} | Fin: {fechaFin} | Motivo: {comentario}";
+        }
+
+        private void dtpFechaFin_ValueChanged(object sender, EventArgs e)
+        {
+            ActualizarResumenAnulacion();
+        }
+
+        private void txtComentario_TextChanged(object sender, EventArgs e)
+        {
+            ActualizarResumenAnulacion();
         }
     }
 }

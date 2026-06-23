@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             pictureBox1 = new PictureBox();
             lblMostrarLinea = new Label();
             lblMostrarPlanta = new Label();
@@ -42,6 +43,10 @@
             lblNoReloj = new Label();
             lblMostrarNoReloj = new Label();
             dgvCertificaciones = new DataGridView();
+            cmsCertificaciones = new ContextMenuStrip(components);
+            tsmModificarRenovar = new ToolStripMenuItem();
+            tsmAnularVer = new ToolStripMenuItem();
+            tsmBorrarCertificacion = new ToolStripMenuItem();
             btnRegresar = new Button();
             btnBorrar = new Button();
             btnModificar = new Button();
@@ -50,12 +55,27 @@
             lblBuscar = new Label();
             pbContec = new PictureBox();
             lblVerificador = new Label();
-            btnImprimir = new Button();
+            btnCredencial = new Button();
             btnExpediente = new Button();
             btnAnular = new Button();
+            lblInfoAnulacion = new Label();
+            lblResumenCertificaciones = new Label();
+            pnlLeyendaCertificaciones = new Panel();
+            lblTextoAnulada = new Label();
+            lblColorAnulada = new Label();
+            lblTextoVencida = new Label();
+            lblColorVencida = new Label();
+            lblTextoPorVencer = new Label();
+            lblColorPorVencer = new Label();
+            lblTextoVigente = new Label();
+            lblColorVigente = new Label();
+            ttAyuda = new ToolTip(components);
+            btnLimpiarBusqueda = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvCertificaciones).BeginInit();
+            cmsCertificaciones.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pbContec).BeginInit();
+            pnlLeyendaCertificaciones.SuspendLayout();
             SuspendLayout();
             // 
             // pictureBox1
@@ -193,19 +213,49 @@
             dgvCertificaciones.AllowUserToAddRows = false;
             dgvCertificaciones.AllowUserToDeleteRows = false;
             dgvCertificaciones.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvCertificaciones.Location = new Point(11, 265);
+            dgvCertificaciones.ContextMenuStrip = cmsCertificaciones;
+            dgvCertificaciones.Location = new Point(4, 287);
             dgvCertificaciones.Name = "dgvCertificaciones";
             dgvCertificaciones.ReadOnly = true;
             dgvCertificaciones.SelectionMode = DataGridViewSelectionMode.CellSelect;
-            dgvCertificaciones.Size = new Size(1022, 236);
+            dgvCertificaciones.Size = new Size(1029, 214);
             dgvCertificaciones.TabIndex = 47;
             dgvCertificaciones.TabStop = false;
             dgvCertificaciones.CellDoubleClick += dgvCertificaciones_CellDoubleClick;
-            dgvCertificaciones.DataBindingComplete += dgvCertificaciones_DataBindingComplete_1;
+            dgvCertificaciones.CellMouseDown += dgvCertificaciones_CellMouseDown;
+            dgvCertificaciones.SelectionChanged += dgvCertificaciones_SelectionChanged;
+            // 
+            // cmsCertificaciones
+            // 
+            cmsCertificaciones.Items.AddRange(new ToolStripItem[] { tsmModificarRenovar, tsmAnularVer, tsmBorrarCertificacion });
+            cmsCertificaciones.Name = "cmsCertificaciones";
+            cmsCertificaciones.Size = new Size(192, 70);
+            cmsCertificaciones.Opening += cmsCertificaciones_Opening;
+            // 
+            // tsmModificarRenovar
+            // 
+            tsmModificarRenovar.Name = "tsmModificarRenovar";
+            tsmModificarRenovar.Size = new Size(191, 22);
+            tsmModificarRenovar.Text = "Modificar / Renovar";
+            tsmModificarRenovar.Click += tsmModificarRenovar_Click;
+            // 
+            // tsmAnularVer
+            // 
+            tsmAnularVer.Name = "tsmAnularVer";
+            tsmAnularVer.Size = new Size(191, 22);
+            tsmAnularVer.Text = "Anular / Ver anulación";
+            tsmAnularVer.Click += tsmAnularVer_Click;
+            // 
+            // tsmBorrarCertificacion
+            // 
+            tsmBorrarCertificacion.Name = "tsmBorrarCertificacion";
+            tsmBorrarCertificacion.Size = new Size(191, 22);
+            tsmBorrarCertificacion.Text = "Borrar certificación";
+            tsmBorrarCertificacion.Click += tsmBorrarCertificacion_Click;
             // 
             // btnRegresar
             // 
-            btnRegresar.Location = new Point(945, 507);
+            btnRegresar.Location = new Point(945, 542);
             btnRegresar.Name = "btnRegresar";
             btnRegresar.Size = new Size(88, 39);
             btnRegresar.TabIndex = 5;
@@ -215,7 +265,7 @@
             // 
             // btnBorrar
             // 
-            btnBorrar.Location = new Point(200, 507);
+            btnBorrar.Location = new Point(192, 542);
             btnBorrar.Name = "btnBorrar";
             btnBorrar.Size = new Size(88, 39);
             btnBorrar.TabIndex = 3;
@@ -225,7 +275,7 @@
             // 
             // btnModificar
             // 
-            btnModificar.Location = new Point(106, 507);
+            btnModificar.Location = new Point(98, 542);
             btnModificar.Name = "btnModificar";
             btnModificar.Size = new Size(88, 39);
             btnModificar.TabIndex = 2;
@@ -235,7 +285,7 @@
             // 
             // btnAgregar
             // 
-            btnAgregar.Location = new Point(12, 507);
+            btnAgregar.Location = new Point(4, 542);
             btnAgregar.Name = "btnAgregar";
             btnAgregar.Size = new Size(88, 39);
             btnAgregar.TabIndex = 1;
@@ -245,16 +295,17 @@
             // 
             // txtBuscar
             // 
-            txtBuscar.Location = new Point(65, 238);
+            txtBuscar.Location = new Point(59, 260);
             txtBuscar.Name = "txtBuscar";
-            txtBuscar.Size = new Size(968, 21);
+            txtBuscar.Size = new Size(880, 21);
             txtBuscar.TabIndex = 0;
+            txtBuscar.KeyDown += txtBuscar_KeyDown;
             txtBuscar.KeyPress += txtBuscar_KeyPress;
             // 
             // lblBuscar
             // 
             lblBuscar.AutoSize = true;
-            lblBuscar.Location = new Point(10, 241);
+            lblBuscar.Location = new Point(4, 263);
             lblBuscar.Name = "lblBuscar";
             lblBuscar.Size = new Size(49, 15);
             lblBuscar.TabIndex = 53;
@@ -283,19 +334,19 @@
             lblVerificador.TabIndex = 55;
             lblVerificador.Text = "Verificador de certificaciones";
             // 
-            // btnImprimir
+            // btnCredencial
             // 
-            btnImprimir.Location = new Point(599, 12);
-            btnImprimir.Name = "btnImprimir";
-            btnImprimir.Size = new Size(88, 39);
-            btnImprimir.TabIndex = 56;
-            btnImprimir.Text = "Imprimir";
-            btnImprimir.UseVisualStyleBackColor = true;
-            btnImprimir.Click += button1_Click;
+            btnCredencial.Location = new Point(599, 12);
+            btnCredencial.Name = "btnCredencial";
+            btnCredencial.Size = new Size(88, 39);
+            btnCredencial.TabIndex = 56;
+            btnCredencial.Text = "Credencial";
+            btnCredencial.UseVisualStyleBackColor = true;
+            btnCredencial.Click += btnCredencial_Click;
             // 
             // btnExpediente
             // 
-            btnExpediente.Location = new Point(294, 507);
+            btnExpediente.Location = new Point(286, 542);
             btnExpediente.Name = "btnExpediente";
             btnExpediente.Size = new Size(88, 39);
             btnExpediente.TabIndex = 57;
@@ -305,22 +356,147 @@
             // 
             // btnAnular
             // 
-            btnAnular.Location = new Point(388, 507);
+            btnAnular.Location = new Point(380, 542);
             btnAnular.Name = "btnAnular";
-            btnAnular.Size = new Size(88, 39);
+            btnAnular.Size = new Size(94, 39);
             btnAnular.TabIndex = 58;
             btnAnular.Text = "Anular";
             btnAnular.UseVisualStyleBackColor = true;
             btnAnular.Click += btnAnular_Click;
             // 
+            // lblInfoAnulacion
+            // 
+            lblInfoAnulacion.BackColor = Color.FromArgb(228, 209, 255);
+            lblInfoAnulacion.BorderStyle = BorderStyle.FixedSingle;
+            lblInfoAnulacion.Font = new Font("Arial", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblInfoAnulacion.ForeColor = Color.FromArgb(74, 20, 140);
+            lblInfoAnulacion.Location = new Point(4, 504);
+            lblInfoAnulacion.Name = "lblInfoAnulacion";
+            lblInfoAnulacion.Size = new Size(1029, 35);
+            lblInfoAnulacion.TabIndex = 59;
+            lblInfoAnulacion.TextAlign = ContentAlignment.MiddleLeft;
+            lblInfoAnulacion.Visible = false;
+            // 
+            // lblResumenCertificaciones
+            // 
+            lblResumenCertificaciones.Font = new Font("Arial", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblResumenCertificaciones.ForeColor = Color.Black;
+            lblResumenCertificaciones.Location = new Point(4, 235);
+            lblResumenCertificaciones.Name = "lblResumenCertificaciones";
+            lblResumenCertificaciones.Size = new Size(650, 22);
+            lblResumenCertificaciones.TabIndex = 60;
+            lblResumenCertificaciones.Text = "Total: 0 | Vigentes: 0 | Por vencer: 0 | Vencidas: 0 | Anuladas: 0";
+            // 
+            // pnlLeyendaCertificaciones
+            // 
+            pnlLeyendaCertificaciones.BackColor = Color.Transparent;
+            pnlLeyendaCertificaciones.Controls.Add(lblTextoAnulada);
+            pnlLeyendaCertificaciones.Controls.Add(lblColorAnulada);
+            pnlLeyendaCertificaciones.Controls.Add(lblTextoVencida);
+            pnlLeyendaCertificaciones.Controls.Add(lblColorVencida);
+            pnlLeyendaCertificaciones.Controls.Add(lblTextoPorVencer);
+            pnlLeyendaCertificaciones.Controls.Add(lblColorPorVencer);
+            pnlLeyendaCertificaciones.Controls.Add(lblTextoVigente);
+            pnlLeyendaCertificaciones.Controls.Add(lblColorVigente);
+            pnlLeyendaCertificaciones.Location = new Point(368, 229);
+            pnlLeyendaCertificaciones.Name = "pnlLeyendaCertificaciones";
+            pnlLeyendaCertificaciones.Size = new Size(357, 28);
+            pnlLeyendaCertificaciones.TabIndex = 61;
+            // 
+            // lblTextoAnulada
+            // 
+            lblTextoAnulada.AutoSize = true;
+            lblTextoAnulada.Location = new Point(256, 7);
+            lblTextoAnulada.Name = "lblTextoAnulada";
+            lblTextoAnulada.Size = new Size(52, 15);
+            lblTextoAnulada.TabIndex = 65;
+            lblTextoAnulada.Text = "Anulada";
+            // 
+            // lblColorAnulada
+            // 
+            lblColorAnulada.BackColor = Color.FromArgb(126, 87, 194);
+            lblColorAnulada.BorderStyle = BorderStyle.FixedSingle;
+            lblColorAnulada.Location = new Point(314, 6);
+            lblColorAnulada.Name = "lblColorAnulada";
+            lblColorAnulada.Size = new Size(18, 18);
+            lblColorAnulada.TabIndex = 64;
+            // 
+            // lblTextoVencida
+            // 
+            lblTextoVencida.AutoSize = true;
+            lblTextoVencida.Location = new Point(176, 7);
+            lblTextoVencida.Name = "lblTextoVencida";
+            lblTextoVencida.Size = new Size(50, 15);
+            lblTextoVencida.TabIndex = 65;
+            lblTextoVencida.Text = "Vencida";
+            // 
+            // lblColorVencida
+            // 
+            lblColorVencida.BackColor = Color.LightCoral;
+            lblColorVencida.BorderStyle = BorderStyle.FixedSingle;
+            lblColorVencida.Location = new Point(232, 6);
+            lblColorVencida.Name = "lblColorVencida";
+            lblColorVencida.Size = new Size(18, 18);
+            lblColorVencida.TabIndex = 64;
+            // 
+            // lblTextoPorVencer
+            // 
+            lblTextoPorVencer.AutoSize = true;
+            lblTextoPorVencer.Location = new Point(81, 7);
+            lblTextoPorVencer.Name = "lblTextoPorVencer";
+            lblTextoPorVencer.Size = new Size(65, 15);
+            lblTextoPorVencer.TabIndex = 65;
+            lblTextoPorVencer.Text = "Por vencer";
+            // 
+            // lblColorPorVencer
+            // 
+            lblColorPorVencer.BackColor = Color.Khaki;
+            lblColorPorVencer.BorderStyle = BorderStyle.FixedSingle;
+            lblColorPorVencer.Location = new Point(152, 6);
+            lblColorPorVencer.Name = "lblColorPorVencer";
+            lblColorPorVencer.Size = new Size(18, 18);
+            lblColorPorVencer.TabIndex = 64;
+            // 
+            // lblTextoVigente
+            // 
+            lblTextoVigente.AutoSize = true;
+            lblTextoVigente.Location = new Point(3, 7);
+            lblTextoVigente.Name = "lblTextoVigente";
+            lblTextoVigente.Size = new Size(48, 15);
+            lblTextoVigente.TabIndex = 63;
+            lblTextoVigente.Text = "Vigente";
+            // 
+            // lblColorVigente
+            // 
+            lblColorVigente.BackColor = Color.LightGreen;
+            lblColorVigente.BorderStyle = BorderStyle.FixedSingle;
+            lblColorVigente.Location = new Point(57, 6);
+            lblColorVigente.Name = "lblColorVigente";
+            lblColorVigente.Size = new Size(18, 18);
+            lblColorVigente.TabIndex = 62;
+            // 
+            // btnLimpiarBusqueda
+            // 
+            btnLimpiarBusqueda.Location = new Point(945, 242);
+            btnLimpiarBusqueda.Name = "btnLimpiarBusqueda";
+            btnLimpiarBusqueda.Size = new Size(88, 39);
+            btnLimpiarBusqueda.TabIndex = 62;
+            btnLimpiarBusqueda.Text = "Limpiar";
+            btnLimpiarBusqueda.UseVisualStyleBackColor = true;
+            btnLimpiarBusqueda.Click += btnLimpiarBusqueda_Click;
+            // 
             // CertificacionesVentana
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1045, 558);
+            ClientSize = new Size(1045, 588);
+            Controls.Add(btnLimpiarBusqueda);
+            Controls.Add(pnlLeyendaCertificaciones);
+            Controls.Add(lblResumenCertificaciones);
+            Controls.Add(lblInfoAnulacion);
             Controls.Add(btnAnular);
             Controls.Add(btnExpediente);
-            Controls.Add(btnImprimir);
+            Controls.Add(btnCredencial);
             Controls.Add(lblVerificador);
             Controls.Add(pbContec);
             Controls.Add(txtBuscar);
@@ -353,7 +529,10 @@
             Load += CertificacionesVentana_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgvCertificaciones).EndInit();
+            cmsCertificaciones.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)pbContec).EndInit();
+            pnlLeyendaCertificaciones.ResumeLayout(false);
+            pnlLeyendaCertificaciones.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -382,8 +561,25 @@
         private Label lblBuscar;
         private PictureBox pbContec;
         private Label lblVerificador;
-        private Button btnImprimir;
+        private Button btnCredencial;
         private Button btnExpediente;
         private Button btnAnular;
+        private Label lblInfoAnulacion;
+        private Label lblResumenCertificaciones;
+        private Panel pnlLeyendaCertificaciones;
+        private Label lblTextoAnulada;
+        private Label lblColorAnulada;
+        private Label lblTextoVencida;
+        private Label lblColorVencida;
+        private Label lblTextoPorVencer;
+        private Label lblColorPorVencer;
+        private Label lblTextoVigente;
+        private Label lblColorVigente;
+        private ToolTip ttAyuda;
+        private ContextMenuStrip cmsCertificaciones;
+        private ToolStripMenuItem tsmModificarRenovar;
+        private ToolStripMenuItem tsmAnularVer;
+        private ToolStripMenuItem tsmBorrarCertificacion;
+        private Button btnLimpiarBusqueda;
     }
 }

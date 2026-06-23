@@ -12,9 +12,34 @@ namespace Aseguranza.Ventanas
 {
     public partial class Verificaciones : Form
     {
+        private readonly string _noRelojInicial = "";
+        private readonly bool _imprimirAutomaticamente = false;
+        private readonly bool _ocultarVentanaAlImprimir = false;
+        private readonly bool _guardarDirectoEnDescargas = false;
         public Verificaciones()
         {
             InitializeComponent();
+        }
+
+        public Verificaciones(
+            string noReloj,
+            bool imprimirAutomaticamente = false,
+            bool ocultarVentanaAlImprimir = false,
+            bool guardarDirectoEnDescargas = false)
+        {
+            InitializeComponent();
+
+            _noRelojInicial = noReloj;
+            _imprimirAutomaticamente = imprimirAutomaticamente;
+            _ocultarVentanaAlImprimir = ocultarVentanaAlImprimir;
+            _guardarDirectoEnDescargas = guardarDirectoEnDescargas;
+
+            if (_ocultarVentanaAlImprimir)
+            {
+                ShowInTaskbar = false;
+                StartPosition = FormStartPosition.Manual;
+                Location = new Point(-20000, -20000);
+            }
         }
 
         private async void Verificaciones_Load(object sender, EventArgs e)
@@ -23,8 +48,86 @@ namespace Aseguranza.Ventanas
             MostrarSoloVistaHtml();
             await MostrarHtmlInicialAsync();
 
+            if (!string.IsNullOrWhiteSpace(_noRelojInicial))
+            {
+                txtNoReloj.Text = _noRelojInicial;
+
+                bool credencialGenerada = await ConsultarYMostrarCredencialAsync(_noRelojInicial);
+
+                if (_imprimirAutomaticamente && credencialGenerada)
+                {
+                    BeginInvoke(new Action(async () =>
+                    {
+                        await EsperarRenderWebViewAsync();
+                        await GenerarPdfCredencialAsync(!_guardarDirectoEnDescargas);
+                        Close();
+                    }));
+                }
+
+                txtNoReloj.SelectAll();
+                txtNoReloj.Focus();
+                return;
+            }
+
             txtNoReloj.Clear();
             txtNoReloj.Focus();
+        }
+
+        private async Task<bool> ConsultarYMostrarCredencialAsync(string noReloj)
+        {
+            if (string.IsNullOrWhiteSpace(noReloj))
+                return false;
+
+            LimpiarVistaBusqueda();
+
+            DataTable dt = Clases.Certificacion.ConsultarVerificacionNoReloj(noReloj);
+
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                MostrarVistaCompleta();
+                await MostrarHtmlInicialAsync();
+
+                MessageBox.Show("No se encontraron certificaciones.");
+
+                txtNoReloj.SelectAll();
+                txtNoReloj.Focus();
+
+                return false;
+            }
+
+            dgvCertificaciones.AutoGenerateColumns = true;
+            dgvCertificaciones.DataSource = dt;
+
+            string nombre = dt.Rows[0]["Nombre"]?.ToString() ?? "";
+
+            txtNombre.Text = nombre;
+            lblMostrarNoReloj.Text = noReloj;
+            lblMostrarNombre.Text = nombre;
+
+            OcultarColumnas();
+            PintarCertificaciones();
+            GenerarProcesosCertificados();
+
+            MostrarSoloVistaHtml();
+            await MostrarCertificacionHtmlAsync();
+
+            return true;
+        }
+
+        private Task NavegarHtmlAsync(string html)
+        {
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+
+            void Handler(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+            {
+                webViewCertificacion.CoreWebView2.NavigationCompleted -= Handler;
+                tcs.TrySetResult(true);
+            }
+
+            webViewCertificacion.CoreWebView2.NavigationCompleted += Handler;
+            webViewCertificacion.NavigateToString(html);
+
+            return tcs.Task;
         }
         private void MostrarSoloVistaHtml()
         {
@@ -69,47 +172,15 @@ namespace Aseguranza.Ventanas
 
         private async void txtNoReloj_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar != (char)Keys.Enter) return;
+            if (e.KeyChar != (char)Keys.Enter)
+                return;
 
             e.Handled = true;
 
             string noReloj = txtNoReloj.Text.Trim();
-            if (string.IsNullOrWhiteSpace(noReloj))
-                return;
 
-            LimpiarVistaBusqueda();
+            await ConsultarYMostrarCredencialAsync(noReloj);
 
-            DataTable dt = Clases.Certificacion.ConsultarVerificacionNoReloj(noReloj);
-
-            if (dt == null || dt.Rows.Count == 0)
-            {
-                MostrarVistaCompleta();
-                await MostrarHtmlInicialAsync();
-
-                MessageBox.Show("No se encontraron certificaciones.");
-
-                txtNoReloj.SelectAll();
-                txtNoReloj.Focus();
-                return;
-            }
-
-            dgvCertificaciones.AutoGenerateColumns = true;
-            dgvCertificaciones.DataSource = dt;
-
-            string nombre = dt.Rows[0]["Nombre"]?.ToString() ?? "";
-
-            txtNombre.Text = nombre;
-            lblMostrarNoReloj.Text = noReloj;
-            lblMostrarNombre.Text = nombre;
-
-            OcultarColumnas();
-            PintarCertificaciones();
-            GenerarProcesosCertificados();
-
-            MostrarSoloVistaHtml();
-            await MostrarCertificacionHtmlAsync();
-
-            // ✅ deja listo el textbox para escribir otro número encima
             txtNoReloj.SelectAll();
             txtNoReloj.Focus();
         }
@@ -264,7 +335,25 @@ namespace Aseguranza.Ventanas
             html = html.Replace("{{FOTO_HTML}}", ObtenerFotoHtml());
             html = html.Replace("{{TABLA_PROCESOS}}", GenerarTablaProcesosHtml());
 
-            webViewCertificacion.NavigateToString(html);
+            await NavegarHtmlAsync(html);
+        }
+
+        private async Task EsperarRenderWebViewAsync()
+        {
+            if (webViewCertificacion.CoreWebView2 == null)
+                await InicializarWebViewAsync();
+
+            // Pequeña espera para que WebView termine de pintar la credencial antes de generar PDF
+            await Task.Delay(1200);
+
+            try
+            {
+                await webViewCertificacion.CoreWebView2.ExecuteScriptAsync("document.body.offsetHeight;");
+            }
+            catch
+            {
+                // Si falla el script, no detenemos la impresión.
+            }
         }
 
         private string GenerarProcesosCertificadosHtmlFijos()
@@ -598,10 +687,12 @@ namespace Aseguranza.Ventanas
             return "<span style='font-size:12px;'>SIN FOTO</span>";
         }
 
-        private async Task GenerarPdfCredencialAsync()
+        private async Task GenerarPdfCredencialAsync(bool pedirRuta = true)
         {
             if (webViewCertificacion.CoreWebView2 == null)
                 await InicializarWebViewAsync();
+
+            await EsperarRenderWebViewAsync();
 
             string reloj = txtNoReloj.Text.Trim();
             string nombre = txtNombre.Text.Trim();
@@ -613,11 +704,14 @@ namespace Aseguranza.Ventanas
             }
 
             string nombreArchivo = LimpiarTextoParaArchivo(nombre);
-
             string archivo = $"Credencial_{reloj}_{nombreArchivo}.pdf";
 
-            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            string rutaDestino;
+
+            if (pedirRuta)
             {
+                using SaveFileDialog saveFileDialog = new SaveFileDialog();
+
                 saveFileDialog.Title = "Guardar credencial";
                 saveFileDialog.Filter = "Archivo PDF (*.pdf)|*.pdf";
                 saveFileDialog.FileName = archivo;
@@ -625,12 +719,33 @@ namespace Aseguranza.Ventanas
                 if (saveFileDialog.ShowDialog() != DialogResult.OK)
                     return;
 
-                bool resultado = await webViewCertificacion.CoreWebView2.PrintToPdfAsync(saveFileDialog.FileName);
+                rutaDestino = saveFileDialog.FileName;
+            }
+            else
+            {
+                string carpetaDescargas = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Downloads");
 
-                if (resultado)
-                    MessageBox.Show("Credencial generada correctamente.", "Información");
-                else
-                    MessageBox.Show("No se pudo generar el PDF.", "Información");
+                if (!Directory.Exists(carpetaDescargas))
+                    carpetaDescargas = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+
+                rutaDestino = ObtenerRutaDisponible(Path.Combine(carpetaDescargas, archivo));
+            }
+
+            bool resultado = await webViewCertificacion.CoreWebView2.PrintToPdfAsync(rutaDestino);
+
+            if (resultado)
+            {
+                MessageBox.Show(
+                    $"Credencial generada correctamente.\n\nArchivo:\n{rutaDestino}",
+                    "Información",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show("No se pudo generar el PDF.", "Información");
             }
         }
         private string LimpiarTextoParaArchivo(string texto)
@@ -648,9 +763,31 @@ namespace Aseguranza.Ventanas
             return limpio;
         }
 
+        private string ObtenerRutaDisponible(string ruta)
+        {
+            if (!File.Exists(ruta))
+                return ruta;
+
+            string carpeta = Path.GetDirectoryName(ruta) ?? "";
+            string nombre = Path.GetFileNameWithoutExtension(ruta);
+            string extension = Path.GetExtension(ruta);
+
+            int contador = 2;
+            string nuevaRuta;
+
+            do
+            {
+                nuevaRuta = Path.Combine(carpeta, $"{nombre}_{contador}{extension}");
+                contador++;
+            }
+            while (File.Exists(nuevaRuta));
+
+            return nuevaRuta;
+        }
+
         private async void btnImprimirHtml_Click(object sender, EventArgs e)
         {
-            await GenerarPdfCredencialAsync();
+            await GenerarPdfCredencialAsync(true);
         }
         private async Task ImprimirDirectoAsync()
         {

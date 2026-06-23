@@ -107,9 +107,18 @@ namespace Aseguranza.Ventanas
                 // 🗑️ Eliminar foto física
                 try
                 {
-                    if (!string.IsNullOrEmpty(rutaFoto) && File.Exists(rutaFoto))
+                    string noReloj = dgvTrabajadores.CurrentRow.Cells["NoReloj"].Value?.ToString() ?? "";
+
+                    string carpetaRespaldo = Clases.RutasArchivos.MoverCarpetaTrabajadorAEliminados(noReloj);
+
+                    if (!string.IsNullOrWhiteSpace(carpetaRespaldo))
                     {
-                        File.Delete(rutaFoto);
+                        MessageBox.Show(
+                            "La carpeta física del trabajador se movió a respaldo:\n" +
+                            carpetaRespaldo,
+                            "Respaldo generado",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
                     }
                 }
                 catch (Exception ex)

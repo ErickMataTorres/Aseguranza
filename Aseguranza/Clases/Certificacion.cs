@@ -76,28 +76,38 @@ namespace Aseguranza.Clases
         public static Clases.Mensaje BorrarCertificacion(int id)
         {
             Clases.Mensaje respuesta = new Clases.Mensaje();
+
             SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spBorrarCertificacion", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", id);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
+
             try
             {
+                SqlCommand command = new SqlCommand("spBorrarCertificacion", conexion);
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@Id", id);
+
+                conexion.Open();
+
+                SqlDataReader dr = command.ExecuteReader();
+
                 if (dr.Read())
                 {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
+                    respuesta.Id = Convert.ToInt32(dr["Id"]);
+                    respuesta.Nombre = dr["Nombre"].ToString() ?? "";
                 }
+
+                dr.Close();
             }
-            catch (Exception error)
+            catch (Exception ex)
             {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
+                respuesta.Id = 0;
+                respuesta.Nombre = "No se pudo borrar la certificación. Detalle: " + ex.Message;
             }
+            finally
+            {
+                if (conexion.State == ConnectionState.Open)
+                    conexion.Close();
+            }
+
             return respuesta;
         }
     }

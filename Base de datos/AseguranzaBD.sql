@@ -763,12 +763,47 @@ BEGIN
 END
 
 CREATE OR ALTER PROCEDURE spBorrarCertificacion
-@Id INT
+    @Id INT
 AS
 BEGIN
-	SET NOCOUNT ON;
-	DELETE FROM Certificacion WHERE Id=@Id;
-	SELECT 1 AS [Id], 'Certificación borrada correctamente' AS [Nombre];
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (SELECT 1 FROM Certificacion WHERE Id = @Id)
+        BEGIN
+            ROLLBACK TRANSACTION;
+
+            SELECT 
+                0 AS Id,
+                'No existe la certificación que intenta borrar.' AS Nombre;
+
+            RETURN;
+        END
+
+        -- Primero borrar historial de anulaciones relacionado
+        DELETE FROM CertificacionAnulacion
+        WHERE IdCertificacion = @Id;
+
+        -- Después borrar la certificación
+        DELETE FROM Certificacion
+        WHERE Id = @Id;
+
+        COMMIT TRANSACTION;
+
+        SELECT 
+            1 AS Id,
+            'Certificación eliminada correctamente.' AS Nombre;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        SELECT 
+            0 AS Id,
+            'No se pudo eliminar la certificación. Detalle: ' + ERROR_MESSAGE() AS Nombre;
+    END CATCH
 END
 
 -------------------------------------------
