@@ -12,8 +12,7 @@ namespace Aseguranza.Data
             CrearLocalidadRepository()
         {
             ProveedorBaseDatos proveedor =
-                ConfiguracionSistema
-                    .ObtenerProveedorBaseDatos();
+                ConfiguracionSistema.ObtenerProveedorBaseDatos();
 
             return proveedor switch
             {
@@ -31,8 +30,7 @@ namespace Aseguranza.Data
             CrearTurnoRepository()
         {
             ProveedorBaseDatos proveedor =
-                ConfiguracionSistema
-                    .ObtenerProveedorBaseDatos();
+                ConfiguracionSistema.ObtenerProveedorBaseDatos();
 
             return proveedor switch
             {
@@ -41,6 +39,24 @@ namespace Aseguranza.Data
 
                 ProveedorBaseDatos.SQLite =>
                     new SqliteTurnoRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
+        public static IPlantaRepository
+            CrearPlantaRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema.ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerPlantaRepository(),
+
+                ProveedorBaseDatos.SQLite =>
+                    new SqlitePlantaRepository(),
 
                 _ => throw CrearErrorProveedor(proveedor)
             };
