@@ -1,17 +1,60 @@
+using Aseguranza.Clases;
+
 namespace Aseguranza
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+
+            bool inicializarSqlite = Array.Exists(
+                args,
+                argumento => argumento.Equals(
+                    "--init-sqlite",
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (inicializarSqlite)
+            {
+                InicializarBaseSqlite();
+                return;
+            }
+
             Application.Run(new MenuPrincipal());
+        }
+
+        private static void InicializarBaseSqlite()
+        {
+            try
+            {
+                InicializadorSqlite.Inicializar();
+
+                if (!InicializadorSqlite.EstaInicializada())
+                {
+                    throw new InvalidOperationException(
+                        "El archivo SQLite fue creado, pero no se pudo verificar el esquema.");
+                }
+
+                string rutaBaseDatos =
+                    ConfiguracionSistema.ObtenerRutaSqlite();
+
+                MessageBox.Show(
+                    $"La base SQLite se creó y verificó correctamente.{Environment.NewLine}{Environment.NewLine}" +
+                    rutaBaseDatos,
+                    "Inicialización SQLite",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"No fue posible inicializar la base SQLite.{Environment.NewLine}{Environment.NewLine}" +
+                    ex.Message,
+                    "Error de inicialización SQLite",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
     }
 }
