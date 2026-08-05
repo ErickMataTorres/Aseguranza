@@ -1,5 +1,4 @@
-﻿using Aseguranza.Clases.Aseguranza.Clases;
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 

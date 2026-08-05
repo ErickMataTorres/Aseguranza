@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Aseguranza.Clases
-{
     namespace Aseguranza.Clases
     {
         public enum ProveedorBaseDatos
@@ -14,4 +12,3 @@ namespace Aseguranza.Clases
             SQLite
         }
     }
-}
