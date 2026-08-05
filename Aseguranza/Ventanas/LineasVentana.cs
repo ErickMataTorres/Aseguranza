@@ -41,24 +41,49 @@ namespace Aseguranza.Ventanas
 
         private void btnAceptar_Click(object sender, EventArgs e)
         {
-            if (cbPlantas.SelectedIndex == -1 || txtNombre.Text == string.Empty)
+            if (cbPlantas.SelectedIndex == -1 ||
+                cbPlantas.SelectedValue is null ||
+                string.IsNullOrWhiteSpace(txtNombre.Text))
             {
-                MessageBox.Show("Debe completar los campos", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    "Debe completar los campos.",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
                 return;
             }
-            Clases.Linea linea = this.lineaActual ?? new Clases.Linea();
-            linea.IdPlanta = (int)cbPlantas.SelectedValue!;
-            linea.Nombre = txtNombre.Text.ToUpper().Trim();
-            Clases.Mensaje respuesta = linea.GuardarLinea();
+
+            Clases.Linea linea =
+                this.lineaActual ?? new Clases.Linea();
+
+            linea.IdPlanta =
+                Convert.ToInt32(cbPlantas.SelectedValue);
+
+            linea.Nombre =
+                txtNombre.Text.Trim().ToUpperInvariant();
+
+            Mensaje respuesta =
+                linea.GuardarLinea();
+
             if (respuesta.Id == 1 || respuesta.Id == 2)
             {
-                MessageBox.Show(respuesta.Nombre, "Resultado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                MessageBox.Show(
+                    respuesta.Nombre,
+                    "Información",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                DialogResult = DialogResult.OK;
+                Close();
             }
             else
             {
-                MessageBox.Show(respuesta.Nombre, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    respuesta.Nombre,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 

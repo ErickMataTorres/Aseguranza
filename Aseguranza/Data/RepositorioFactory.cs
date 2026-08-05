@@ -62,6 +62,24 @@ namespace Aseguranza.Data
             };
         }
 
+        public static ILineaRepository
+    CrearLineaRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema.ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerLineaRepository(),
+
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteLineaRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
         private static InvalidOperationException
             CrearErrorProveedor(
                 ProveedorBaseDatos proveedor)
