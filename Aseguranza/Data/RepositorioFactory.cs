@@ -80,6 +80,24 @@ namespace Aseguranza.Data
             };
         }
 
+        public static IProcesoRepository
+    CrearProcesoRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema.ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerProcesoRepository(),
+
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteProcesoRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
         private static InvalidOperationException
             CrearErrorProveedor(
                 ProveedorBaseDatos proveedor)

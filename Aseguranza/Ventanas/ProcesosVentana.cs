@@ -26,27 +26,71 @@ namespace Aseguranza.Ventanas
             }
         }
 
-        private void btnAceptar_Click(object sender, EventArgs e)
+        private void btnAceptar_Click(
+    object sender,
+    EventArgs e)
         {
-            if (txtNombre.Text == string.Empty || txtDescripcion.Text == string.Empty || txtVigencia.Text == string.Empty)
+            if (string.IsNullOrWhiteSpace(txtNombre.Text) ||
+                string.IsNullOrWhiteSpace(txtDescripcion.Text) ||
+                string.IsNullOrWhiteSpace(txtVigencia.Text))
             {
-                MessageBox.Show("Los campos deben completarse.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    "Los campos deben completarse.",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
                 return;
             }
-            Clases.Proceso proceso = this.procesoActual ?? new Clases.Proceso();
-            proceso.Nombre = txtNombre.Text.ToUpper().Trim();
-            proceso.Descripcion = txtDescripcion.Text.ToUpper().Trim();
-            proceso.VigenciaMeses = int.Parse(txtVigencia.Text.Trim());
-            Clases.Mensaje respuesta = proceso.GuardarProceso();
+
+            if (!int.TryParse(
+                    txtVigencia.Text.Trim(),
+                    out int vigenciaMeses) ||
+                vigenciaMeses <= 0)
+            {
+                MessageBox.Show(
+                    "La vigencia debe ser un número entero mayor que cero.",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                txtVigencia.Focus();
+                return;
+            }
+
+            Clases.Proceso proceso =
+                procesoActual ?? new Clases.Proceso();
+
+            proceso.Nombre =
+                txtNombre.Text.Trim().ToUpperInvariant();
+
+            proceso.Descripcion =
+                txtDescripcion.Text.Trim().ToUpperInvariant();
+
+            proceso.VigenciaMeses =
+                vigenciaMeses;
+
+            Mensaje respuesta =
+                proceso.GuardarProceso();
+
             if (respuesta.Id == 1 || respuesta.Id == 2)
             {
-                MessageBox.Show(respuesta.Nombre, "Resultado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                MessageBox.Show(
+                    respuesta.Nombre,
+                    "Resultado",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                DialogResult = DialogResult.OK;
+                Close();
             }
             else
             {
-                MessageBox.Show(respuesta.Nombre, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    respuesta.Nombre,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
