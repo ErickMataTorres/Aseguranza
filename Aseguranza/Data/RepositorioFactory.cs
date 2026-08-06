@@ -161,6 +161,25 @@ namespace Aseguranza.Data
         }
 
 
+        public static ICertificacionAnulacionRepository
+    CrearCertificacionAnulacionRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema
+                    .ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerCertificacionAnulacionRepository(),
+
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteCertificacionAnulacionRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
         private static InvalidOperationException
             CrearErrorProveedor(
                 ProveedorBaseDatos proveedor)
