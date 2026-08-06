@@ -180,6 +180,25 @@ namespace Aseguranza.Data
             };
         }
 
+        public static IExpedienteTrabajadorRepository
+    CrearExpedienteTrabajadorRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema
+                    .ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerExpedienteTrabajadorRepository(),
+
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteExpedienteTrabajadorRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
         private static InvalidOperationException
             CrearErrorProveedor(
                 ProveedorBaseDatos proveedor)
