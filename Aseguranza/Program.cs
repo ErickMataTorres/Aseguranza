@@ -33,14 +33,16 @@ namespace Aseguranza
                 if (!InicializadorSqlite.EstaInicializada())
                 {
                     throw new InvalidOperationException(
-                        "El archivo SQLite fue creado, pero no se pudo verificar el esquema.");
+                        "El archivo SQLite fue creado, pero no se pudo verificar su esquema.");
                 }
 
                 string rutaBaseDatos =
                     ConfiguracionSistema.ObtenerRutaSqlite();
 
                 MessageBox.Show(
-                    $"La base SQLite se creó y verificó correctamente.{Environment.NewLine}{Environment.NewLine}" +
+                    "La base SQLite se creó y verificó correctamente." +
+                    Environment.NewLine +
+                    Environment.NewLine +
                     rutaBaseDatos,
                     "Inicialización SQLite",
                     MessageBoxButtons.OK,
@@ -49,7 +51,9 @@ namespace Aseguranza
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"No fue posible inicializar la base SQLite.{Environment.NewLine}{Environment.NewLine}" +
+                    "No fue posible inicializar la base SQLite." +
+                    Environment.NewLine +
+                    Environment.NewLine +
                     ex.Message,
                     "Error de inicialización SQLite",
                     MessageBoxButtons.OK,
