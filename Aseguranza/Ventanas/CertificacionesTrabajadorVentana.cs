@@ -87,54 +87,90 @@ namespace Aseguranza.Ventanas
         // =====================================================
         // BOTÓN ACEPTAR
         // =====================================================
-        private void btnAceptar_Click(object sender, EventArgs e)
+        private void btnAceptar_Click(
+    object sender,
+    EventArgs e)
         {
+            if (!Validar())
+            {
+                return;
+            }
 
-            if (cbProcesos.SelectedIndex == -1 || cbCertificadores.SelectedIndex == -1)
+            if (trabajadorActual is null ||
+                trabajadorActual.Id <= 0)
             {
                 MessageBox.Show(
-                    "Debes seleccionar un proceso y un certificador",
+                    "No se encontró un trabajador válido.",
                     "Validación",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning
-                );
+                    MessageBoxIcon.Warning);
+
                 return;
             }
 
-            DateTime fechaCert = dtpFechaCertificacion.Value;
-
-            if (fechaCert < new DateTime(1753, 1, 1))
+            if (dtpFechaCertificacion.Value <
+                new DateTime(1753, 1, 1))
             {
                 MessageBox.Show(
-                    "La fecha de certificación no es válida",
-                    "Error",
+                    "La fecha de certificación no es válida.",
+                    "Validación",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                    MessageBoxIcon.Warning);
+
                 return;
             }
-            
-            Clases.Certificacion certificacion = new Clases.Certificacion();
-            certificacion.IdTrabajador = trabajadorActual!.Id;
-            certificacion.IdProceso = Convert.ToInt32(cbProcesos.SelectedValue);
-            certificacion.FechaCertificacion = dtpFechaCertificacion.Value;
-            certificacion.IdCertificador = Convert.ToInt32(cbCertificadores.SelectedValue);
-            certificacion.Comentario = txtComentario.Text.Trim();
 
-            Clases.Mensaje respuesta = certificacion.GuardarCertificacion();
-            if (respuesta.Id == 1 || respuesta.Id == 2)
+            Certificacion certificacion =
+                certificacionActual ?? new Certificacion();
+
+            certificacion.IdTrabajador =
+                trabajadorActual.Id;
+
+            certificacion.IdProceso =
+                Convert.ToInt32(
+                    cbProcesos.SelectedValue);
+
+            certificacion.FechaCertificacion =
+                dtpFechaCertificacion.Value.Date;
+
+            certificacion.FechaVencimiento =
+                dtpFechaVencimiento.Value.Date;
+
+            certificacion.IdCertificador =
+                Convert.ToInt32(
+                    cbCertificadores.SelectedValue);
+
+            certificacion.Comentario =
+                string.IsNullOrWhiteSpace(
+                    txtComentario.Text)
+                    ? null
+                    : txtComentario.Text.Trim();
+
+            Mensaje respuesta =
+                certificacion.GuardarCertificacion();
+
+            if (respuesta.Id == 1 ||
+                respuesta.Id == 2)
             {
-                MessageBox.Show(respuesta.Nombre, "Resultado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
-                this.Close();
-            }
-            else
-            {
-                MessageBox.Show(respuesta.Nombre, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    respuesta.Nombre,
+                    "Resultado",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                DialogResult =
+                    DialogResult.OK;
+
+                Close();
+
+                return;
             }
 
-            DialogResult = DialogResult.OK;
-            Close();
+            MessageBox.Show(
+                respuesta.Nombre,
+                "No se pudo guardar",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
 
         // =====================================================
