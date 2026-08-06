@@ -98,6 +98,30 @@ namespace Aseguranza.Data
             };
         }
 
+        public static ITrabajadorRepository
+    CrearTrabajadorRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema
+                    .ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerTrabajadorRepository(),
+
+                /*
+                 * SQLite se habilitará en el siguiente bloque.
+                 * Mientras tanto evitamos usar accidentalmente
+                 * el módulo Trabajador en modo SQLite.
+                 */
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteTrabajadorRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
         private static InvalidOperationException
             CrearErrorProveedor(
                 ProveedorBaseDatos proveedor)

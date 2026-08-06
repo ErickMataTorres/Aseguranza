@@ -598,7 +598,10 @@ namespace Aseguranza.Ventanas
             if (cargandoDatos)
                 return;
 
-            if (cbPlanta.SelectedValue is int idPlanta)
+            int idPlanta =
+                ObtenerIdCombo(cbPlanta);
+
+            if (idPlanta > 0)
             {
                 CargarLineasPorPlanta(idPlanta);
             }
@@ -684,9 +687,17 @@ namespace Aseguranza.Ventanas
                 // DATOS RESTANTES
                 // =========================
 
-                trabajador.IdLocalidad = (int)cbLocalidad.SelectedValue!;
-                trabajador.IdTurno = (int)cbTurno.SelectedValue!;
-                trabajador.IdLinea = (int)cbLinea.SelectedValue!;
+                trabajador.IdLocalidad =
+                    ObtenerIdCombo(cbLocalidad);
+
+                trabajador.IdTurno =
+                    ObtenerIdCombo(cbTurno);
+
+                trabajador.IdPlanta =
+                    ObtenerIdCombo(cbPlanta);
+
+                trabajador.IdLinea =
+                    ObtenerIdCombo(cbLinea);
 
                 Clases.Mensaje respuesta = trabajador.GuardarTrabajador();
 
