@@ -122,6 +122,25 @@ namespace Aseguranza.Data
             };
         }
 
+        public static ICertificadorRepository
+    CrearCertificadorRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema
+                    .ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerCertificadorRepository(),
+
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteCertificadorRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
         private static InvalidOperationException
             CrearErrorProveedor(
                 ProveedorBaseDatos proveedor)
