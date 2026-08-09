@@ -442,43 +442,32 @@ namespace Aseguranza.Ventanas
                 string colorFondo = ObtenerColorHtmlPorVencimiento(diasRestantes);
                 string procesoHtml = System.Net.WebUtility.HtmlEncode(proceso);
 
+                string colorTexto =
+    diasRestantes >= 0 &&
+    diasRestantes <= 30
+        ? "#000000"
+        : "#FFFFFF";
+
                 sb.Append($@"
-            <div style='
-                display:inline-block;
-                min-width:80px;
-                padding:5px 8px;
-                margin:3px;
-                border-radius:4px;
-                background:{colorFondo};
-                color:white;
-                font-weight:800;
-                font-size:11px;
-                text-align:center;
-                border:1px solid #222;
-            '>
-                {procesoHtml}
-            </div>
-        ");
+    <div style='
+        background:{colorFondo};
+        color:{colorTexto};
+    '>
+        {procesoHtml}
+    </div>
+");
             }
 
             if (sb.Length == 0)
             {
                 return @"
-            <div style='
-                display:inline-block;
-                padding:5px 8px;
-                margin:3px;
-                border-radius:4px;
-                background:#dc2626;
-                color:white;
-                font-weight:800;
-                font-size:11px;
-                text-align:center;
-                border:1px solid #222;
-            '>
-                SIN CERTIFICACIONES
-            </div>
-        ";
+    <div style='
+        background:#dc2626;
+        color:white;
+    '>
+        SIN CERTIFICACIONES
+    </div>
+";
             }
 
             return sb.ToString();
@@ -553,48 +542,145 @@ namespace Aseguranza.Ventanas
         private string GenerarTablaProcesosHtml()
         {
             StringBuilder sb = new StringBuilder();
+
             int numero = 1;
             int maxFilas = 8;
 
             foreach (DataGridViewRow row in dgvCertificaciones.Rows)
             {
-                if (row.IsNewRow) continue;
-                if (numero > maxFilas) break;
+                if (row.IsNewRow)
+                    continue;
 
-                string proceso = System.Net.WebUtility.HtmlEncode(ObtenerTextoCelda(row, "Proceso"));
-                string fechaCert = System.Net.WebUtility.HtmlEncode(ObtenerTextoCelda(row, "FechaCertificacion"));
-                string nombreCertificadorCompleto = ObtenerTextoCelda(row, "NombreCertificador");
-                string certificador = System.Net.WebUtility.HtmlEncode(AbreviarNombreCertificador(nombreCertificadorCompleto));
-                string vigencia = System.Net.WebUtility.HtmlEncode(ObtenerTextoCelda(row, "FechaVencimiento"));
+                if (numero > maxFilas)
+                    break;
+
+                string proceso =
+                    System.Net.WebUtility.HtmlEncode(
+                        ObtenerTextoCelda(
+                            row,
+                            "Proceso"));
+
+                string fechaCert =
+                    System.Net.WebUtility.HtmlEncode(
+                        ObtenerTextoCelda(
+                            row,
+                            "FechaCertificacion"));
+
+                string nombreCertificadorCompleto =
+                    ObtenerTextoCelda(
+                        row,
+                        "NombreCertificador");
+
+                string certificador =
+                    System.Net.WebUtility.HtmlEncode(
+                        AbreviarNombreCertificador(
+                            nombreCertificadorCompleto));
+
+                string vigencia =
+                    System.Net.WebUtility.HtmlEncode(
+                        ObtenerTextoCelda(
+                            row,
+                            "FechaVencimiento"));
 
                 object? diasObj =
                     row.Cells["DiasRestantes"]?.Value;
+
                 bool noCertificado = false;
 
-                if (diasObj != null && diasObj != DBNull.Value)
+                int? diasRestantes = null;
+
+                if (diasObj is not null &&
+                    diasObj != DBNull.Value)
                 {
-                    int dias = Convert.ToInt32(diasObj);
-                    noCertificado = dias < 0 && string.IsNullOrWhiteSpace(fechaCert);
+                    int dias =
+                        Convert.ToInt32(diasObj);
+
+                    diasRestantes = dias;
+
+                    noCertificado =
+                        dias < 0 &&
+                        string.IsNullOrWhiteSpace(
+                            fechaCert);
                 }
 
-                string estiloFila = noCertificado
-                    ? "background:#dc2626;color:white;font-weight:bold;"
-                    : "background:#efefef;color:black;";
+                string estiloFila =
+                    noCertificado
+                        ? "background:#dc2626;color:white;font-weight:bold;"
+                        : "background:#efefef;color:black;";
 
                 if (string.IsNullOrWhiteSpace(proceso))
+                {
                     proceso = "";
+                }
 
                 if (string.IsNullOrWhiteSpace(fechaCert))
-                    fechaCert = noCertificado ? "NO CERTIFICADO" : "";
+                {
+                    fechaCert =
+                        noCertificado
+                            ? "NO CERTIFICADO"
+                            : "";
+                }
 
                 if (string.IsNullOrWhiteSpace(certificador))
-                    certificador = noCertificado ? "NO CERTIFICADO" : "";
+                {
+                    certificador =
+                        noCertificado
+                            ? "NO CERTIFICADO"
+                            : "";
+                }
 
                 if (string.IsNullOrWhiteSpace(vigencia))
-                    vigencia = noCertificado ? "NO CERTIFICADO" : "";
+                {
+                    vigencia =
+                        noCertificado
+                            ? "NO CERTIFICADO"
+                            : "";
+                }
 
-                if (noCertificado && string.IsNullOrWhiteSpace(proceso))
-                    proceso = "NO CERTIFICADO";
+                if (noCertificado &&
+                    string.IsNullOrWhiteSpace(proceso))
+                {
+                    proceso =
+                        "NO CERTIFICADO";
+                }
+
+                /*
+                 * Color únicamente para la celda VIGENCIA.
+                 *
+                 * Verde   = vigente
+                 * Amarillo = 30 días o menos
+                 * Rojo    = vencida
+                 */
+                string estiloVigencia =
+                    string.Empty;
+
+                if (!noCertificado &&
+                    diasRestantes.HasValue &&
+                    !string.IsNullOrWhiteSpace(vigencia))
+                {
+                    string colorFondo =
+                        ObtenerColorHtmlPorVencimiento(
+                            diasRestantes.Value);
+
+                    string colorTexto;
+
+                    if (diasRestantes.Value >= 0 &&
+                        diasRestantes.Value <= 30)
+                    {
+                        // Amarillo: texto negro para mejor contraste.
+                        colorTexto = "#000000";
+                    }
+                    else
+                    {
+                        // Verde o rojo.
+                        colorTexto = "#FFFFFF";
+                    }
+
+                    estiloVigencia =
+                        $"background:{colorFondo};" +
+                        $"color:{colorTexto};" +
+                        "font-weight:700;";
+                }
 
                 sb.Append($@"
 <tr style='{estiloFila}'>
@@ -602,7 +688,7 @@ namespace Aseguranza.Ventanas
     <td>{proceso}</td>
     <td>{fechaCert}</td>
     <td>{certificador}</td>
-    <td>{vigencia}</td>
+    <td style='{estiloVigencia}'>{vigencia}</td>
 </tr>");
 
                 numero++;

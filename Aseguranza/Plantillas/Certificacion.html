@@ -20,7 +20,8 @@
         html, body {
             margin: 0;
             padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: "Arial Nova", "Arial Nova Light", Arial, Helvetica, sans-serif;
+            font-weight: 300;
             background: #ffffff;
         }
 
@@ -82,7 +83,7 @@
         .card {
             width: 95mm;
             height: 65mm;
-            border: 0.6mm solid #000;
+            border: 0.5mm solid #000;
             border-radius: 4.2mm;
             background: #efefef;
             position: relative;
@@ -112,9 +113,10 @@
             background: #243f95;
             color: #fff;
             text-align: center;
-            font-weight: 800;
+            font-weight: 700;
             font-size: 2.9mm;
             line-height: 1.1;
+            letter-spacing: 0.05mm;
             padding: 1.1mm 0.8mm;
             margin-top: 0.6mm;
             margin-bottom: 1.9mm;
@@ -122,21 +124,48 @@
 
         .front-layout {
             display: grid;
-            grid-template-columns: 1fr 22mm;
-            gap: 2mm;
+            grid-template-columns: minmax(0, 1fr) 22mm;
+            grid-template-rows: auto 1fr;
+            column-gap: 2mm;
+            row-gap: 1.2mm;
             height: calc(100% - 9mm);
+            width: 100%;
+            align-content: start;
         }
 
         .front-left {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-rows: 11.4mm 11.4mm;
+            row-gap: 1.2mm;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .process-section {
+            grid-column: 1 / -1;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .front-left {
+            display: grid;
+            grid-template-rows: 11.4mm 11.4mm;
+            row-gap: 1.2mm;
+            min-width: 0;
+            width: 100%;
         }
 
         .reloj-box,
         .name-box {
-            border: 0.3mm solid #000;
-            background: #efefef;
-            padding: 1.1mm;
+            height: 11.4mm;
+            min-height: 11.4mm;
+            box-sizing: border-box;
+            border: 0.25mm solid #000;
+            background: #fff;
+            padding: 1.2mm 1.8mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .reloj-box {
@@ -151,14 +180,14 @@
 
         .label {
             font-size: 2.75mm;
-            font-weight: 800;
+            font-weight: 700;
             color: #000;
             line-height: 1.05;
         }
 
         .reloj-value {
             font-size: 3.5mm;
-            font-weight: 800;
+            font-weight: 700;
             color: #1f51e5;
             line-height: 1.1;
             margin-top: 0.45mm;
@@ -166,7 +195,7 @@
 
         .name-value {
             font-size: 3.15mm;
-            font-weight: 800;
+            font-weight: 600;
             font-style: italic;
             color: #1f51e5;
             line-height: 1.1;
@@ -177,39 +206,50 @@
         .proc-title {
             text-align: center;
             font-size: 2.9mm;
-            font-weight: 800;
+            font-weight: 700;
+            margin-top: 1mm;
             margin-bottom: 1.5mm;
             line-height: 1.05;
         }
 
         .process-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 1.1mm;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-rows: repeat(2, auto);
+            gap: 1.5mm;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
 
             .process-grid > div {
-                border: 0.3mm solid #000;
-                min-height: 6mm;
+                border: 0.25mm solid #000;
+                border-radius: 0.8mm;
+                min-height: 6.2mm;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
-                font-size: 2.3mm;
-                font-weight: 800;
-                line-height: 1;
-                padding: 0.45mm;
+                font-size: 2.1mm;
+                font-weight: 600;
+                line-height: 1.05;
+                padding: 0.4mm 0.25mm;
                 background: #fff;
                 color: #000;
+                overflow: hidden;
+                box-sizing: border-box;
             }
 
         .photo-box {
             width: 22mm;
-            height: 29mm;
+            min-width: 22mm;
+            max-width: 22mm;
+            height: 24mm;
             border: 0.35mm solid #000;
             background: #fff;
             overflow: hidden;
             align-self: start;
+            justify-self: end;
             margin-top: 0.3mm;
         }
 
@@ -217,6 +257,7 @@
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                object-position: center center;
                 display: block;
             }
 
@@ -224,8 +265,8 @@
             position: absolute;
             left: 2.2mm;
             bottom: 2mm;
-            font-size: 2.4mm;
-            font-weight: 800;
+            font-size: 2.1mm;
+            font-weight: 600;
             color: #000;
             line-height: 1;
         }
@@ -251,7 +292,7 @@
 
             .back-table th,
             .back-table td {
-                border: 0.25mm solid #000;
+                border: 0.2mm solid #000;
                 text-align: center;
                 padding: 0.3mm 0.2mm;
                 font-size: 2.2mm;
@@ -261,10 +302,14 @@
                 overflow: hidden;
             }
 
+            .back-table tbody td {
+                font-weight: 400;
+            }
+
             .back-table thead th {
                 background: #243f95;
                 color: #fff;
-                font-weight: 800;
+                font-weight: 700;
                 font-size: 2.1mm;
                 height: 5.6mm;
             }
@@ -332,6 +377,7 @@
                         <div class="inner-title">CERTIFICACION DE PROCESOS CRITICOS</div>
 
                         <div class="front-layout">
+
                             <div class="front-left">
                                 <div class="reloj-box">
                                     <div class="label">NO. RELOJ:</div>
@@ -342,17 +388,22 @@
                                     <div class="label">NOMBRE:</div>
                                     <div class="name-value">{{NOMBRE}}</div>
                                 </div>
+                            </div>
 
-                                <div class="proc-title">PROCESOS CERTIFICADOS:</div>
+                            <div class="photo-box">
+                                {{FOTO_HTML}}
+                            </div>
+
+                            <div class="process-section">
+                                <div class="proc-title">
+                                    PROCESOS CERTIFICADOS:
+                                </div>
 
                                 <div class="process-grid">
                                     {{PROCESOS_CERTIFICADOS}}
                                 </div>
                             </div>
 
-                            <div class="photo-box">
-                                {{FOTO_HTML}}
-                            </div>
                         </div>
 
                         <div class="footer-note">EC06 I01 CTS MCH-35 &nbsp; REV.2</div>
