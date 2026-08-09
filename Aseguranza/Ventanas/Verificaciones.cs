@@ -340,15 +340,28 @@ namespace Aseguranza.Ventanas
 
         private async Task EsperarRenderWebViewAsync()
         {
-            if (webViewCertificacion.CoreWebView2 == null)
+            if (webViewCertificacion.CoreWebView2 is null)
+            {
                 await InicializarWebViewAsync();
+            }
 
-            // Pequeña espera para que WebView termine de pintar la credencial antes de generar PDF
+            var coreWebView2 =
+                webViewCertificacion.CoreWebView2;
+
+            if (coreWebView2 is null)
+            {
+                throw new InvalidOperationException(
+                    "No fue posible inicializar WebView2.");
+            }
+
+            // Pequeña espera para que WebView termine de pintar
+            // la credencial antes de generar el PDF.
             await Task.Delay(1200);
 
             try
             {
-                await webViewCertificacion.CoreWebView2.ExecuteScriptAsync("document.body.offsetHeight;");
+                await coreWebView2.ExecuteScriptAsync(
+                    "document.body.offsetHeight;");
             }
             catch
             {
@@ -418,7 +431,8 @@ namespace Aseguranza.Ventanas
                 if (!procesosMostrados.Add(proceso))
                     continue;
 
-                object diasObj = row.Cells["DiasRestantes"]?.Value;
+                object? diasObj =
+                    row.Cells["DiasRestantes"]?.Value;
 
                 if (diasObj == null || diasObj == DBNull.Value)
                     continue;
@@ -484,7 +498,8 @@ namespace Aseguranza.Ventanas
                 string procesoOriginal = row.Cells["Proceso"]?.Value?.ToString()?.Trim() ?? "";
                 if (string.IsNullOrWhiteSpace(procesoOriginal)) continue;
 
-                object diasObj = row.Cells["DiasRestantes"]?.Value;
+                object? diasObj =
+                    row.Cells["DiasRestantes"]?.Value;
                 if (diasObj == null || diasObj == DBNull.Value) continue;
 
                 int dias = Convert.ToInt32(diasObj);
@@ -552,7 +567,8 @@ namespace Aseguranza.Ventanas
                 string certificador = System.Net.WebUtility.HtmlEncode(AbreviarNombreCertificador(nombreCertificadorCompleto));
                 string vigencia = System.Net.WebUtility.HtmlEncode(ObtenerTextoCelda(row, "FechaVencimiento"));
 
-                object diasObj = row.Cells["DiasRestantes"]?.Value;
+                object? diasObj =
+                    row.Cells["DiasRestantes"]?.Value;
                 bool noCertificado = false;
 
                 if (diasObj != null && diasObj != DBNull.Value)
@@ -609,23 +625,43 @@ namespace Aseguranza.Ventanas
             return sb.ToString();
         }
 
-        private string ObtenerTextoCelda(DataGridViewRow row, string nombreColumna)
+        private string ObtenerTextoCelda(
+            DataGridViewRow row,
+            string nombreColumna)
         {
-            if (!dgvCertificaciones.Columns.Contains(nombreColumna))
-                return "";
+            if (!dgvCertificaciones.Columns.Contains(
+                nombreColumna))
+            {
+                return string.Empty;
+            }
 
-            object valor = row.Cells[nombreColumna]?.Value;
+            object? valor =
+                row.Cells[nombreColumna]?.Value;
 
-            if (valor == null || valor == DBNull.Value)
-                return "";
+            if (valor is null ||
+                valor == DBNull.Value)
+            {
+                return string.Empty;
+            }
 
             if (valor is DateTime fecha)
+            {
                 return fecha.ToString("dd/MM/yy");
+            }
 
-            if (DateTime.TryParse(valor.ToString(), out DateTime fechaParseada))
-                return fechaParseada.ToString("dd/MM/yy");
+            string texto =
+                Convert.ToString(valor)
+                ?? string.Empty;
 
-            return valor.ToString();
+            if (DateTime.TryParse(
+                texto,
+                out DateTime fechaParseada))
+            {
+                return fechaParseada.ToString(
+                    "dd/MM/yy");
+            }
+
+            return texto;
         }
 
         private string AbreviarNombreCertificador(string nombreCompleto)
@@ -733,7 +769,23 @@ namespace Aseguranza.Ventanas
                 rutaDestino = ObtenerRutaDisponible(Path.Combine(carpetaDescargas, archivo));
             }
 
-            bool resultado = await webViewCertificacion.CoreWebView2.PrintToPdfAsync(rutaDestino);
+            if (webViewCertificacion.CoreWebView2 is null)
+            {
+                await InicializarWebViewAsync();
+            }
+
+            var coreWebView2 =
+                webViewCertificacion.CoreWebView2;
+
+            if (coreWebView2 is null)
+            {
+                throw new InvalidOperationException(
+                    "No fue posible inicializar WebView2 para generar el PDF.");
+            }
+
+            bool resultado =
+                await coreWebView2.PrintToPdfAsync(
+                    rutaDestino);
 
             if (resultado)
             {
@@ -791,10 +843,22 @@ namespace Aseguranza.Ventanas
         }
         private async Task ImprimirDirectoAsync()
         {
-            if (webViewCertificacion.CoreWebView2 == null)
+            if (webViewCertificacion.CoreWebView2 is null)
+            {
                 await InicializarWebViewAsync();
+            }
 
-            await webViewCertificacion.CoreWebView2.ExecuteScriptAsync("window.print();");
+            var coreWebView2 =
+                webViewCertificacion.CoreWebView2;
+
+            if (coreWebView2 is null)
+            {
+                throw new InvalidOperationException(
+                    "No fue posible inicializar WebView2 para imprimir.");
+            }
+
+            await coreWebView2.ExecuteScriptAsync(
+                "window.print();");
         }
     }
 }

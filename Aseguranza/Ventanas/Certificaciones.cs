@@ -289,19 +289,41 @@ namespace Aseguranza.Ventanas
         // ============================
         private void AbrirCertificaciones()
         {
-            Clases.Trabajador? trabajador = ObtenerTrabajadorSeleccionado();
+            Clases.Trabajador? trabajador =
+                ObtenerTrabajadorSeleccionado();
 
             if (trabajador == null)
             {
-                MessageBox.Show("Seleccione un trabajador.", "Aviso",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(
+                    "Seleccione un trabajador.",
+                    "Aviso",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
                 return;
             }
 
-            using var ventana = new Ventanas.CertificacionesVentana(trabajador);
+            if (!TryObtenerNoReloj(
+                trabajador,
+                out string noReloj))
+            {
+                MessageBox.Show(
+                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                    "Validación",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
+            using var ventana =
+                new Ventanas.CertificacionesVentana(
+                    trabajador);
+
             ventana.ShowDialog();
 
-            CargarTrabajadores(trabajador.NoReloj);
+            CargarTrabajadores(
+                noReloj);
         }
 
         // ============================
@@ -552,9 +574,24 @@ namespace Aseguranza.Ventanas
 
             using var ventana = new Ventanas.TrabajadoresVentana(trabajador);
 
-            if (ventana.ShowDialog() == DialogResult.OK)
+            if (ventana.ShowDialog() ==
+                DialogResult.OK)
             {
-                CargarTrabajadores(trabajador.NoReloj);
+                /*
+                 * Se obtiene después de cerrar la ventana porque
+                 * el número de reloj pudo haberse modificado.
+                 */
+                if (TryObtenerNoReloj(
+                    trabajador,
+                    out string noReloj))
+                {
+                    CargarTrabajadores(
+                        noReloj);
+                }
+                else
+                {
+                    CargarTrabajadores();
+                }
             }
         }
 
@@ -569,9 +606,22 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
+            if (!TryObtenerNoReloj(
+    trabajador,
+    out string noReloj))
+            {
+                MessageBox.Show(
+                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                    "Validación",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
             DialogResult confirmacion = MessageBox.Show(
                 $"¿Está seguro de borrar al trabajador?\n\n" +
-                $"No. Reloj: {trabajador.NoReloj}\n" +
+                $"No. Reloj: {noReloj}\n" +
                 $"Nombre: {trabajador.Nombre}",
                 "Confirmar borrado",
                 MessageBoxButtons.YesNo,
@@ -587,7 +637,10 @@ namespace Aseguranza.Ventanas
 
                 try
                 {
-                    string carpetaRespaldo = Clases.RutasArchivos.MoverCarpetaTrabajadorAEliminados(trabajador.NoReloj);
+                    string carpetaRespaldo =
+    Clases.RutasArchivos
+        .MoverCarpetaTrabajadorAEliminados(
+            noReloj);
 
                     if (!string.IsNullOrWhiteSpace(carpetaRespaldo))
                     {
@@ -624,6 +677,17 @@ namespace Aseguranza.Ventanas
             }
         }
 
+        private static bool TryObtenerNoReloj(
+    Clases.Trabajador trabajador,
+    out string noReloj)
+        {
+            noReloj =
+                trabajador.NoReloj?.Trim()
+                ?? string.Empty;
+
+            return noReloj.Length > 0;
+        }
+
         private void ActualizarBotonesTrabajador()
         {
             bool haySeleccion = dgvTrabajadores.CurrentRow != null
@@ -634,37 +698,80 @@ namespace Aseguranza.Ventanas
             btnCertificaciones.Enabled = haySeleccion;
         }
 
-        private void btnVistaPreviaCredencial_Click(object sender, EventArgs e)
+        private void btnVistaPreviaCredencial_Click(
+            object sender,
+            EventArgs e)
         {
-            Clases.Trabajador? trabajador = ObtenerTrabajadorSeleccionado();
+            Clases.Trabajador? trabajador =
+                ObtenerTrabajadorSeleccionado();
 
-            if (trabajador == null)
+            if (trabajador is null)
             {
-                MessageBox.Show("Seleccione un trabajador.", "Aviso",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(
+                    "Seleccione un trabajador.",
+                    "Aviso",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
                 return;
             }
 
-            using var ventana = new Verificaciones(trabajador.NoReloj);
+            if (!TryObtenerNoReloj(
+                trabajador,
+                out string noReloj))
+            {
+                MessageBox.Show(
+                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                    "Validación",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
+            using var ventana =
+                new Verificaciones(noReloj);
+
             ventana.ShowDialog();
         }
 
-        private void btnImprimirCredencial_Click(object sender, EventArgs e)
+        private void btnImprimirCredencial_Click(
+            object sender,
+            EventArgs e)
         {
-            Clases.Trabajador? trabajador = ObtenerTrabajadorSeleccionado();
+            Clases.Trabajador? trabajador =
+                ObtenerTrabajadorSeleccionado();
 
-            if (trabajador == null)
+            if (trabajador is null)
             {
-                MessageBox.Show("Seleccione un trabajador.", "Aviso",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(
+                    "Seleccione un trabajador.",
+                    "Aviso",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
                 return;
             }
 
-            using var ventana = new Verificaciones(
-                trabajador.NoReloj,
-                imprimirAutomaticamente: true,
-                ocultarVentanaAlImprimir: true,
-                guardarDirectoEnDescargas: true);
+            if (!TryObtenerNoReloj(
+                trabajador,
+                out string noReloj))
+            {
+                MessageBox.Show(
+                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                    "Validación",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
+            using var ventana =
+                new Verificaciones(
+                    noReloj,
+                    imprimirAutomaticamente: true,
+                    ocultarVentanaAlImprimir: true,
+                    guardarDirectoEnDescargas: true);
 
             ventana.ShowDialog();
         }

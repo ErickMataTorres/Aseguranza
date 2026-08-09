@@ -66,7 +66,9 @@ namespace Aseguranza.Ventanas
                 {
                     return;
                 }
-                Clases.Trabajador t = Clases.Trabajador.ConsultarTrabajador(txtNoReloj.Text);
+                Clases.Trabajador? t =
+    Clases.Trabajador.ConsultarTrabajador(
+        txtNoReloj.Text);
                 if (t != null)
                 {
                     lblMostrarNombre.Text = t.Nombre;
