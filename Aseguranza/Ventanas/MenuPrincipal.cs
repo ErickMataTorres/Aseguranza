@@ -18,8 +18,10 @@ namespace Aseguranza
 
         private void certificarToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Ventanas.Localidades ventana = new Ventanas.Localidades();
-            ventana.ShowDialog();
+            using Ventanas.Localidades ventana =
+                new Ventanas.Localidades();
+
+            ventana.ShowDialog(this);
         }
 
         private void localidadToolStripMenuItem_Click(object sender, EventArgs e)
