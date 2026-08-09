@@ -10,7 +10,6 @@ namespace Aseguranza.Ventanas
     public partial class Certificaciones : Form
     {
         private readonly Font _boldFont = new Font("Arial", 9F, FontStyle.Bold);
-        private Color _colorOriginal;
 
         public Certificaciones()
         {

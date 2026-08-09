@@ -476,7 +476,6 @@
         private PictureBox pictureBox1;
         private Button btnIniciarCamara;
         private Button btnSeleccionar;
-        private Button btnAceptar;
         private Button btnRegresar;
         private Button btnCapturar;
         private ComboBox cbCamaras;
