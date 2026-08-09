@@ -1,8 +1,7 @@
-﻿using System.Drawing.Drawing2D;
-using System.Drawing.Text;
+﻿using Aseguranza.UI;
 using System;
-using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -11,58 +10,20 @@ namespace Aseguranza.Ventanas
     public partial class Localidades : Form
     {
         // =========================================================
-        // PALETA VISUAL
+        // ESTADO
         // =========================================================
-
-        private static readonly Color AzulPrincipal =
-            Color.FromArgb(36, 63, 149);       // #243F95
-
-        private static readonly Color AzulSecundario =
-            Color.FromArgb(59, 89, 152);
-
-        private static readonly Color FondoAplicacion =
-            Color.FromArgb(245, 247, 250);
-
-        private static readonly Color FondoFilaAlterna =
-            Color.FromArgb(248, 250, 252);
-
-        private static readonly Color TextoPrincipal =
-            Color.FromArgb(31, 41, 55);
-
-        private static readonly Color TextoSecundario =
-            Color.FromArgb(100, 116, 139);
-
-        private static readonly Color BordeSuave =
-            Color.FromArgb(226, 232, 240);
-
-        private static readonly Color RojoEliminar =
-            Color.FromArgb(220, 53, 69);
-
-        private static readonly Color GrisBoton =
-            Color.FromArgb(75, 85, 99);
 
         private Label? _lblRegistros;
 
         private bool _estiloAplicado;
 
+        // =========================================================
+        // CONSTRUCTOR
+        // =========================================================
 
-        private static readonly string FuenteIconos =
-    ObtenerFuenteIconos();
-
-        private const string IconoBuscar = "\uE721";
-        private const string IconoAgregar = "\uE710";
-        private const string IconoModificar = "\uE70F";
-        private const string IconoEliminar = "\uE74D";
-        private const string IconoRegresar = "\uE72B";
-
-        private Panel? _pnlBuscar;
-        private bool _buscarTieneFoco;
         public Localidades()
         {
             InitializeComponent();
-
-            StartPosition =
-                FormStartPosition.CenterParent;
 
             AplicarEstiloVisual();
         }
@@ -89,7 +50,8 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            _estiloAplicado = true;
+            _estiloAplicado =
+                true;
 
             SuspendLayout();
 
@@ -97,135 +59,42 @@ namespace Aseguranza.Ventanas
             // FORMULARIO
             // -----------------------------------------------------
 
-            Text = "Localidades";
+            FormStyler.ApplyBase(
+                this,
+                "Localidades",
+                new Size(
+                    920,
+                    560));
 
-            ClientSize = new Size(920, 560);
-
-            BackColor =
-                FondoAplicacion;
-
-            DoubleBuffered = true;
-
-            Font =
-                new Font(
-                    "Arial Nova Light",
-                    10F,
-                    FontStyle.Regular);
-
-            FormBorderStyle =
-                FormBorderStyle.FixedSingle;
-
-            MaximizeBox = false;
-            MinimizeBox = false;
+            DoubleBuffered =
+                true;
 
             // -----------------------------------------------------
-            // CABECERA PRINCIPAL
+            // CABECERA
             // -----------------------------------------------------
 
             Panel pnlCabecera =
-                new Panel
-                {
-                    Name = "pnlCabeceraVisual",
-                    Location = new Point(0, 0),
-                    Size = new Size(
-                        ClientSize.Width,
-                        88),
-                    Anchor =
-                        AnchorStyles.Top |
-                        AnchorStyles.Left |
-                        AnchorStyles.Right,
-                    BackColor =
-                        AzulPrincipal
-                };
-
-            Label lblTitulo =
-                new Label
-                {
-                    AutoSize = true,
-                    Location =
-                        new Point(32, 14),
-
-                    Text =
-                        "Localidades",
-
-                    ForeColor =
-                        Color.White,
-
-                    Font =
-                        new Font(
-                            "Arial Nova",
-                            19F,
-                            FontStyle.Bold)
-                };
-
-            Label lblSubtitulo =
-                new Label
-                {
-                    AutoSize = true,
-                    Location =
-                        new Point(34, 51),
-
-                    Text =
-                        "Administra el catálogo de localidades del sistema",
-
-                    ForeColor =
-                        Color.FromArgb(
-                            225,
-                            231,
-                            255),
-
-                    Font =
-                        new Font(
-                            "Arial Nova Light",
-                            10F,
-                            FontStyle.Regular)
-                };
-
-            pnlCabecera.Controls.Add(
-                lblTitulo);
-
-            pnlCabecera.Controls.Add(
-                lblSubtitulo);
-
-            Controls.Add(
-                pnlCabecera);
+                FormStyler.CreateHeader(
+                    this,
+                    "Localidades",
+                    "Administra el catálogo de localidades del sistema");
 
             // -----------------------------------------------------
-            // TARJETA DE CONTENIDO
+            // TARJETA PRINCIPAL
             // -----------------------------------------------------
 
             Panel pnlContenido =
-                new Panel
-                {
-                    Name = "pnlContenido",
+                FormStyler.CreateCard(
+                    this,
+                    new Point(
+                        20,
+                        105),
+                    new Size(
+                        ClientSize.Width - 40,
+                        ClientSize.Height - 125));
 
-                    Location =
-                        new Point(20, 105),
-
-                    Size =
-                        new Size(
-                            ClientSize.Width - 40,
-                            ClientSize.Height - 125),
-
-                    BackColor =
-                        Color.White,
-
-                    Anchor =
-                        AnchorStyles.Top |
-                        AnchorStyles.Bottom |
-                        AnchorStyles.Left |
-                        AnchorStyles.Right
-                };
-
-            // Borde gris suave de la tarjeta.
-
-
-            Controls.Add(
-                pnlContenido);
-
-            AplicarBordeRedondeado(
-    pnlContenido,
-    12);
+            pnlContenido.Name =
+                "pnlContenido";
 
             // -----------------------------------------------------
             // ETIQUETA BUSCAR
@@ -238,19 +107,20 @@ namespace Aseguranza.Ventanas
                 true;
 
             lblBuscar.Location =
-                new Point(20, 17);
+                new Point(
+                    20,
+                    17);
 
             lblBuscar.ForeColor =
-                TextoPrincipal;
+                AppColors.TextPrimary;
 
             lblBuscar.Font =
-                new Font(
-                    "Arial Nova",
+                AppFonts.Regular(
                     10F,
                     FontStyle.Bold);
 
             // -----------------------------------------------------
-            // CONTENEDOR DEL BUSCADOR
+            // CONTENEDOR BUSCADOR
             // -----------------------------------------------------
 
             Panel pnlBuscar =
@@ -260,7 +130,9 @@ namespace Aseguranza.Ventanas
                         "pnlBuscar",
 
                     Location =
-                        new Point(20, 42),
+                        new Point(
+                            20,
+                            42),
 
                     Size =
                         new Size(
@@ -276,21 +148,6 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Right
                 };
 
-            // Guardamos la referencia para poder
-            // cambiar el borde cuando recibe foco.
-            _pnlBuscar =
-                pnlBuscar;
-
-            // Forma redondeada del buscador.
-            AplicarBordeRedondeado(
-                pnlBuscar,
-                7);
-
-            // El borde se dibuja con nuestro método,
-            // que cambiará de gris a azul cuando tenga foco.
-            pnlBuscar.Paint +=
-                DibujarBordeBuscador;
-
             // -----------------------------------------------------
             // ICONO BUSCAR
             // -----------------------------------------------------
@@ -302,26 +159,30 @@ namespace Aseguranza.Ventanas
                         "lblIconoBuscar",
 
                     Text =
-                        IconoBuscar,
+                        AppIcons.Search,
 
                     AutoSize =
                         false,
 
                     Size =
-                        new Size(36, 36),
+                        new Size(
+                            36,
+                            36),
 
                     Location =
-                        new Point(2, 1),
+                        new Point(
+                            2,
+                            1),
 
                     TextAlign =
                         ContentAlignment.MiddleCenter,
 
                     ForeColor =
-                        TextoSecundario,
+                        AppColors.TextSecondary,
 
                     Font =
                         new Font(
-                            FuenteIconos,
+                            AppIcons.FontFamilyName,
                             14F,
                             FontStyle.Regular)
                 };
@@ -331,7 +192,9 @@ namespace Aseguranza.Ventanas
             // -----------------------------------------------------
 
             txtBuscar.Location =
-                new Point(39, 8);
+                new Point(
+                    39,
+                    8);
 
             txtBuscar.Size =
                 new Size(
@@ -350,28 +213,17 @@ namespace Aseguranza.Ventanas
                 Color.White;
 
             txtBuscar.ForeColor =
-                TextoPrincipal;
+                AppColors.TextPrimary;
 
             txtBuscar.Font =
-                new Font(
-                    "Arial Nova Light",
-                    11F,
-                    FontStyle.Regular);
+                AppFonts.Light(11F);
 
             txtBuscar.PlaceholderText =
                 "Escribe el nombre de la localidad...";
 
-            txtBuscar.Enter +=
-    Buscador_Enter;
-
-            txtBuscar.Leave +=
-                Buscador_Leave;
-
-            pnlBuscar.Click +=
-                (_, _) =>
-                {
-                    txtBuscar.Focus();
-                };
+            InputStyler.ApplyOutlinedInput(
+                pnlBuscar,
+                txtBuscar);
 
             lblIconoBuscar.Click +=
                 (_, _) =>
@@ -380,13 +232,13 @@ namespace Aseguranza.Ventanas
                 };
 
             pnlBuscar.Controls.Add(
-    lblIconoBuscar);
+                lblIconoBuscar);
 
             pnlBuscar.Controls.Add(
                 txtBuscar);
 
             // -----------------------------------------------------
-            // CONTADOR DE REGISTROS
+            // CONTADOR
             // -----------------------------------------------------
 
             _lblRegistros =
@@ -399,29 +251,29 @@ namespace Aseguranza.Ventanas
                         true,
 
                     Location =
-                        new Point(20, 92),
+                        new Point(
+                            20,
+                            92),
 
                     Text =
                         "0 localidades registradas",
 
                     ForeColor =
-                        TextoSecundario,
+                        AppColors.TextSecondary,
 
                     Font =
-                        new Font(
-                            "Arial Nova Light",
-                            9.5F,
-                            FontStyle.Regular)
+                        AppFonts.Light(9.5F)
                 };
 
             // -----------------------------------------------------
             // DATAGRIDVIEW
             // -----------------------------------------------------
 
-            ConfigurarDataGridView();
+            DataGridViewStyler.ApplyCatalogStyle(
+                dgvLocalidades);
 
             // -----------------------------------------------------
-            // CONTENEDOR DE LA TABLA
+            // CONTENEDOR TABLA
             // -----------------------------------------------------
 
             Panel pnlTabla =
@@ -431,7 +283,9 @@ namespace Aseguranza.Ventanas
                         "pnlTabla",
 
                     Location =
-                        new Point(20, 118),
+                        new Point(
+                            20,
+                            118),
 
                     Size =
                         new Size(
@@ -451,7 +305,7 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Right
                 };
 
-            AplicarBordeRedondeado(
+            RoundedControlHelper.ApplyRoundedRegion(
                 pnlTabla,
                 6);
 
@@ -469,31 +323,20 @@ namespace Aseguranza.Ventanas
                             pnlTabla.Height - 1);
 
                     using GraphicsPath ruta =
-                        CrearRutaRedondeada(
-                            rectangulo,
-                            6);
+                        RoundedControlHelper
+                            .CreateRoundedPath(
+                                rectangulo,
+                                6);
 
                     using Pen lapiz =
                         new Pen(
-                            Color.FromArgb(
-                                203,
-                                213,
-                                225),
+                            AppColors.BorderMedium,
                             1F);
 
                     e.Graphics.DrawPath(
                         lapiz,
                         ruta);
                 };
-
-
-            dgvLocalidades.Location =
-    new Point(1, 1);
-
-            dgvLocalidades.Size =
-                new Size(
-                    pnlTabla.ClientSize.Width - 2,
-                    pnlTabla.ClientSize.Height - 2);
 
             dgvLocalidades.Dock =
                 DockStyle.Fill;
@@ -504,46 +347,51 @@ namespace Aseguranza.Ventanas
             pnlTabla.Controls.Add(
                 dgvLocalidades);
 
-
             // -----------------------------------------------------
             // BOTONES
             // -----------------------------------------------------
 
-            ConfigurarBoton(
+            ButtonStyler.Apply(
                 btnAgregar,
                 "Agregar",
-                AzulPrincipal,
-                IconoAgregar);
+                AppColors.Primary,
+                AppIcons.Add);
 
-            ConfigurarBoton(
+            ButtonStyler.Apply(
                 btnModificar,
                 "Modificar",
-                AzulSecundario,
-                IconoModificar);
+                AppColors.Secondary,
+                AppIcons.Edit);
 
-            ConfigurarBoton(
+            ButtonStyler.Apply(
                 btnBorrar,
                 "Eliminar",
-                RojoEliminar,
-                IconoEliminar);
+                AppColors.Danger,
+                AppIcons.Delete);
 
-            ConfigurarBoton(
+            ButtonStyler.Apply(
                 btnRegresar,
                 "Regresar",
-                GrisBoton,
-                IconoRegresar);
+                AppColors.Neutral,
+                AppIcons.Back);
 
             int yBotones =
                 pnlContenido.ClientSize.Height - 58;
 
             btnAgregar.Location =
-                new Point(20, yBotones);
+                new Point(
+                    20,
+                    yBotones);
 
             btnModificar.Location =
-                new Point(170, yBotones);
+                new Point(
+                    170,
+                    yBotones);
 
             btnBorrar.Location =
-                new Point(320, yBotones);
+                new Point(
+                    320,
+                    yBotones);
 
             btnRegresar.Location =
                 new Point(
@@ -553,8 +401,8 @@ namespace Aseguranza.Ventanas
                     yBotones);
 
             btnAgregar.Anchor =
-    AnchorStyles.Bottom |
-    AnchorStyles.Left;
+                AnchorStyles.Bottom |
+                AnchorStyles.Left;
 
             btnModificar.Anchor =
                 AnchorStyles.Bottom |
@@ -569,7 +417,7 @@ namespace Aseguranza.Ventanas
                 AnchorStyles.Right;
 
             // -----------------------------------------------------
-            // REUBICAR CONTROLES DENTRO DE LA TARJETA
+            // AGREGAR CONTROLES
             // -----------------------------------------------------
 
             pnlContenido.Controls.Add(
@@ -582,7 +430,7 @@ namespace Aseguranza.Ventanas
                 _lblRegistros);
 
             pnlContenido.Controls.Add(
-    pnlTabla);
+                pnlTabla);
 
             pnlContenido.Controls.Add(
                 btnAgregar);
@@ -597,340 +445,13 @@ namespace Aseguranza.Ventanas
                 btnRegresar);
 
             pnlContenido.BringToFront();
+
             pnlCabecera.BringToFront();
 
             ResumeLayout(false);
+
             PerformLayout();
         }
-
-
-        private static void AplicarBordeRedondeado(
-    Control control,
-    int radio)
-        {
-            void ActualizarRegion()
-            {
-                if (control.Width <= 0 ||
-                    control.Height <= 0)
-                {
-                    return;
-                }
-
-                int diametro = radio * 2;
-
-                using GraphicsPath ruta =
-                    new GraphicsPath();
-
-                ruta.StartFigure();
-
-                ruta.AddArc(
-                    0,
-                    0,
-                    diametro,
-                    diametro,
-                    180,
-                    90);
-
-                ruta.AddArc(
-                    control.Width - diametro,
-                    0,
-                    diametro,
-                    diametro,
-                    270,
-                    90);
-
-                ruta.AddArc(
-                    control.Width - diametro,
-                    control.Height - diametro,
-                    diametro,
-                    diametro,
-                    0,
-                    90);
-
-                ruta.AddArc(
-                    0,
-                    control.Height - diametro,
-                    diametro,
-                    diametro,
-                    90,
-                    90);
-
-                ruta.CloseFigure();
-
-                control.Region =
-                    new Region(ruta);
-            }
-
-            ActualizarRegion();
-
-            control.Resize +=
-                (_, _) =>
-                {
-                    ActualizarRegion();
-                };
-        }
-
-
-        // =========================================================
-        // ESTILO DEL DATAGRIDVIEW
-        // =========================================================
-
-        private void ConfigurarDataGridView()
-        {
-            dgvLocalidades.BackgroundColor =
-                Color.White;
-
-            dgvLocalidades.BorderStyle =
-                BorderStyle.None;
-
-            dgvLocalidades.GridColor =
-                BordeSuave;
-
-            dgvLocalidades.CellBorderStyle =
-                DataGridViewCellBorderStyle.SingleHorizontal;
-
-            dgvLocalidades.ColumnHeadersBorderStyle =
-                DataGridViewHeaderBorderStyle.None;
-
-            dgvLocalidades.RowHeadersVisible =
-                false;
-
-            dgvLocalidades.AllowUserToAddRows =
-                false;
-
-            dgvLocalidades.AllowUserToDeleteRows =
-                false;
-
-            dgvLocalidades.AllowUserToResizeRows =
-                false;
-
-            dgvLocalidades.MultiSelect =
-                false;
-
-            dgvLocalidades.ReadOnly =
-                true;
-
-            dgvLocalidades.SelectionMode =
-                DataGridViewSelectionMode.FullRowSelect;
-
-            dgvLocalidades.AutoSizeColumnsMode =
-                DataGridViewAutoSizeColumnsMode.Fill;
-
-            // -----------------------------------------------------
-            // ENCABEZADO
-            // -----------------------------------------------------
-
-            dgvLocalidades.EnableHeadersVisualStyles =
-                false;
-
-            dgvLocalidades.ColumnHeadersHeight =
-                40;
-
-            dgvLocalidades.ColumnHeadersHeightSizeMode =
-                DataGridViewColumnHeadersHeightSizeMode
-                    .DisableResizing;
-
-            dgvLocalidades
-                .ColumnHeadersDefaultCellStyle
-                .BackColor =
-                    AzulPrincipal;
-
-            dgvLocalidades
-                .ColumnHeadersDefaultCellStyle
-                .ForeColor =
-                    Color.White;
-
-            dgvLocalidades
-                .ColumnHeadersDefaultCellStyle
-                .SelectionBackColor =
-                    AzulPrincipal;
-
-            dgvLocalidades
-                .ColumnHeadersDefaultCellStyle
-                .SelectionForeColor =
-                    Color.White;
-
-            dgvLocalidades
-                .ColumnHeadersDefaultCellStyle
-                .Font =
-                    new Font(
-                        "Arial Nova",
-                        10F,
-                        FontStyle.Bold);
-
-            dgvLocalidades
-                .ColumnHeadersDefaultCellStyle
-                .Alignment =
-                    DataGridViewContentAlignment.MiddleLeft;
-
-            dgvLocalidades
-                .ColumnHeadersDefaultCellStyle
-                .Padding =
-                    new Padding(
-                        8,
-                        0,
-                        0,
-                        0);
-
-            // -----------------------------------------------------
-            // FILAS
-            // -----------------------------------------------------
-
-            dgvLocalidades
-                .DefaultCellStyle
-                .BackColor =
-                    Color.White;
-
-            dgvLocalidades
-                .DefaultCellStyle
-                .ForeColor =
-                    TextoPrincipal;
-
-            dgvLocalidades
-                .DefaultCellStyle
-                .Font =
-                    new Font(
-                        "Arial Nova Light",
-                        10F,
-                        FontStyle.Regular);
-
-            dgvLocalidades
-                .DefaultCellStyle
-                .SelectionBackColor =
-                    Color.FromArgb(
-                        224,
-                        231,
-                        255);
-
-            dgvLocalidades
-                .DefaultCellStyle
-                .SelectionForeColor =
-                    TextoPrincipal;
-
-            dgvLocalidades
-                .DefaultCellStyle
-                .Padding =
-                    new Padding(
-                        8,
-                        0,
-                        8,
-                        0);
-
-            dgvLocalidades
-                .AlternatingRowsDefaultCellStyle
-                .BackColor =
-                    FondoFilaAlterna;
-
-            dgvLocalidades.RowTemplate.Height =
-                38;
-        }
-
-        // =========================================================
-        // ESTILO DE BOTONES
-        // =========================================================
-
-        private void ConfigurarBoton(
-    Button boton,
-    string texto,
-    Color colorFondo,
-    string icono)
-        {
-            boton.Text =
-                texto;
-
-            boton.Size =
-                new Size(138, 42);
-
-            boton.FlatStyle =
-                FlatStyle.Flat;
-
-            boton.FlatAppearance.BorderSize =
-                0;
-
-            boton.FlatAppearance.MouseOverBackColor =
-                ControlPaint.Dark(
-                    colorFondo,
-                    0.05F);
-
-            boton.FlatAppearance.MouseDownBackColor =
-                ControlPaint.Dark(
-                    colorFondo,
-                    0.10F);
-
-            boton.BackColor =
-                colorFondo;
-
-            boton.ForeColor =
-                Color.White;
-
-            boton.UseVisualStyleBackColor =
-                false;
-
-            boton.Cursor =
-                Cursors.Hand;
-
-            boton.Font =
-                new Font(
-                    "Arial Nova",
-                    10F,
-                    FontStyle.Bold);
-
-            boton.Image =
-                CrearIcono(
-                    icono,
-                    Color.White,
-                    16);
-
-            boton.ImageAlign =
-                ContentAlignment.MiddleLeft;
-
-            boton.TextAlign =
-                ContentAlignment.MiddleCenter;
-
-            boton.TextImageRelation =
-                TextImageRelation.ImageBeforeText;
-
-            boton.Padding =
-                new Padding(
-                    12,
-                    0,
-                    12,
-                    0);
-
-            AplicarBordeRedondeado(
-                boton,
-                7);
-        }
-
-
-        private void ActualizarEstadoBoton(
-    Button boton,
-    Color colorActivo)
-        {
-            if (boton.Enabled)
-            {
-                boton.BackColor =
-                    colorActivo;
-
-                boton.ForeColor =
-                    Color.White;
-
-                return;
-            }
-
-            boton.BackColor =
-                Color.FromArgb(
-                    203,
-                    213,
-                    225);
-
-            boton.ForeColor =
-                Color.FromArgb(
-                    100,
-                    116,
-                    139);
-        }
-
 
         // =========================================================
         // DATOS
@@ -952,7 +473,8 @@ namespace Aseguranza.Ventanas
                 dgvLocalidades.ClearSelection();
 
                 dgvLocalidades.Rows[0]
-                    .Selected = true;
+                    .Selected =
+                        true;
 
                 DataGridViewCell? primeraCeldaVisible =
                     dgvLocalidades.Rows[0]
@@ -971,6 +493,9 @@ namespace Aseguranza.Ventanas
             else
             {
                 dgvLocalidades.ClearSelection();
+
+                dgvLocalidades.CurrentCell =
+                    null;
             }
 
             ValidarBotones();
@@ -981,18 +506,19 @@ namespace Aseguranza.Ventanas
             if (dgvLocalidades.Columns.Contains(
                 "Id"))
             {
-                dgvLocalidades.Columns["Id"]
-                    .Visible = false;
+                dgvLocalidades.Columns["Id"]!
+                    .Visible =
+                        false;
             }
 
             if (dgvLocalidades.Columns.Contains(
                 "Nombre"))
             {
-                dgvLocalidades.Columns["Nombre"]
+                dgvLocalidades.Columns["Nombre"]!
                     .HeaderText =
                         "LOCALIDAD";
 
-                dgvLocalidades.Columns["Nombre"]
+                dgvLocalidades.Columns["Nombre"]!
                     .AutoSizeMode =
                         DataGridViewAutoSizeColumnMode.Fill;
             }
@@ -1033,19 +559,19 @@ namespace Aseguranza.Ventanas
             btnBorrar.Enabled =
                 hayRegistros;
 
-            ActualizarEstadoBoton(
+            ButtonStyler.UpdateEnabledState(
                 btnModificar,
-                AzulSecundario);
+                AppColors.Secondary);
 
-            ActualizarEstadoBoton(
+            ButtonStyler.UpdateEnabledState(
                 btnBorrar,
-                RojoEliminar);
+                AppColors.Danger);
 
             txtBuscar.Focus();
         }
 
         // =========================================================
-        // OBTENER LOCALIDAD SELECCIONADA
+        // OBTENER SELECCIÓN
         // =========================================================
 
         private Clases.Localidad?
@@ -1106,11 +632,11 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
-            using Ventanas.LocalidadesVentana ventana =
-                new Ventanas.LocalidadesVentana(
-                    null!);
+            using LocalidadesVentana ventana =
+                new LocalidadesVentana(
+                    null);
 
-            if (ventana.ShowDialog() ==
+            if (ventana.ShowDialog(this) ==
                 DialogResult.OK)
             {
                 IniciarTodo();
@@ -1139,11 +665,11 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            using Ventanas.LocalidadesVentana ventana =
-                new Ventanas.LocalidadesVentana(
+            using LocalidadesVentana ventana =
+                new LocalidadesVentana(
                     localidad);
 
-            if (ventana.ShowDialog() ==
+            if (ventana.ShowDialog(this) ==
                 DialogResult.OK)
             {
                 IniciarTodo();
@@ -1174,8 +700,7 @@ namespace Aseguranza.Ventanas
 
             DialogResult confirmacion =
                 MessageBox.Show(
-                    $"¿Está seguro de eliminar la localidad " +
-                    $"\"{localidad.Nombre}\"?",
+                    $"¿Está seguro de eliminar la localidad \"{localidad.Nombre}\"?",
                     "Confirmar eliminación",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning);
@@ -1212,8 +737,7 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
-            // Por ahora la búsqueda se ejecuta
-            // al presionar Enter.
+            // La búsqueda se ejecuta al presionar Enter.
         }
 
         private void txtBuscar_KeyPress(
@@ -1226,13 +750,14 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            e.Handled = true;
+            e.Handled =
+                true;
 
             IniciarTodo();
         }
 
         // =========================================================
-        // DOBLE CLIC EN LA TABLA
+        // DOBLE CLIC
         // =========================================================
 
         private void dgvLocalidades_CellDoubleClick(
@@ -1244,13 +769,19 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            dgvLocalidades.CurrentCell =
+            DataGridViewCell? primeraCeldaVisible =
                 dgvLocalidades.Rows[e.RowIndex]
                     .Cells
                     .Cast<DataGridViewCell>()
                     .FirstOrDefault(
                         celda =>
                             celda.Visible);
+
+            if (primeraCeldaVisible is not null)
+            {
+                dgvLocalidades.CurrentCell =
+                    primeraCeldaVisible;
+            }
 
             Clases.Localidad? localidad =
                 ObtenerLocalidadSeleccionada();
@@ -1260,197 +791,15 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            using Ventanas.LocalidadesVentana ventana =
-                new Ventanas.LocalidadesVentana(
+            using LocalidadesVentana ventana =
+                new LocalidadesVentana(
                     localidad);
 
-            if (ventana.ShowDialog() ==
+            if (ventana.ShowDialog(this) ==
                 DialogResult.OK)
             {
                 IniciarTodo();
             }
         }
-
-        private static string ObtenerFuenteIconos()
-        {
-            using InstalledFontCollection fuentes =
-                new InstalledFontCollection();
-
-            bool existeFluent =
-                fuentes.Families.Any(
-                    fuente =>
-                        fuente.Name.Equals(
-                            "Segoe Fluent Icons",
-                            StringComparison.OrdinalIgnoreCase));
-
-            return existeFluent
-                ? "Segoe Fluent Icons"
-                : "Segoe MDL2 Assets";
-        }
-
-        private static Bitmap CrearIcono(
-            string glifo,
-            Color color,
-            int tamano = 16)
-        {
-            Bitmap bitmap =
-                new Bitmap(24, 24);
-
-            using Graphics graphics =
-                Graphics.FromImage(bitmap);
-
-            graphics.Clear(
-                Color.Transparent);
-
-            graphics.SmoothingMode =
-                SmoothingMode.AntiAlias;
-
-            graphics.TextRenderingHint =
-                TextRenderingHint.AntiAliasGridFit;
-
-            using Font fuente =
-                new Font(
-                    FuenteIconos,
-                    tamano,
-                    FontStyle.Regular,
-                    GraphicsUnit.Pixel);
-
-            TextRenderer.DrawText(
-                graphics,
-                glifo,
-                fuente,
-                new Rectangle(
-                    0,
-                    0,
-                    bitmap.Width,
-                    bitmap.Height),
-                color,
-                TextFormatFlags.HorizontalCenter |
-                TextFormatFlags.VerticalCenter |
-                TextFormatFlags.NoPadding);
-
-            return bitmap;
-        }
-
-
-        private GraphicsPath CrearRutaRedondeada(
-    Rectangle rectangulo,
-    int radio)
-        {
-            GraphicsPath ruta =
-                new GraphicsPath();
-
-            int diametro =
-                radio * 2;
-
-            Rectangle arco =
-                new Rectangle(
-                    rectangulo.Location,
-                    new Size(
-                        diametro,
-                        diametro));
-
-            ruta.AddArc(
-                arco,
-                180,
-                90);
-
-            arco.X =
-                rectangulo.Right -
-                diametro;
-
-            ruta.AddArc(
-                arco,
-                270,
-                90);
-
-            arco.Y =
-                rectangulo.Bottom -
-                diametro;
-
-            ruta.AddArc(
-                arco,
-                0,
-                90);
-
-            arco.X =
-                rectangulo.Left;
-
-            ruta.AddArc(
-                arco,
-                90,
-                90);
-
-            ruta.CloseFigure();
-
-            return ruta;
-        }
-
-        private void DibujarBordeBuscador(
-            object? sender,
-            PaintEventArgs e)
-        {
-            if (_pnlBuscar is null)
-            {
-                return;
-            }
-
-            e.Graphics.SmoothingMode =
-                SmoothingMode.AntiAlias;
-
-            Rectangle rectangulo =
-                new Rectangle(
-                    0,
-                    0,
-                    _pnlBuscar.Width - 1,
-                    _pnlBuscar.Height - 1);
-
-            using GraphicsPath ruta =
-                CrearRutaRedondeada(
-                    rectangulo,
-                    7);
-
-            Color colorBorde =
-                _buscarTieneFoco
-                    ? AzulPrincipal
-                    : Color.FromArgb(
-                        148,
-                        163,
-                        184);
-
-            float grosor =
-                _buscarTieneFoco
-                    ? 1.8F
-                    : 1F;
-
-            using Pen lapiz =
-                new Pen(
-                    colorBorde,
-                    grosor);
-
-            e.Graphics.DrawPath(
-                lapiz,
-                ruta);
-        }
-
-        private void Buscador_Enter(
-            object? sender,
-            EventArgs e)
-        {
-            _buscarTieneFoco = true;
-
-            _pnlBuscar?.Invalidate();
-        }
-
-        private void Buscador_Leave(
-            object? sender,
-            EventArgs e)
-        {
-            _buscarTieneFoco = false;
-
-            _pnlBuscar?.Invalidate();
-        }
-
-
     }
 }
