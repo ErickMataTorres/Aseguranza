@@ -1,102 +1,553 @@
-﻿using Aseguranza.Clases;
+﻿using Aseguranza.UI;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Aseguranza.Ventanas
 {
     public partial class LineasVentana : Form
     {
+        // =========================================================
+        // DATOS
+        // =========================================================
+
         private Clases.Linea? lineaActual;
-        public LineasVentana(Clases.Linea linea)
+
+        private bool _estiloAplicado;
+
+        // =========================================================
+        // CONSTRUCTOR
+        // =========================================================
+
+        public LineasVentana(
+            Clases.Linea? linea)
         {
             InitializeComponent();
-            if (linea != null)
+
+            lineaActual =
+                linea;
+
+            if (lineaActual is not null)
             {
-                lineaActual = linea;
-                txtNombre.Text = linea.Nombre;
+                txtNombre.Text =
+                    lineaActual.Nombre;
             }
+
+            AplicarEstiloVisual();
         }
 
-        private void LineasVentana_Load(object sender, EventArgs e)
+        // =========================================================
+        // CARGA
+        // =========================================================
+
+        private void LineasVentana_Load(
+            object sender,
+            EventArgs e)
         {
-            cbPlantas.DataSource = Clases.Planta.ConsultarPlantas(string.Empty);
-            cbPlantas.DisplayMember = "Nombre";
-            cbPlantas.ValueMember = "Id";
-            if (lineaActual == null)
+            CargarPlantas();
+
+            if (lineaActual is null)
             {
-                cbPlantas.SelectedIndex = -1;
+                cbPlantas.SelectedIndex =
+                    -1;
+
+                cbPlantas.Focus();
             }
             else
             {
-                cbPlantas.SelectedValue = lineaActual.IdPlanta;
+                cbPlantas.SelectedValue =
+                    lineaActual.IdPlanta;
+
+                txtNombre.Focus();
+
+                txtNombre.SelectAll();
             }
         }
 
-        private void btnAceptar_Click(object sender, EventArgs e)
+        // =========================================================
+        // CARGAR PLANTAS
+        // =========================================================
+
+        private void CargarPlantas()
         {
-            if (cbPlantas.SelectedIndex == -1 ||
-                cbPlantas.SelectedValue is null ||
-                string.IsNullOrWhiteSpace(txtNombre.Text))
+            cbPlantas.DataSource =
+                Clases.Planta
+                    .ConsultarPlantas(
+                        string.Empty);
+
+            cbPlantas.DisplayMember =
+                "Nombre";
+
+            cbPlantas.ValueMember =
+                "Id";
+        }
+
+        // =========================================================
+        // ESTILO
+        // =========================================================
+
+        private void AplicarEstiloVisual()
+        {
+            if (_estiloAplicado)
+            {
+                return;
+            }
+
+            _estiloAplicado =
+                true;
+
+            SuspendLayout();
+
+            string titulo =
+                lineaActual is null
+                    ? "Agregar línea"
+                    : "Modificar línea";
+
+            string subtitulo =
+                lineaActual is null
+                    ? "Registra una nueva línea y asígnala a una planta"
+                    : "Actualiza la línea y su planta asignada";
+
+            // =====================================================
+            // FORMULARIO
+            // =====================================================
+
+            FormStyler.ApplyBase(
+                this,
+                titulo,
+                new Size(
+                    620,
+                    420));
+
+            DoubleBuffered =
+                true;
+
+            AcceptButton =
+                btnAceptar;
+
+            CancelButton =
+                btnRegresar;
+
+            // =====================================================
+            // CABECERA
+            // =====================================================
+
+            Panel pnlCabecera =
+                FormStyler.CreateHeader(
+                    this,
+                    titulo,
+                    subtitulo,
+                    titleX: 30,
+                    titleY: 15,
+                    subtitleX: 32,
+                    subtitleY: 52);
+
+            // =====================================================
+            // TARJETA
+            // =====================================================
+
+            Panel pnlContenido =
+                FormStyler.CreateCard(
+                    this,
+                    new Point(
+                        20,
+                        106),
+                    new Size(
+                        ClientSize.Width - 40,
+                        ClientSize.Height - 126));
+
+            pnlContenido.Name =
+                "pnlContenido";
+
+            // =====================================================
+            // LABEL PLANTA
+            // =====================================================
+
+            lblPlanta.Text =
+                "Planta";
+
+            lblPlanta.AutoSize =
+                true;
+
+            lblPlanta.Location =
+                new Point(
+                    22,
+                    22);
+
+            lblPlanta.ForeColor =
+                AppColors.TextPrimary;
+
+            lblPlanta.Font =
+                AppFonts.Regular(
+                    10F,
+                    FontStyle.Bold);
+
+            // =====================================================
+            // CONTENEDOR COMBOBOX
+            // =====================================================
+
+            Panel pnlPlanta =
+                new Panel
+                {
+                    Name =
+                        "pnlPlanta",
+
+                    Location =
+                        new Point(
+                            22,
+                            50),
+
+                    Size =
+                        new Size(
+                            pnlContenido.ClientSize.Width - 44,
+                            42),
+
+                    BackColor =
+                        Color.White,
+
+                    Anchor =
+                        AnchorStyles.Top |
+                        AnchorStyles.Left |
+                        AnchorStyles.Right
+                };
+
+            // =====================================================
+            // COMBOBOX PLANTAS
+            // =====================================================
+
+            cbPlantas.Location =
+                new Point(
+                    8,
+                    7);
+
+            cbPlantas.Size =
+                new Size(
+                    pnlPlanta.ClientSize.Width - 16,
+                    28);
+
+            cbPlantas.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Left |
+                AnchorStyles.Right;
+
+            ComboBoxStyler.ApplyOutlinedComboBox(
+                pnlPlanta,
+                cbPlantas);
+
+            pnlPlanta.Controls.Add(
+                cbPlantas);
+
+            // =====================================================
+            // LABEL NOMBRE
+            // =====================================================
+
+            lblNombre.Text =
+                "Nombre de la línea";
+
+            lblNombre.AutoSize =
+                true;
+
+            lblNombre.Location =
+                new Point(
+                    22,
+                    111);
+
+            lblNombre.ForeColor =
+                AppColors.TextPrimary;
+
+            lblNombre.Font =
+                AppFonts.Regular(
+                    10F,
+                    FontStyle.Bold);
+
+            // =====================================================
+            // CONTENEDOR NOMBRE
+            // =====================================================
+
+            Panel pnlNombre =
+                new Panel
+                {
+                    Name =
+                        "pnlNombre",
+
+                    Location =
+                        new Point(
+                            22,
+                            139),
+
+                    Size =
+                        new Size(
+                            pnlContenido.ClientSize.Width - 44,
+                            42),
+
+                    BackColor =
+                        Color.White,
+
+                    Anchor =
+                        AnchorStyles.Top |
+                        AnchorStyles.Left |
+                        AnchorStyles.Right
+                };
+
+            // =====================================================
+            // TEXTBOX NOMBRE
+            // =====================================================
+
+            txtNombre.Location =
+                new Point(
+                    12,
+                    10);
+
+            txtNombre.Size =
+                new Size(
+                    pnlNombre.ClientSize.Width - 24,
+                    25);
+
+            txtNombre.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Left |
+                AnchorStyles.Right;
+
+            txtNombre.BorderStyle =
+                BorderStyle.None;
+
+            txtNombre.BackColor =
+                Color.White;
+
+            txtNombre.ForeColor =
+                AppColors.TextPrimary;
+
+            txtNombre.Font =
+                AppFonts.Light(11F);
+
+            txtNombre.PlaceholderText =
+                "Ej. ENSAMBLE 1";
+
+            InputStyler.ApplyOutlinedInput(
+                pnlNombre,
+                txtNombre);
+
+            pnlNombre.Controls.Add(
+                txtNombre);
+
+            // =====================================================
+            // AYUDA
+            // =====================================================
+
+            Label lblAyuda =
+                new Label
+                {
+                    AutoSize =
+                        true,
+
+                    Location =
+                        new Point(
+                            22,
+                            191),
+
+                    Text =
+                        "Selecciona la planta a la que pertenece la línea.",
+
+                    ForeColor =
+                        AppColors.TextSecondary,
+
+                    Font =
+                        AppFonts.Light(9F)
+                };
+
+            // =====================================================
+            // BOTONES
+            // =====================================================
+
+            ButtonStyler.Apply(
+                btnAceptar,
+                lineaActual is null
+                    ? "Guardar"
+                    : "Actualizar",
+                AppColors.Primary,
+                AppIcons.Save);
+
+            ButtonStyler.Apply(
+                btnRegresar,
+                "Cancelar",
+                AppColors.Neutral,
+                AppIcons.Back);
+
+            int yBotones =
+                pnlContenido.ClientSize.Height - 60;
+
+            btnAceptar.Location =
+                new Point(
+                    22,
+                    yBotones);
+
+            btnRegresar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width -
+                    btnRegresar.Width -
+                    22,
+                    yBotones);
+
+            btnAceptar.Anchor =
+                AnchorStyles.Bottom |
+                AnchorStyles.Left;
+
+            btnRegresar.Anchor =
+                AnchorStyles.Bottom |
+                AnchorStyles.Right;
+
+            // =====================================================
+            // AGREGAR CONTROLES
+            // =====================================================
+
+            pnlContenido.Controls.Add(
+                lblPlanta);
+
+            pnlContenido.Controls.Add(
+                pnlPlanta);
+
+            pnlContenido.Controls.Add(
+                lblNombre);
+
+            pnlContenido.Controls.Add(
+                pnlNombre);
+
+            pnlContenido.Controls.Add(
+                lblAyuda);
+
+            pnlContenido.Controls.Add(
+                btnAceptar);
+
+            pnlContenido.Controls.Add(
+                btnRegresar);
+
+            pnlContenido.BringToFront();
+
+            pnlCabecera.BringToFront();
+
+            ResumeLayout(false);
+
+            PerformLayout();
+        }
+
+        // =========================================================
+        // GUARDAR / ACTUALIZAR
+        // =========================================================
+
+        private void btnAceptar_Click(
+            object sender,
+            EventArgs e)
+        {
+            string nombre =
+                txtNombre.Text.Trim();
+
+            if (cbPlantas.SelectedIndex < 0)
             {
                 MessageBox.Show(
-                    "Debe completar los campos.",
-                    "Error",
+                    "Seleccione una planta.",
+                    "Dato requerido",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
+
+                cbPlantas.Focus();
+
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                nombre))
+            {
+                MessageBox.Show(
+                    "El nombre de la línea no puede estar vacío.",
+                    "Dato requerido",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                txtNombre.Focus();
+
+                return;
+            }
+
+            if (cbPlantas.SelectedValue is null)
+            {
+                MessageBox.Show(
+                    "No fue posible obtener la planta seleccionada.",
+                    "Dato requerido",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                cbPlantas.Focus();
 
                 return;
             }
 
             Clases.Linea linea =
-                this.lineaActual ?? new Clases.Linea();
+                lineaActual ??
+                new Clases.Linea();
 
             linea.IdPlanta =
-                Convert.ToInt32(cbPlantas.SelectedValue);
+                Convert.ToInt32(
+                    cbPlantas.SelectedValue);
 
             linea.Nombre =
-                txtNombre.Text.Trim().ToUpperInvariant();
+                nombre.ToUpper();
 
-            Mensaje respuesta =
+            Clases.Mensaje respuesta =
                 linea.GuardarLinea();
 
-            if (respuesta.Id == 1 || respuesta.Id == 2)
+            if (respuesta.Id == 1 ||
+                respuesta.Id == 2)
             {
                 MessageBox.Show(
                     respuesta.Nombre,
-                    "Información",
+                    "Operación completada",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
 
-                DialogResult = DialogResult.OK;
+                DialogResult =
+                    DialogResult.OK;
+
                 Close();
+
+                return;
             }
-            else
-            {
-                MessageBox.Show(
-                    respuesta.Nombre,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+
+            MessageBox.Show(
+                respuesta.Nombre,
+                "No se pudo guardar",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
 
-        private void btnRegresar_Click(object sender, EventArgs e)
+        // =========================================================
+        // CANCELAR
+        // =========================================================
+
+        private void btnRegresar_Click(
+            object sender,
+            EventArgs e)
         {
-            this.Close();
+            DialogResult =
+                DialogResult.Cancel;
+
+            Close();
         }
 
-        private void txtNombre_KeyPress(object sender, KeyPressEventArgs e)
+        // =========================================================
+        // ENTER
+        // =========================================================
+
+        private void txtNombre_KeyPress(
+            object sender,
+            KeyPressEventArgs e)
         {
-            if(e.KeyChar == (char)Keys.Enter)
+            if (e.KeyChar ==
+                (char)Keys.Enter)
             {
-                btnAceptar_Click(sender, e);
+                e.Handled =
+                    true;
+
+                btnAceptar.PerformClick();
             }
         }
     }
