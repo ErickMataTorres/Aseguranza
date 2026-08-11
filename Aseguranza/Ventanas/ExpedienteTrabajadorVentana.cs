@@ -1,4 +1,5 @@
 ﻿using Aseguranza.Clases;
+using Aseguranza.UI;
 using AForge.Video;
 using AForge.Video.DirectShow;
 using System.Drawing;
@@ -29,20 +30,426 @@ namespace Aseguranza.Ventanas
             this.idTrabajador = idTrabajador;
             this.noReloj = noReloj;
             this.nombreTrabajador = nombreTrabajador;
+
+            DoubleBuffered = true;
+
+            AplicarEstiloVisual();
         }
 
         private void ExpedienteTrabajadorVentana_Load(object sender, EventArgs e)
         {
-            lblTitulo.Text = $"Expediente: {noReloj} - {nombreTrabajador}";
-
             ConfigurarGrid();
             CargarExpediente();
             CargarCamaras();
 
             btnIniciarCamara.Text = "Iniciar cámara";
             btnCapturar.Enabled = false;
+            ButtonStyler.UpdateEnabledState(
+                btnCapturar,
+                AppColors.Primary);
 
             ConfigurarToolTips();
+        }
+
+
+        // =========================================================
+        // INTERFAZ MODERNA
+        // =========================================================
+
+        private void AplicarEstiloVisual()
+        {
+            SuspendLayout();
+
+            FormStyler.ApplyBase(
+                this,
+                "Expediente del trabajador",
+                new Size(
+                    1200,
+                    760));
+
+            FormStyler.CreateHeader(
+                this,
+                "Expediente del trabajador",
+                "Administra archivos, documentos, fotografías y evidencias del personal",
+                height: 105,
+                titleX: 44,
+                titleY: 18,
+                subtitleX: 46,
+                subtitleY: 59);
+
+            Panel pnlContenido =
+                FormStyler.CreateCard(
+                    this,
+                    new Point(
+                        20,
+                        125),
+                    new Size(
+                        1160,
+                        615),
+                    radius: 14);
+
+            // Los GroupBox originales se conservan en el Designer,
+            // pero la interfaz moderna utiliza paneles propios.
+            gbInformacion.Visible = false;
+            gbArchivos.Visible = false;
+            gbCamara.Visible = false;
+            gbAcciones.Visible = false;
+            lblTitulo.Visible = false;
+
+            // =====================================================
+            // INFORMACIÓN DEL TRABAJADOR
+            // =====================================================
+
+            Panel pnlTrabajador =
+                CrearPanelSeccion(
+                    pnlContenido,
+                    new Point(20, 18),
+                    new Size(1120, 82));
+
+            pnlTrabajador.Controls.Add(
+                CrearTituloSeccion(
+                    "Información del trabajador",
+                    new Point(18, 12)));
+
+            pnlTrabajador.Controls.Add(
+                CrearEtiquetaCampo(
+                    "No. Reloj",
+                    new Point(18, 48)));
+
+            pnlTrabajador.Controls.Add(
+                CrearEtiquetaValor(
+                    noReloj,
+                    new Point(95, 45),
+                    new Size(120, 28)));
+
+            pnlTrabajador.Controls.Add(
+                CrearEtiquetaCampo(
+                    "Nombre",
+                    new Point(235, 48)));
+
+            pnlTrabajador.Controls.Add(
+                CrearEtiquetaValor(
+                    nombreTrabajador,
+                    new Point(298, 45),
+                    new Size(780, 28)));
+
+            // =====================================================
+            // ARCHIVOS DEL EXPEDIENTE
+            // =====================================================
+
+            Panel pnlArchivos =
+                CrearPanelSeccion(
+                    pnlContenido,
+                    new Point(20, 116),
+                    new Size(730, 410));
+
+            pnlArchivos.Controls.Add(
+                CrearTituloSeccion(
+                    "Archivos del expediente",
+                    new Point(18, 14)));
+
+            lblResumenExpediente.Parent = pnlArchivos;
+            lblResumenExpediente.Location = new Point(18, 46);
+            lblResumenExpediente.AutoSize = true;
+            lblResumenExpediente.Font = AppFonts.Regular(10F, FontStyle.Bold);
+            lblResumenExpediente.ForeColor = AppColors.TextPrimary;
+            lblResumenExpediente.BackColor = Color.Transparent;
+
+            dgvExpediente.Parent = pnlArchivos;
+            dgvExpediente.Location = new Point(18, 74);
+            dgvExpediente.Size = new Size(694, 286);
+            dgvExpediente.Anchor = AnchorStyles.None;
+
+            lblArchivoSeleccionado.Parent = pnlArchivos;
+            lblArchivoSeleccionado.Location = new Point(18, 370);
+            lblArchivoSeleccionado.Size = new Size(694, 24);
+            lblArchivoSeleccionado.Font = AppFonts.Regular(10F, FontStyle.Bold);
+            lblArchivoSeleccionado.ForeColor = AppColors.TextSecondary;
+            lblArchivoSeleccionado.BackColor = Color.Transparent;
+            lblArchivoSeleccionado.AutoEllipsis = true;
+
+            // =====================================================
+            // CÁMARA / VISTA PREVIA
+            // =====================================================
+
+            Panel pnlCamara =
+                CrearPanelSeccion(
+                    pnlContenido,
+                    new Point(770, 116),
+                    new Size(370, 410));
+
+            pnlCamara.Controls.Add(
+                CrearTituloSeccion(
+                    "Cámara / Vista previa",
+                    new Point(18, 14)));
+
+            lblCamaras.Parent = pnlCamara;
+            lblCamaras.Text = "Cámara";
+            lblCamaras.Location = new Point(18, 48);
+            lblCamaras.AutoSize = true;
+            lblCamaras.Font = AppFonts.Regular(10F, FontStyle.Bold);
+            lblCamaras.ForeColor = AppColors.TextPrimary;
+            lblCamaras.BackColor = Color.Transparent;
+
+            Panel pnlComboCamara =
+                new Panel
+                {
+                    Location = new Point(18, 70),
+                    Size = new Size(334, 42),
+                    BackColor = Color.White
+                };
+
+            cbCamaras.Parent = pnlComboCamara;
+            cbCamaras.Location = new Point(7, 8);
+            cbCamaras.Size = new Size(320, 27);
+            cbCamaras.Anchor = AnchorStyles.None;
+
+            ComboBoxStyler.ApplyOutlinedComboBox(
+                pnlComboCamara,
+                cbCamaras);
+
+            pnlCamara.Controls.Add(pnlComboCamara);
+
+            Panel pnlVistaPrevia =
+                new Panel
+                {
+                    Location = new Point(18, 124),
+                    Size = new Size(334, 178),
+                    BackColor = Color.White
+                };
+
+            pbCamara.Parent = pnlVistaPrevia;
+            pbCamara.Location = new Point(4, 4);
+            pbCamara.Size = new Size(326, 170);
+            pbCamara.Anchor = AnchorStyles.None;
+            pbCamara.BorderStyle = BorderStyle.None;
+            pbCamara.BackColor = Color.White;
+            pbCamara.SizeMode = PictureBoxSizeMode.Zoom;
+
+            InputStyler.ApplyOutlinedInput(
+                pnlVistaPrevia,
+                pbCamara,
+                radius: 8,
+                borderColor: AppColors.BorderMedium);
+
+            pnlCamara.Controls.Add(pnlVistaPrevia);
+
+            ButtonStyler.Apply(
+                btnIniciarCamara,
+                "Iniciar cámara",
+                AppColors.Secondary,
+                AppIcons.Search,
+                width: 190,
+                height: 40);
+
+            btnIniciarCamara.Parent = pnlCamara;
+            btnIniciarCamara.Location = new Point(18, 316);
+            btnIniciarCamara.Anchor = AnchorStyles.None;
+
+            ButtonStyler.Apply(
+                btnCapturar,
+                "Capturar",
+                AppColors.Primary,
+                AppIcons.Save,
+                width: 130,
+                height: 40);
+
+            btnCapturar.Parent = pnlCamara;
+            btnCapturar.Location = new Point(222, 316);
+            btnCapturar.Anchor = AnchorStyles.None;
+
+            ButtonStyler.Apply(
+                btnSeleccionar,
+                "Seleccionar imagen",
+                AppColors.Secondary,
+                AppIcons.Add,
+                width: 334,
+                height: 40);
+
+            btnSeleccionar.Parent = pnlCamara;
+            btnSeleccionar.Location = new Point(18, 364);
+            btnSeleccionar.Anchor = AnchorStyles.None;
+
+            // =====================================================
+            // COMENTARIO Y ACCIONES
+            // =====================================================
+
+            Panel pnlAcciones =
+                CrearPanelSeccion(
+                    pnlContenido,
+                    new Point(20, 540),
+                    new Size(1120, 58));
+
+            lblComentario.Parent = pnlAcciones;
+            lblComentario.Text = "Comentario";
+            lblComentario.Location = new Point(18, 10);
+            lblComentario.AutoSize = true;
+            lblComentario.Font = AppFonts.Regular(10F, FontStyle.Bold);
+            lblComentario.ForeColor = AppColors.TextPrimary;
+            lblComentario.BackColor = Color.Transparent;
+
+            Panel pnlComentario =
+                new Panel
+                {
+                    Location = new Point(108, 8),
+                    Size = new Size(290, 42),
+                    BackColor = Color.White
+                };
+
+            txtComentario.Parent = pnlComentario;
+            txtComentario.Location = new Point(8, 6);
+            txtComentario.Size = new Size(274, 30);
+            txtComentario.BorderStyle = BorderStyle.None;
+            txtComentario.Font = AppFonts.Light(10.5F);
+            txtComentario.BackColor = Color.White;
+            txtComentario.ForeColor = AppColors.TextPrimary;
+            txtComentario.ScrollBars = ScrollBars.Vertical;
+
+            InputStyler.ApplyOutlinedInput(
+                pnlComentario,
+                txtComentario);
+
+            pnlAcciones.Controls.Add(pnlComentario);
+
+            ButtonStyler.Apply(
+                btnAdjuntar,
+                "Adjuntar",
+                AppColors.Primary,
+                AppIcons.Add,
+                width: 135,
+                height: 42);
+
+            btnAdjuntar.Parent = pnlAcciones;
+            btnAdjuntar.Location = new Point(408, 8);
+            btnAdjuntar.Anchor = AnchorStyles.None;
+
+            ButtonStyler.Apply(
+                btnAbrir,
+                "Abrir",
+                AppColors.Secondary,
+                AppIcons.Search,
+                width: 110,
+                height: 42);
+
+            btnAbrir.Parent = pnlAcciones;
+            btnAbrir.Location = new Point(553, 8);
+            btnAbrir.Anchor = AnchorStyles.None;
+
+            ButtonStyler.Apply(
+                btnReemplazar,
+                "Reemplazar",
+                AppColors.Secondary,
+                AppIcons.Edit,
+                width: 150,
+                height: 42);
+
+            btnReemplazar.Parent = pnlAcciones;
+            btnReemplazar.Location = new Point(673, 8);
+            btnReemplazar.Anchor = AnchorStyles.None;
+
+            ButtonStyler.Apply(
+                btnEliminar,
+                "Eliminar",
+                AppColors.Danger,
+                AppIcons.Delete,
+                width: 130,
+                height: 42);
+
+            btnEliminar.Parent = pnlAcciones;
+            btnEliminar.Location = new Point(833, 8);
+            btnEliminar.Anchor = AnchorStyles.None;
+
+            ButtonStyler.Apply(
+                btnRegresar,
+                "Regresar",
+                AppColors.Neutral,
+                AppIcons.Back,
+                width: 130,
+                height: 42);
+
+            btnRegresar.Parent = pnlAcciones;
+            btnRegresar.Location = new Point(973, 8);
+            btnRegresar.Anchor = AnchorStyles.None;
+
+            // =====================================================
+            // MENÚ CONTEXTUAL
+            // =====================================================
+
+            cmsExpediente.Font = AppFonts.Light(10F);
+            cmsExpediente.ShowImageMargin = false;
+
+            ResumeLayout(true);
+        }
+
+        private static Panel CrearPanelSeccion(
+            Control parent,
+            Point location,
+            Size size)
+        {
+            Panel panel =
+                new Panel
+                {
+                    Location = location,
+                    Size = size,
+                    BackColor = AppColors.SectionBackground
+                };
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                panel,
+                10);
+
+            parent.Controls.Add(panel);
+
+            return panel;
+        }
+
+        private static Label CrearTituloSeccion(
+            string texto,
+            Point location)
+        {
+            return new Label
+            {
+                AutoSize = true,
+                Text = texto,
+                Location = location,
+                ForeColor = AppColors.TextPrimary,
+                Font = AppFonts.Regular(13F, FontStyle.Bold),
+                BackColor = Color.Transparent
+            };
+        }
+
+        private static Label CrearEtiquetaCampo(
+            string texto,
+            Point location)
+        {
+            return new Label
+            {
+                AutoSize = true,
+                Text = texto,
+                Location = location,
+                ForeColor = AppColors.TextSecondary,
+                Font = AppFonts.Regular(10F, FontStyle.Bold),
+                BackColor = Color.Transparent
+            };
+        }
+
+        private static Label CrearEtiquetaValor(
+            string texto,
+            Point location,
+            Size size)
+        {
+            return new Label
+            {
+                AutoSize = false,
+                Text = texto,
+                Location = location,
+                Size = size,
+                ForeColor = AppColors.TextPrimary,
+                Font = AppFonts.Regular(12F, FontStyle.Bold),
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
+            };
         }
 
 
@@ -69,33 +476,22 @@ namespace Aseguranza.Ventanas
 
         private void ConfigurarGrid()
         {
-            dgvExpediente.AllowUserToAddRows = false;
-            dgvExpediente.AllowUserToDeleteRows = false;
-            dgvExpediente.AllowUserToResizeRows = false;
-            dgvExpediente.ReadOnly = true;
-            dgvExpediente.MultiSelect = false;
-            dgvExpediente.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvExpediente.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgvExpediente.RowHeadersVisible = false;
+            DataGridViewStyler.ApplyCatalogStyle(
+                dgvExpediente,
+                headerHeight: 40,
+                rowHeight: 38);
 
-            dgvExpediente.BackgroundColor = Color.WhiteSmoke;
-            dgvExpediente.BorderStyle = BorderStyle.FixedSingle;
-            dgvExpediente.GridColor = Color.LightGray;
+            dgvExpediente.AutoSizeColumnsMode =
+                DataGridViewAutoSizeColumnsMode.Fill;
 
-            dgvExpediente.EnableHeadersVisualStyles = false;
-            dgvExpediente.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 70, 140);
-            dgvExpediente.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgvExpediente.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            dgvExpediente.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dgvExpediente.ColumnHeadersHeight = 32;
+            dgvExpediente.ColumnHeadersDefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
 
-            dgvExpediente.DefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-            dgvExpediente.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 235, 250);
-            dgvExpediente.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgvExpediente.DefaultCellStyle.SelectionBackColor =
+                AppColors.Selection;
 
-            dgvExpediente.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
-
-            dgvExpediente.RowTemplate.Height = 28;
+            dgvExpediente.DefaultCellStyle.SelectionForeColor =
+                AppColors.TextPrimary;
         }
 
         private void CargarExpediente()
@@ -162,39 +558,41 @@ namespace Aseguranza.Ventanas
             if (dgvExpediente.Columns.Contains("NombreOriginal"))
             {
                 dgvExpediente.Columns["NombreOriginal"].HeaderText = "Archivo";
-                dgvExpediente.Columns["NombreOriginal"].FillWeight = 180;
+                dgvExpediente.Columns["NombreOriginal"].FillWeight = 190;
             }
 
             if (dgvExpediente.Columns.Contains("Extension"))
             {
                 dgvExpediente.Columns["Extension"].HeaderText = "Ext.";
-                dgvExpediente.Columns["Extension"].FillWeight = 45;
+                dgvExpediente.Columns["Extension"].FillWeight = 55;
                 dgvExpediente.Columns["Extension"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             }
 
             if (dgvExpediente.Columns.Contains("RutaArchivo"))
             {
-                dgvExpediente.Columns["RutaArchivo"].HeaderText = "Ubicación";
-                dgvExpediente.Columns["RutaArchivo"].FillWeight = 260;
+                // La ruta completa sigue disponible para abrir ubicación,
+                // copiar ruta y demás acciones, pero no ocupa espacio
+                // en la tabla principal.
+                dgvExpediente.Columns["RutaArchivo"].Visible = false;
             }
 
             if (dgvExpediente.Columns.Contains("TipoArchivo"))
             {
                 dgvExpediente.Columns["TipoArchivo"].HeaderText = "Tipo";
-                dgvExpediente.Columns["TipoArchivo"].FillWeight = 80;
+                dgvExpediente.Columns["TipoArchivo"].FillWeight = 85;
                 dgvExpediente.Columns["TipoArchivo"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             }
 
             if (dgvExpediente.Columns.Contains("Comentario"))
             {
                 dgvExpediente.Columns["Comentario"].HeaderText = "Comentario";
-                dgvExpediente.Columns["Comentario"].FillWeight = 180;
+                dgvExpediente.Columns["Comentario"].FillWeight = 155;
             }
 
             if (dgvExpediente.Columns.Contains("FechaRegistro"))
             {
                 dgvExpediente.Columns["FechaRegistro"].HeaderText = "Fecha registro";
-                dgvExpediente.Columns["FechaRegistro"].FillWeight = 100;
+                dgvExpediente.Columns["FechaRegistro"].FillWeight = 120;
                 dgvExpediente.Columns["FechaRegistro"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm";
                 dgvExpediente.Columns["FechaRegistro"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             }
@@ -202,7 +600,7 @@ namespace Aseguranza.Ventanas
             if (dgvExpediente.Columns.Contains("FechaModificacion"))
             {
                 dgvExpediente.Columns["FechaModificacion"].HeaderText = "Fecha modificación";
-                dgvExpediente.Columns["FechaModificacion"].FillWeight = 100;
+                dgvExpediente.Columns["FechaModificacion"].FillWeight = 120;
                 dgvExpediente.Columns["FechaModificacion"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm";
                 dgvExpediente.Columns["FechaModificacion"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             }
@@ -210,14 +608,26 @@ namespace Aseguranza.Ventanas
 
         private void ActualizarEstadoBotones()
         {
-            bool hayArchivoSeleccionado = dgvExpediente.CurrentRow != null
-                && dgvExpediente.Rows.Count > 0;
+            bool hayArchivoSeleccionado =
+                dgvExpediente.CurrentRow != null &&
+                dgvExpediente.Rows.Count > 0;
 
             btnAbrir.Enabled = hayArchivoSeleccionado;
             btnReemplazar.Enabled = hayArchivoSeleccionado;
             btnEliminar.Enabled = hayArchivoSeleccionado;
-        }
 
+            ButtonStyler.UpdateEnabledState(
+                btnAbrir,
+                AppColors.Secondary);
+
+            ButtonStyler.UpdateEnabledState(
+                btnReemplazar,
+                AppColors.Secondary);
+
+            ButtonStyler.UpdateEnabledState(
+                btnEliminar,
+                AppColors.Danger);
+        }
 
         private void CargarCamaras()
         {
@@ -238,20 +648,18 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    MessageBox.Show(
-                        "No se encontraron cámaras disponibles.",
+                    AppDialog.ShowInfo(
+                        this,
                         "Cámara",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        "No se encontraron cámaras disponibles.");
                 }
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al cargar cámaras",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -300,11 +708,10 @@ namespace Aseguranza.Ventanas
 
                 if (respuesta.Id == 1)
                 {
-                    MessageBox.Show(
-                        respuesta.Nombre,
-                        "Resultado",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                    AppDialog.ShowInfo(
+                        this,
+                        "Operación completada",
+                        respuesta.Nombre);
 
                     txtComentario.Clear();
                     CargarExpediente();
@@ -314,11 +721,10 @@ namespace Aseguranza.Ventanas
                     if (File.Exists(rutaDestino))
                         File.Delete(rutaDestino);
 
-                    MessageBox.Show(
-                        respuesta.Nombre,
+                    AppDialog.ShowError(
+                        this,
                         "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                        respuesta.Nombre);
                 }
             }
             catch
@@ -351,6 +757,9 @@ namespace Aseguranza.Ventanas
 
                 btnIniciarCamara.Text = "Iniciar cámara";
                 btnCapturar.Enabled = false;
+                ButtonStyler.UpdateEnabledState(
+                    btnCapturar,
+                    AppColors.Primary);
                 cbCamaras.Enabled = true;
 
                 pbCamara.Image?.Dispose();
@@ -364,6 +773,9 @@ namespace Aseguranza.Ventanas
 
                 btnIniciarCamara.Text = "Iniciar cámara";
                 btnCapturar.Enabled = false;
+                ButtonStyler.UpdateEnabledState(
+                    btnCapturar,
+                    AppColors.Primary);
                 cbCamaras.Enabled = true;
             }
         }
@@ -376,7 +788,7 @@ namespace Aseguranza.Ventanas
                 Filter = "Archivos permitidos|*.jpg;*.jpeg;*.png;*.bmp;*.pdf;*.doc;*.docx;*.xls;*.xlsx|Todos los archivos|*.*"
             };
 
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if (ofd.ShowDialog(this) != DialogResult.OK)
                 return;
 
             string rutaOrigen = ofd.FileName;
@@ -412,11 +824,10 @@ namespace Aseguranza.Ventanas
 
                 if (respuesta.Id == 1)
                 {
-                    MessageBox.Show(
-                        respuesta.Nombre,
-                        "Resultado",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                    AppDialog.ShowInfo(
+                        this,
+                        "Operación completada",
+                        respuesta.Nombre);
 
                     txtComentario.Clear();
                     CargarExpediente();
@@ -426,20 +837,18 @@ namespace Aseguranza.Ventanas
                     if (File.Exists(rutaDestino))
                         File.Delete(rutaDestino);
 
-                    MessageBox.Show(
-                        respuesta.Nombre,
+                    AppDialog.ShowError(
+                        this,
                         "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                        respuesta.Nombre);
                 }
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al adjuntar archivo",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -452,11 +861,12 @@ namespace Aseguranza.Ventanas
 
             if (!File.Exists(rutaArchivo))
             {
-                MessageBox.Show(
-                    $"El archivo no existe en la ubicación guardada.\n\nRuta:\n{rutaArchivo}\n\nEs posible que el archivo haya sido eliminado, movido o que no tenga acceso a la carpeta.",
+                AppDialog.ShowWarning(
+                    this,
                     "Archivo no encontrado",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El archivo no existe en la ubicación guardada.\n\n" +
+                    $"Ruta: {rutaArchivo}\n\n" +
+                    "Es posible que haya sido eliminado, movido o que no tenga acceso a la carpeta.");
 
                 return;
             }
@@ -473,11 +883,10 @@ namespace Aseguranza.Ventanas
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al abrir archivo",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -497,13 +906,16 @@ namespace Aseguranza.Ventanas
                 nombreArchivoActual = dgvExpediente.CurrentRow.Cells["NombreOriginal"].Value?.ToString() ?? "archivo seleccionado";
             }
 
-            DialogResult confirmacion = MessageBox.Show(
-                $"Va a reemplazar el siguiente archivo:\n\n{nombreArchivoActual}\n\n¿Desea continuar?",
-                "Confirmar reemplazo",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
+                    "Confirmar reemplazo",
+                    "Va a reemplazar el siguiente archivo:\n\n" +
+                    $"{nombreArchivoActual}\n\n" +
+                    "¿Desea continuar?",
+                    "Reemplazar");
 
-            if (confirmacion != DialogResult.Yes)
+            if (!confirmacion)
                 return;
 
 
@@ -514,7 +926,7 @@ namespace Aseguranza.Ventanas
                 Filter = "Archivos permitidos|*.jpg;*.jpeg;*.png;*.bmp;*.pdf;*.doc;*.docx;*.xls;*.xlsx|Todos los archivos|*.*"
             };
 
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if (ofd.ShowDialog(this) != DialogResult.OK)
                 return;
 
             string rutaOrigen = ofd.FileName;
@@ -566,11 +978,10 @@ namespace Aseguranza.Ventanas
                         }
                     }
 
-                    MessageBox.Show(
-                        respuesta.Nombre,
-                        "Resultado",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                    AppDialog.ShowInfo(
+                        this,
+                        "Operación completada",
+                        respuesta.Nombre);
 
                     txtComentario.Clear();
                     CargarExpediente();
@@ -580,20 +991,18 @@ namespace Aseguranza.Ventanas
                     if (File.Exists(rutaDestino))
                         File.Delete(rutaDestino);
 
-                    MessageBox.Show(
-                        respuesta.Nombre,
+                    AppDialog.ShowError(
+                        this,
                         "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                        respuesta.Nombre);
                 }
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al reemplazar archivo",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -613,13 +1022,15 @@ namespace Aseguranza.Ventanas
                 nombreArchivo = dgvExpediente.CurrentRow.Cells["NombreOriginal"].Value?.ToString() ?? "archivo seleccionado";
             }
 
-            DialogResult confirmacion = MessageBox.Show(
-                $"¿Seguro que desea eliminar este archivo del expediente?\n\nArchivo:\n{nombreArchivo}",
-                "Confirmar eliminación",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
+                    "Confirmar eliminación",
+                    "¿Seguro que desea eliminar este archivo del expediente?\n\n" +
+                    $"Archivo: {nombreArchivo}",
+                    "Eliminar");
 
-            if (confirmacion != DialogResult.Yes)
+            if (!confirmacion)
                 return;
 
             Mensaje respuesta = Clases.ExpedienteTrabajador.EliminarExpedienteTrabajador(idExpediente.Value);
@@ -634,29 +1045,26 @@ namespace Aseguranza.Ventanas
                     }
                     catch
                     {
-                        MessageBox.Show(
-                            "El registro se eliminó del expediente, pero el archivo físico no se pudo borrar. Es posible que esté abierto.",
+                        AppDialog.ShowWarning(
+                            this,
                             "Advertencia",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning);
+                            "El registro se eliminó del expediente, pero el archivo físico no se pudo borrar. Es posible que esté abierto.");
                     }
                 }
 
-                MessageBox.Show(
-                    respuesta.Nombre,
-                    "Resultado",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                AppDialog.ShowInfo(
+                    this,
+                    "Operación completada",
+                    respuesta.Nombre);
 
                 CargarExpediente();
             }
             else
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowError(
+                    this,
                     "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    respuesta.Nombre);
             }
         }
 
@@ -669,22 +1077,20 @@ namespace Aseguranza.Ventanas
         {
             if (dgvExpediente.CurrentRow == null)
             {
-                MessageBox.Show(
-                    "Seleccione un archivo del expediente.",
+                AppDialog.ShowWarning(
+                    this,
                     "Sin selección",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione un archivo del expediente.");
 
                 return null;
             }
 
             if (!dgvExpediente.Columns.Contains("Id"))
             {
-                MessageBox.Show(
-                    "No se encontró la columna Id.",
+                AppDialog.ShowError(
+                    this,
                     "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    "No se encontró la columna Id.");
 
                 return null;
             }
@@ -701,22 +1107,20 @@ namespace Aseguranza.Ventanas
         {
             if (dgvExpediente.CurrentRow == null)
             {
-                MessageBox.Show(
-                    "Seleccione un archivo del expediente.",
+                AppDialog.ShowWarning(
+                    this,
                     "Sin selección",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione un archivo del expediente.");
 
                 return null;
             }
 
             if (!dgvExpediente.Columns.Contains("RutaArchivo"))
             {
-                MessageBox.Show(
-                    "No se encontró la columna RutaArchivo.",
+                AppDialog.ShowError(
+                    this,
                     "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    "No se encontró la columna RutaArchivo.");
 
                 return null;
             }
@@ -771,22 +1175,20 @@ namespace Aseguranza.Ventanas
 
             if (dispositivosVideo == null || dispositivosVideo.Count == 0)
             {
-                MessageBox.Show(
-                    "No hay cámaras disponibles.",
+                AppDialog.ShowWarning(
+                    this,
                     "Cámara",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "No hay cámaras disponibles.");
 
                 return;
             }
 
             if (cbCamaras.SelectedIndex < 0)
             {
-                MessageBox.Show(
-                    "Seleccione una cámara.",
+                AppDialog.ShowWarning(
+                    this,
                     "Cámara",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione una cámara.");
 
                 return;
             }
@@ -801,15 +1203,17 @@ namespace Aseguranza.Ventanas
 
                 btnIniciarCamara.Text = "Detener cámara";
                 btnCapturar.Enabled = true;
+                ButtonStyler.UpdateEnabledState(
+                    btnCapturar,
+                    AppColors.Primary);
                 cbCamaras.Enabled = false;
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al iniciar cámara",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -817,11 +1221,10 @@ namespace Aseguranza.Ventanas
         {
             if (pbCamara.Image == null)
             {
-                MessageBox.Show(
-                    "No hay imagen de la cámara para capturar.",
+                AppDialog.ShowWarning(
+                    this,
                     "Cámara",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "No hay imagen de la cámara para capturar.");
 
                 return;
             }
@@ -840,11 +1243,10 @@ namespace Aseguranza.Ventanas
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al capturar foto",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -856,8 +1258,16 @@ namespace Aseguranza.Ventanas
                 Filter = "Imágenes|*.jpg;*.jpeg;*.png;*.bmp"
             };
 
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if (ofd.ShowDialog(this) != DialogResult.OK)
                 return;
+
+            // Si el usuario eligió una imagen externa, dejamos de usar
+            // la cámara como fuente de vista previa. Así liberamos el
+            // dispositivo y la imagen seleccionada puede mostrarse.
+            if (camaraActiva || fuenteVideo?.IsRunning == true)
+            {
+                DetenerCamara();
+            }
 
             try
             {
@@ -880,11 +1290,10 @@ namespace Aseguranza.Ventanas
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al seleccionar imagen",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -1062,11 +1471,10 @@ namespace Aseguranza.Ventanas
 
             Clipboard.SetText(rutaArchivo);
 
-            MessageBox.Show(
-                "Ruta copiada al portapapeles.",
+            AppDialog.ShowInfo(
+                this,
                 "Copiar ruta",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+                "Ruta copiada al portapapeles.");
         }
 
         private void tsmAbrirUbicacion_Click(object sender, EventArgs e)
@@ -1078,11 +1486,10 @@ namespace Aseguranza.Ventanas
 
             if (!File.Exists(rutaArchivo))
             {
-                MessageBox.Show(
-                    "El archivo no existe en la ubicación guardada.",
+                AppDialog.ShowWarning(
+                    this,
                     "Archivo no encontrado",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El archivo no existe en la ubicación guardada.");
 
                 return;
             }
@@ -1100,11 +1507,10 @@ namespace Aseguranza.Ventanas
             }
             catch (Exception error)
             {
-                MessageBox.Show(
-                    error.Message,
+                AppDialog.ShowError(
+                    this,
                     "Error al abrir ubicación",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    error.Message);
             }
         }
 
@@ -1130,9 +1536,9 @@ namespace Aseguranza.Ventanas
 
                 if (!File.Exists(rutaArchivo))
                 {
-                    row.DefaultCellStyle.BackColor = Color.MistyRose;
-                    row.DefaultCellStyle.ForeColor = Color.DarkRed;
-                    row.DefaultCellStyle.SelectionBackColor = Color.LightCoral;
+                    row.DefaultCellStyle.BackColor = Color.FromArgb(255, 226, 226);
+                    row.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
+                    row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(254, 202, 202);
                     row.DefaultCellStyle.SelectionForeColor = Color.Black;
                 }
             }
