@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.ComponentModel;
 using Aseguranza.Clases;
+using Aseguranza.UI;
 using System;
 using System.Data;
 using System.Drawing;
@@ -12,12 +13,689 @@ namespace Aseguranza.Ventanas
     public partial class CertificacionesVentana : Form
     {
         private readonly Trabajador trabajadorActual;
-        private readonly Font _boldFont = new Font("Arial", 9F, FontStyle.Bold);
+        private readonly Font _boldFont = AppFonts.Regular(9.5F, FontStyle.Bold);
+
+        private static readonly Color ColorVigente =
+            Color.FromArgb(198, 239, 206);
+
+        private static readonly Color ColorVigenteTexto =
+            Color.FromArgb(0, 97, 0);
+
+        private static readonly Color ColorVigenteSeleccion =
+            Color.FromArgb(111, 193, 126);
+
+        private static readonly Color ColorPorVencer =
+            Color.FromArgb(255, 235, 156);
+
+        private static readonly Color ColorPorVencerTexto =
+            Color.FromArgb(128, 92, 0);
+
+        private static readonly Color ColorPorVencerSeleccion =
+            Color.FromArgb(236, 187, 58);
+
+        private static readonly Color ColorVencida =
+            Color.FromArgb(255, 199, 206);
+
+        private static readonly Color ColorVencidaTexto =
+            Color.FromArgb(156, 0, 6);
+
+        private static readonly Color ColorVencidaSeleccion =
+            Color.FromArgb(235, 106, 120);
+
+        private static readonly Color ColorAnulada =
+            Color.FromArgb(221, 214, 254);
+
+        private static readonly Color ColorAnuladaTexto =
+            Color.FromArgb(91, 33, 182);
+
+        private static readonly Color ColorAnuladaSeleccion =
+            Color.FromArgb(167, 139, 250);
+
+        private static readonly Color ColorAccionAnular =
+            Color.FromArgb(202, 138, 4);
+
+        private static readonly Color ColorAccionAnulada =
+            Color.FromArgb(109, 76, 176);
 
         public CertificacionesVentana(Trabajador trabajador)
         {
             InitializeComponent();
             trabajadorActual = trabajador;
+
+            DoubleBuffered = true;
+
+            AplicarEstiloVisual();
+        }
+
+        // =====================================================
+        // INTERFAZ VISUAL
+        // =====================================================
+        private void AplicarEstiloVisual()
+        {
+            SuspendLayout();
+
+            FormStyler.ApplyBase(
+                this,
+                "Certificaciones del trabajador",
+                new Size(
+                    1180,
+                    720));
+
+            FormStyler.CreateHeader(
+                this,
+                "Certificaciones del trabajador",
+                "Administra, renueva y consulta las certificaciones del personal",
+                height: 100,
+                titleX: 38,
+                titleY: 18,
+                subtitleX: 40,
+                subtitleY: 58);
+
+            // El encabezado antiguo del Designer se conserva,
+            // pero ya no se muestra.
+            pbContec.Visible = false;
+            lblVerificador.Visible = false;
+
+            Panel pnlContenido =
+                FormStyler.CreateCard(
+                    this,
+                    new Point(
+                        20,
+                        120),
+                    new Size(
+                        1140,
+                        580),
+                    radius: 14);
+
+            // =================================================
+            // SECCIÓN DEL TRABAJADOR
+            // =================================================
+
+            Panel pnlTrabajador =
+                new Panel
+                {
+                    Location =
+                        new Point(
+                            20,
+                            18),
+
+                    Size =
+                        new Size(
+                            1100,
+                            150),
+
+                    BackColor =
+                        AppColors.SectionBackground
+                };
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                pnlTrabajador,
+                10);
+
+            pnlContenido.Controls.Add(
+                pnlTrabajador);
+
+            Label lblTituloTrabajador =
+                new Label
+                {
+                    AutoSize = true,
+                    Text = "Información del trabajador",
+                    Location = new Point(18, 14),
+                    ForeColor = AppColors.TextPrimary,
+                    Font = AppFonts.Regular(13F, FontStyle.Bold),
+                    BackColor = Color.Transparent
+                };
+
+            pnlTrabajador.Controls.Add(
+                lblTituloTrabajador);
+
+            ConfigurarEtiquetaCampo(
+                lblNoReloj,
+                "No. Reloj",
+                new Point(18, 51));
+
+            ConfigurarEtiquetaValor(
+                lblMostrarNoReloj,
+                new Point(95, 49),
+                new Size(110, 24));
+
+            ConfigurarEtiquetaCampo(
+                lblNombre,
+                "Nombre",
+                new Point(225, 51));
+
+            ConfigurarEtiquetaValor(
+                lblMostrarNombre,
+                new Point(286, 49),
+                new Size(560, 24));
+
+            ConfigurarEtiquetaCampo(
+                lblLocalidad,
+                "Localidad",
+                new Point(18, 91));
+
+            ConfigurarEtiquetaValor(
+                lblMostrarLocalidad,
+                new Point(95, 89),
+                new Size(120, 24));
+
+            ConfigurarEtiquetaCampo(
+                lblTurno,
+                "Turno",
+                new Point(230, 91));
+
+            ConfigurarEtiquetaValor(
+                lblMostrarTurno,
+                new Point(280, 89),
+                new Size(75, 24));
+
+            ConfigurarEtiquetaCampo(
+                lblPlanta,
+                "Planta",
+                new Point(380, 91));
+
+            ConfigurarEtiquetaValor(
+                lblMostrarPlanta,
+                new Point(430, 89),
+                new Size(110, 24));
+
+            ConfigurarEtiquetaCampo(
+                lblLinea,
+                "Línea",
+                new Point(570, 91));
+
+            ConfigurarEtiquetaValor(
+                lblMostrarLinea,
+                new Point(615, 89),
+                new Size(220, 24));
+
+            // Reubicar etiquetas existentes dentro de la sección.
+            pnlTrabajador.Controls.Add(lblNoReloj);
+            pnlTrabajador.Controls.Add(lblMostrarNoReloj);
+            pnlTrabajador.Controls.Add(lblNombre);
+            pnlTrabajador.Controls.Add(lblMostrarNombre);
+            pnlTrabajador.Controls.Add(lblLocalidad);
+            pnlTrabajador.Controls.Add(lblMostrarLocalidad);
+            pnlTrabajador.Controls.Add(lblTurno);
+            pnlTrabajador.Controls.Add(lblMostrarTurno);
+            pnlTrabajador.Controls.Add(lblPlanta);
+            pnlTrabajador.Controls.Add(lblMostrarPlanta);
+            pnlTrabajador.Controls.Add(lblLinea);
+            pnlTrabajador.Controls.Add(lblMostrarLinea);
+
+            Panel pnlFoto =
+                new Panel
+                {
+                    Location = new Point(855, 6),
+                    Size = new Size(225, 140),
+                    BackColor = Color.White
+                };
+
+            InputStyler.ApplyOutlinedInput(
+                pnlFoto,
+                pictureBox1,
+                radius: 8,
+                borderColor: AppColors.BorderMedium);
+
+            pictureBox1.Location = new Point(5, 5);
+            pictureBox1.Size = new Size(215, 130);
+            pictureBox1.BackColor = Color.White;
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+
+            pnlFoto.Controls.Add(
+                pictureBox1);
+
+            pnlTrabajador.Controls.Add(
+                pnlFoto);
+
+            // =================================================
+            // RESUMEN Y LEYENDA
+            // =================================================
+
+            lblResumenCertificaciones.Parent =
+                pnlContenido;
+
+            lblResumenCertificaciones.Location =
+                new Point(
+                    20,
+                    181);
+
+            lblResumenCertificaciones.Size =
+                new Size(
+                    610,
+                    26);
+
+            lblResumenCertificaciones.Font =
+                AppFonts.Regular(
+                    9.7F,
+                    FontStyle.Bold);
+
+            lblResumenCertificaciones.ForeColor =
+                AppColors.TextPrimary;
+
+            lblResumenCertificaciones.BackColor =
+                Color.Transparent;
+
+            ConfigurarLeyendaCertificaciones(
+                pnlContenido);
+
+            // =================================================
+            // BÚSQUEDA
+            // =================================================
+
+            lblBuscar.Parent =
+                pnlContenido;
+
+            lblBuscar.Text =
+                "Buscar certificación";
+
+            lblBuscar.AutoSize =
+                true;
+
+            lblBuscar.Location =
+                new Point(
+                    20,
+                    215);
+
+            lblBuscar.ForeColor =
+                AppColors.TextPrimary;
+
+            lblBuscar.Font =
+                AppFonts.Regular(
+                    9.5F,
+                    FontStyle.Bold);
+
+            Panel pnlBuscar =
+                new Panel
+                {
+                    Location = new Point(20, 238),
+                    Size = new Size(890, 40)
+                };
+
+            txtBuscar.Parent =
+                pnlBuscar;
+
+            txtBuscar.BorderStyle =
+                BorderStyle.None;
+
+            txtBuscar.Location =
+                new Point(
+                    12,
+                    10);
+
+            txtBuscar.Size =
+                new Size(
+                    864,
+                    22);
+
+            txtBuscar.Font =
+                AppFonts.Light(10F);
+
+            txtBuscar.ForeColor =
+                AppColors.TextPrimary;
+
+            txtBuscar.BackColor =
+                Color.White;
+
+            txtBuscar.PlaceholderText =
+                "Proceso, fecha, comentario o certificador...";
+
+            InputStyler.ApplyOutlinedInput(
+                pnlBuscar,
+                txtBuscar);
+
+            pnlContenido.Controls.Add(
+                pnlBuscar);
+
+            AplicarBotonTexto(
+                btnLimpiarBusqueda,
+                "Limpiar",
+                AppColors.Neutral,
+                170);
+
+            btnLimpiarBusqueda.Size =
+                new Size(
+                    170,
+                    40);
+
+            btnLimpiarBusqueda.Parent =
+                pnlContenido;
+
+            btnLimpiarBusqueda.Location =
+                new Point(
+                    930,
+                    238);
+
+            // =================================================
+            // GRID
+            // =================================================
+
+            dgvCertificaciones.Parent =
+                pnlContenido;
+
+            dgvCertificaciones.Location =
+                new Point(
+                    20,
+                    292);
+
+            dgvCertificaciones.Size =
+                new Size(
+                    1100,
+                    190);
+
+            // =================================================
+            // INFORMACIÓN DE ANULACIÓN
+            // =================================================
+
+            lblInfoAnulacion.Parent =
+                pnlContenido;
+
+            lblInfoAnulacion.Location =
+                new Point(
+                    20,
+                    490);
+
+            lblInfoAnulacion.Size =
+                new Size(
+                    1100,
+                    32);
+
+            lblInfoAnulacion.BackColor =
+                ColorAnulada;
+
+            lblInfoAnulacion.ForeColor =
+                ColorAnuladaTexto;
+
+            lblInfoAnulacion.Font =
+                AppFonts.Regular(
+                    9.2F,
+                    FontStyle.Bold);
+
+            lblInfoAnulacion.TextAlign =
+                ContentAlignment.MiddleLeft;
+
+            lblInfoAnulacion.Padding =
+                new Padding(
+                    10,
+                    0,
+                    10,
+                    0);
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                lblInfoAnulacion,
+                6);
+
+            // =================================================
+            // BOTONES INFERIORES
+            // =================================================
+
+            ConfigurarBotonesAccion(
+                pnlContenido);
+
+            ResumeLayout(
+                true);
+        }
+
+        private static void ConfigurarEtiquetaCampo(
+            Label label,
+            string texto,
+            Point location)
+        {
+            label.Text = texto;
+            label.AutoSize = true;
+            label.Location = location;
+            label.ForeColor = AppColors.TextSecondary;
+            label.Font = AppFonts.Regular(10F, FontStyle.Bold);
+            label.BackColor = Color.Transparent;
+        }
+
+        private static void ConfigurarEtiquetaValor(
+            Label label,
+            Point location,
+            Size size)
+        {
+            label.AutoSize = false;
+            label.Location = location;
+            label.Size = size;
+            label.ForeColor = AppColors.TextPrimary;
+            label.Font = AppFonts.Regular(12F, FontStyle.Bold);
+            label.BackColor = Color.Transparent;
+            label.TextAlign = ContentAlignment.MiddleLeft;
+            label.AutoEllipsis = true;
+        }
+
+        private void ConfigurarLeyendaCertificaciones(
+            Control parent)
+        {
+            pnlLeyendaCertificaciones.Parent =
+                parent;
+
+            pnlLeyendaCertificaciones.Location =
+                new Point(
+                    660,
+                    176);
+
+            pnlLeyendaCertificaciones.Size =
+                new Size(
+                    460,
+                    34);
+
+            pnlLeyendaCertificaciones.BackColor =
+                Color.Transparent;
+
+            ConfigurarItemLeyenda(
+                lblColorVigente,
+                lblTextoVigente,
+                ColorVigente,
+                "Vigente",
+                0);
+
+            ConfigurarItemLeyenda(
+                lblColorPorVencer,
+                lblTextoPorVencer,
+                ColorPorVencer,
+                "Por vencer",
+                104);
+
+            ConfigurarItemLeyenda(
+                lblColorVencida,
+                lblTextoVencida,
+                ColorVencida,
+                "Vencida",
+                238);
+
+            ConfigurarItemLeyenda(
+                lblColorAnulada,
+                lblTextoAnulada,
+                ColorAnulada,
+                "Anulada",
+                347);
+        }
+
+        private static void ConfigurarItemLeyenda(
+            Label indicador,
+            Label texto,
+            Color color,
+            string descripcion,
+            int x)
+        {
+            indicador.Location =
+                new Point(
+                    x,
+                    9);
+
+            indicador.Size =
+                new Size(
+                    15,
+                    15);
+
+            indicador.BackColor =
+                color;
+
+            indicador.Text =
+                string.Empty;
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                indicador,
+                4);
+
+            texto.Text =
+                descripcion;
+
+            texto.AutoSize =
+                true;
+
+            texto.Location =
+                new Point(
+                    x + 21,
+                    8);
+
+            texto.ForeColor =
+                AppColors.TextSecondary;
+
+            texto.Font =
+                AppFonts.Light(9F);
+
+            texto.BackColor =
+                Color.Transparent;
+        }
+
+        private void ConfigurarBotonesAccion(
+            Control parent)
+        {
+            ButtonStyler.Apply(
+                btnAgregar,
+                "Agregar",
+                AppColors.Primary,
+                AppIcons.Add,
+                width: 135,
+                height: 42);
+
+            ButtonStyler.Apply(
+                btnModificar,
+                "Modificar / Renovar",
+                AppColors.Secondary,
+                AppIcons.Edit,
+                width: 170,
+                height: 42);
+
+            ButtonStyler.Apply(
+                btnBorrar,
+                "Borrar",
+                AppColors.Danger,
+                AppIcons.Delete,
+                width: 125,
+                height: 42);
+
+            AplicarBotonTexto(
+                btnExpediente,
+                "Expediente",
+                AppColors.Secondary,
+                145);
+
+            AplicarBotonTexto(
+                btnAnular,
+                "Anular",
+                ColorAccionAnular,
+                145);
+
+            AplicarBotonTexto(
+                btnCredencial,
+                "Credencial",
+                AppColors.Primary,
+                145);
+
+            ButtonStyler.Apply(
+                btnRegresar,
+                "Regresar",
+                AppColors.Neutral,
+                AppIcons.Back,
+                width: 135,
+                height: 42);
+
+            Button[] botones =
+            {
+                btnAgregar,
+                btnModificar,
+                btnBorrar,
+                btnExpediente,
+                btnAnular,
+                btnCredencial,
+                btnRegresar
+            };
+
+            foreach (Button boton in botones)
+            {
+                boton.Parent = parent;
+            }
+
+            int y = 530;
+
+            btnAgregar.Location = new Point(20, y);
+            btnModificar.Location = new Point(165, y);
+            btnBorrar.Location = new Point(345, y);
+            btnExpediente.Location = new Point(480, y);
+            btnAnular.Location = new Point(635, y);
+            btnCredencial.Location = new Point(790, y);
+            btnRegresar.Location = new Point(945, y);
+        }
+
+        private static void AplicarBotonTexto(
+            Button button,
+            string texto,
+            Color color,
+            int width)
+        {
+            button.Text = texto;
+            button.Size = new Size(width, 42);
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.MouseOverBackColor =
+                ControlPaint.Dark(color, 0.05F);
+            button.FlatAppearance.MouseDownBackColor =
+                ControlPaint.Dark(color, 0.10F);
+            button.BackColor = color;
+            button.ForeColor = Color.White;
+            button.UseVisualStyleBackColor = false;
+            button.Cursor = Cursors.Hand;
+            button.Font = AppFonts.Regular(10F, FontStyle.Bold);
+            button.Image = null;
+            button.TextAlign = ContentAlignment.MiddleCenter;
+            button.Padding = Padding.Empty;
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                button,
+                7);
+        }
+
+        private void ActualizarEstiloBotonesPorEstado()
+        {
+            ButtonStyler.UpdateEnabledState(
+                btnModificar,
+                AppColors.Secondary);
+
+            ButtonStyler.UpdateEnabledState(
+                btnBorrar,
+                AppColors.Danger);
+
+            if (btnCredencial.Enabled)
+            {
+                btnCredencial.BackColor =
+                    AppColors.Primary;
+
+                btnCredencial.ForeColor =
+                    Color.White;
+            }
+            else
+            {
+                btnCredencial.BackColor =
+                    AppColors.DisabledBackground;
+
+                btnCredencial.ForeColor =
+                    AppColors.DisabledText;
+            }
+
+            ActualizarEstadoBotonAnular();
         }
 
         // =====================================================
@@ -64,30 +742,33 @@ namespace Aseguranza.Ventanas
 
         private void ConfigurarGridCertificaciones()
         {
-            dgvCertificaciones.AllowUserToAddRows = false;
-            dgvCertificaciones.AllowUserToDeleteRows = false;
-            dgvCertificaciones.AllowUserToResizeRows = false;
+            DataGridViewStyler.ApplyCatalogStyle(
+                dgvCertificaciones,
+                headerHeight: 38,
+                rowHeight: 36);
 
-            dgvCertificaciones.ReadOnly = true;
-            dgvCertificaciones.MultiSelect = false;
-            dgvCertificaciones.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvCertificaciones.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgvCertificaciones.RowHeadersVisible = false;
+            dgvCertificaciones.ColumnHeadersDefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
 
-            dgvCertificaciones.EnableHeadersVisualStyles = false;
-            dgvCertificaciones.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(0, 70, 140);
-            dgvCertificaciones.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgvCertificaciones.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            dgvCertificaciones.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dgvCertificaciones.ColumnHeadersHeight = 32;
+            dgvCertificaciones.DefaultCellStyle.SelectionForeColor =
+                AppColors.TextPrimary;
 
-            dgvCertificaciones.DefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-            dgvCertificaciones.DefaultCellStyle.ForeColor = Color.Black;
-            dgvCertificaciones.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgvCertificaciones.BackgroundColor =
+                Color.White;
 
-            dgvCertificaciones.GridColor = Color.LightGray;
-            dgvCertificaciones.RowTemplate.Height = 28;
+            dgvCertificaciones.ContextMenuStrip =
+                cmsCertificaciones;
+
+            cmsCertificaciones.Font =
+                AppFonts.Light(9.5F);
+
+            cmsCertificaciones.BackColor =
+                Color.White;
+
+            cmsCertificaciones.ForeColor =
+                AppColors.TextPrimary;
         }
+
         private void SeleccionarPrimero()
         {
             if (dgvCertificaciones.Rows.Count == 0)
@@ -190,13 +871,12 @@ namespace Aseguranza.Ventanas
                 {
                     pictureBox1.Image = null;
 
-                    MessageBox.Show(
+                    AppDialog.ShowWarning(
+                        this,
+                        "Foto no disponible",
                         "No se pudo cargar la foto del trabajador.\n\n" +
                         "Ruta: " + trabajadorActual.RutaFoto + "\n\n" +
-                        "Detalle: " + ex.Message,
-                        "Foto no disponible",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
+                        "Detalle: " + ex.Message);
                 }
             }
             else
@@ -249,11 +929,12 @@ namespace Aseguranza.Ventanas
                 btnCredencial.Enabled = false;
                 btnAnular.Enabled = false;
                 btnAnular.Text = "Anular";
-                btnAnular.BackColor = SystemColors.Control;
 
                 lblInfoAnulacion.Visible = false;
                 lblInfoAnulacion.Text = "";
             }
+
+            ActualizarEstiloBotonesPorEstado();
 
             txtBuscar.Focus();
         }
@@ -412,63 +1093,95 @@ namespace Aseguranza.Ventanas
                 if (row.IsNewRow)
                     continue;
 
-                bool estaAnulada = false;
-
-                if (dgvCertificaciones.Columns.Contains("EstaAnulada"))
-                {
-                    object valorAnulada = row.Cells["EstaAnulada"].Value;
-
-                    if (valorAnulada != null && valorAnulada != DBNull.Value)
-                    {
-                        string valorTexto = valorAnulada.ToString()!.Trim().ToLower();
-
-                        estaAnulada =
-                            valorTexto == "1" ||
-                            valorTexto == "true" ||
-                            valorTexto == "si" ||
-                            valorTexto == "sí";
-                    }
-                }
+                bool estaAnulada =
+                    ObtenerBoolCelda(
+                        row,
+                        "EstaAnulada");
 
                 if (estaAnulada)
                 {
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(126, 87, 194); // Morado
-                    row.DefaultCellStyle.ForeColor = Color.White;
-                    row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(94, 53, 177); // Morado más fuerte
-                    row.DefaultCellStyle.SelectionForeColor = Color.White;
-                    row.DefaultCellStyle.Font = _boldFont;
+                    row.DefaultCellStyle.BackColor =
+                        ColorAnulada;
+
+                    row.DefaultCellStyle.ForeColor =
+                        ColorAnuladaTexto;
+
+                    row.DefaultCellStyle.SelectionBackColor =
+                        ColorAnuladaSeleccion;
+
+                    row.DefaultCellStyle.SelectionForeColor =
+                        ColorAnuladaTexto;
+
+                    row.DefaultCellStyle.Font =
+                        _boldFont;
+
                     continue;
                 }
 
-                if (!dgvCertificaciones.Columns.Contains("DiasRestantes"))
+                if (!dgvCertificaciones.Columns.Contains(
+                        "DiasRestantes"))
+                {
                     continue;
+                }
 
-                object valor = row.Cells["DiasRestantes"].Value;
+                object valor =
+                    row.Cells["DiasRestantes"].Value;
 
-                if (valor == null || valor == DBNull.Value)
+                if (valor == null ||
+                    valor == DBNull.Value)
+                {
                     continue;
+                }
 
-                int dias = Convert.ToInt32(valor);
+                int dias =
+                    Convert.ToInt32(
+                        valor);
 
                 if (dias < 0)
                 {
-                    row.DefaultCellStyle.BackColor = Color.LightCoral;
-                    row.DefaultCellStyle.SelectionBackColor = Color.IndianRed;
+                    row.DefaultCellStyle.BackColor =
+                        ColorVencida;
+
+                    row.DefaultCellStyle.ForeColor =
+                        ColorVencidaTexto;
+
+                    row.DefaultCellStyle.SelectionBackColor =
+                        ColorVencidaSeleccion;
+
+                    row.DefaultCellStyle.SelectionForeColor =
+                        ColorVencidaTexto;
                 }
                 else if (dias <= 30)
                 {
-                    row.DefaultCellStyle.BackColor = Color.Khaki;
-                    row.DefaultCellStyle.SelectionBackColor = Color.Goldenrod;
+                    row.DefaultCellStyle.BackColor =
+                        ColorPorVencer;
+
+                    row.DefaultCellStyle.ForeColor =
+                        ColorPorVencerTexto;
+
+                    row.DefaultCellStyle.SelectionBackColor =
+                        ColorPorVencerSeleccion;
+
+                    row.DefaultCellStyle.SelectionForeColor =
+                        ColorPorVencerTexto;
                 }
                 else
                 {
-                    row.DefaultCellStyle.BackColor = Color.LightGreen;
-                    row.DefaultCellStyle.SelectionBackColor = Color.SeaGreen;
+                    row.DefaultCellStyle.BackColor =
+                        ColorVigente;
+
+                    row.DefaultCellStyle.ForeColor =
+                        ColorVigenteTexto;
+
+                    row.DefaultCellStyle.SelectionBackColor =
+                        ColorVigenteSeleccion;
+
+                    row.DefaultCellStyle.SelectionForeColor =
+                        ColorVigenteTexto;
                 }
 
-                row.DefaultCellStyle.ForeColor = Color.Black;
-                row.DefaultCellStyle.SelectionForeColor = Color.Black;
-                row.DefaultCellStyle.Font = _boldFont;
+                row.DefaultCellStyle.Font =
+                    _boldFont;
             }
         }
 
@@ -512,22 +1225,20 @@ namespace Aseguranza.Ventanas
         {
             if (dgvCertificaciones.CurrentRow == null)
             {
-                MessageBox.Show(
-                    "Seleccione una certificación.",
+                AppDialog.ShowWarning(
+                    this,
                     "Sin selección",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione una certificación.");
 
                 return;
             }
 
             if (CertificacionSeleccionadaEstaAnulada())
             {
-                MessageBox.Show(
-                    "Esta certificación se encuentra anulada. No se puede modificar ni renovar mientras tenga una anulación activa.",
+                AppDialog.ShowWarning(
+                    this,
                     "Certificación anulada",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Esta certificación se encuentra anulada. No se puede modificar ni renovar mientras tenga una anulación activa.");
 
                 return;
             }
@@ -542,10 +1253,12 @@ namespace Aseguranza.Ventanas
             certificacion.IdCertificador = int.Parse(dgvCertificaciones.CurrentRow.Cells["IdCertificador"].Value.ToString()!);
             certificacion.Comentario = dgvCertificaciones.CurrentRow.Cells["Comentario"].Value.ToString()!;
 
-            Ventanas.CertificacionesTrabajadorVentana ventana =
-                new Ventanas.CertificacionesTrabajadorVentana(certificacion, trabajadorActual);
+            using Ventanas.CertificacionesTrabajadorVentana ventana =
+                new Ventanas.CertificacionesTrabajadorVentana(
+                    certificacion,
+                    trabajadorActual);
 
-            ventana.ShowDialog();
+            ventana.ShowDialog(this);
 
             if (ventana.DialogResult == DialogResult.OK)
             {
@@ -555,10 +1268,12 @@ namespace Aseguranza.Ventanas
 
         private void btnAgregar_Click_1(object sender, EventArgs e)
         {
-            Ventanas.CertificacionesTrabajadorVentana ventana =
-                new Ventanas.CertificacionesTrabajadorVentana(null!, trabajadorActual);
+            using Ventanas.CertificacionesTrabajadorVentana ventana =
+                new Ventanas.CertificacionesTrabajadorVentana(
+                    null!,
+                    trabajadorActual);
 
-            ventana.ShowDialog();
+            ventana.ShowDialog(this);
 
             if (ventana.DialogResult == DialogResult.OK)
             {
@@ -570,22 +1285,20 @@ namespace Aseguranza.Ventanas
         {
             if (dgvCertificaciones.CurrentRow == null)
             {
-                MessageBox.Show(
-                    "Seleccione una certificación.",
+                AppDialog.ShowWarning(
+                    this,
                     "Sin selección",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione una certificación.");
 
                 return;
             }
 
             if (CertificacionSeleccionadaEstaAnulada())
             {
-                MessageBox.Show(
-                    "Esta certificación se encuentra anulada. Primero debe eliminar la anulación antes de borrar la certificación.",
+                AppDialog.ShowWarning(
+                    this,
                     "Certificación anulada",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Esta certificación se encuentra anulada. Primero debe eliminar la anulación antes de borrar la certificación.");
 
                 return;
             }
@@ -595,15 +1308,16 @@ namespace Aseguranza.Ventanas
             if (dgvCertificaciones.Columns.Contains("Proceso"))
                 proceso = dgvCertificaciones.CurrentRow.Cells["Proceso"].Value?.ToString() ?? "";
 
-            DialogResult confirmacion = MessageBox.Show(
-                $"¿Deseas eliminar esta certificación?\n\n" +
-                $"Proceso: {proceso}\n" +
-                $"Trabajador: {trabajadorActual.NoReloj} - {trabajadorActual.Nombre}",
-                "Confirmar eliminación",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
+                    "Confirmar eliminación",
+                    $"¿Deseas eliminar esta certificación?\n\n" +
+                    $"Proceso: {proceso}\n" +
+                    $"Trabajador: {trabajadorActual.NoReloj} - {trabajadorActual.Nombre}",
+                    "Eliminar");
 
-            if (confirmacion != DialogResult.Yes)
+            if (!confirmacion)
                 return;
 
             int id = Convert.ToInt32(dgvCertificaciones.CurrentRow.Cells["Id"].Value);
@@ -612,21 +1326,19 @@ namespace Aseguranza.Ventanas
 
             if (respuesta.Id == 1)
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowInfo(
+                    this,
                     "Resultado",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    respuesta.Nombre);
 
                 CargarCertificaciones(txtBuscar.Text.Trim());
             }
             else
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowError(
+                    this,
                     "No se pudo eliminar",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    respuesta.Nombre);
             }
         }
 
@@ -652,33 +1364,31 @@ namespace Aseguranza.Ventanas
         {
             if (trabajadorActual == null)
             {
-                MessageBox.Show(
-                    "No se encontró la información del trabajador.",
+                AppDialog.ShowWarning(
+                    this,
                     "Trabajador no encontrado",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "No se encontró la información del trabajador.");
 
                 return;
             }
 
-            ExpedienteTrabajadorVentana ventana = new ExpedienteTrabajadorVentana(
-                trabajadorActual.Id,
-                trabajadorActual.NoReloj ?? "",
-                trabajadorActual.Nombre ?? ""
-            );
+            using ExpedienteTrabajadorVentana ventana =
+                new ExpedienteTrabajadorVentana(
+                    trabajadorActual.Id,
+                    trabajadorActual.NoReloj ?? "",
+                    trabajadorActual.Nombre ?? "");
 
-            ventana.ShowDialog();
+            ventana.ShowDialog(this);
         }
 
         private void btnAnular_Click(object sender, EventArgs e)
         {
             if (dgvCertificaciones.CurrentRow == null)
             {
-                MessageBox.Show(
-                    "Seleccione una certificación para anular.",
+                AppDialog.ShowWarning(
+                    this,
                     "Sin selección",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione una certificación para anular.");
 
                 return;
             }
@@ -689,14 +1399,14 @@ namespace Aseguranza.Ventanas
 
             string proceso = dgvCertificaciones.CurrentRow.Cells["Proceso"].Value?.ToString() ?? "";
 
-            CertificacionAnulacionVentana ventana = new CertificacionAnulacionVentana(
-                idCertificacion,
-                trabajadorActual.NoReloj ?? "",
-                trabajadorActual.Nombre ?? "",
-                proceso
-            );
+            using CertificacionAnulacionVentana ventana =
+                new CertificacionAnulacionVentana(
+                    idCertificacion,
+                    trabajadorActual.NoReloj ?? "",
+                    trabajadorActual.Nombre ?? "",
+                    proceso);
 
-            ventana.ShowDialog();
+            ventana.ShowDialog(this);
 
             if (ventana.DialogResult == DialogResult.OK)
             {
@@ -949,27 +1659,68 @@ namespace Aseguranza.Ventanas
 
         private void ActualizarEstadoBotonAnular()
         {
-            if (dgvCertificaciones.CurrentRow == null || dgvCertificaciones.Rows.Count == 0)
+            if (dgvCertificaciones.CurrentRow == null ||
+                dgvCertificaciones.Rows.Count == 0)
             {
-                btnAnular.Text = "Anular";
-                btnAnular.Enabled = false;
-                btnAnular.BackColor = SystemColors.Control;
+                btnAnular.Text =
+                    "Anular";
+
+                btnAnular.Enabled =
+                    false;
+
+                btnAnular.BackColor =
+                    AppColors.DisabledBackground;
+
+                btnAnular.ForeColor =
+                    AppColors.DisabledText;
+
                 return;
             }
 
-            btnAnular.Enabled = true;
+            btnAnular.Enabled =
+                true;
 
             if (CertificacionSeleccionadaEstaAnulada())
             {
-                btnAnular.Text = "Ver anulación";
-                btnAnular.BackColor = Color.FromArgb(126, 87, 194);
-                btnAnular.ForeColor = Color.White;
+                btnAnular.Text =
+                    "Ver anulación";
+
+                btnAnular.BackColor =
+                    ColorAccionAnulada;
+
+                btnAnular.ForeColor =
+                    Color.White;
+
+                btnAnular.FlatAppearance.MouseOverBackColor =
+                    ControlPaint.Dark(
+                        ColorAccionAnulada,
+                        0.05F);
+
+                btnAnular.FlatAppearance.MouseDownBackColor =
+                    ControlPaint.Dark(
+                        ColorAccionAnulada,
+                        0.10F);
             }
             else
             {
-                btnAnular.Text = "Anular";
-                btnAnular.BackColor = SystemColors.Control;
-                btnAnular.ForeColor = Color.Black;
+                btnAnular.Text =
+                    "Anular";
+
+                btnAnular.BackColor =
+                    ColorAccionAnular;
+
+                btnAnular.ForeColor =
+                    Color.White;
+
+                btnAnular.FlatAppearance.MouseOverBackColor =
+                    ControlPaint.Dark(
+                        ColorAccionAnular,
+                        0.05F);
+
+                btnAnular.FlatAppearance.MouseDownBackColor =
+                    ControlPaint.Dark(
+                        ColorAccionAnular,
+                        0.10F);
             }
         }
 
@@ -1050,17 +1801,19 @@ namespace Aseguranza.Ventanas
         {
             if (trabajadorActual == null || string.IsNullOrWhiteSpace(trabajadorActual.NoReloj))
             {
-                MessageBox.Show(
-                    "No se encontró el número de reloj del trabajador.",
+                AppDialog.ShowWarning(
+                    this,
                     "Información incompleta",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "No se encontró el número de reloj del trabajador.");
 
                 return;
             }
 
-            using var ventana = new Verificaciones(trabajadorActual.NoReloj);
-            ventana.ShowDialog();
+            using Verificaciones ventana =
+                new Verificaciones(
+                    trabajadorActual.NoReloj);
+
+            ventana.ShowDialog(this);
         }
 
         private void btnLimpiarBusqueda_Click(object sender, EventArgs e)
