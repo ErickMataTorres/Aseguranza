@@ -137,7 +137,7 @@ namespace Aseguranza.Ventanas
                 titulo,
                 new Size(
                     1040,
-                    740));
+                    640));
 
             DoubleBuffered =
                 true;
@@ -209,10 +209,10 @@ namespace Aseguranza.Ventanas
                     Size =
                         new Size(
                             560,
-                            455),
+                            390),
 
                     BackColor =
-                        AppColors.AlternateRow
+                        AppColors.SectionBackground
                 };
 
             RoundedControlHelper.ApplyRoundedRegion(
@@ -277,12 +277,12 @@ namespace Aseguranza.Ventanas
                 lblNoReloj,
                 "No. Reloj *",
                 18,
-                72);
+                68);
 
             Panel pnlNoReloj =
                 CrearPanelCampo(
                     18,
-                    97,
+                    90,
                     250);
 
             ConfigurarTextBox(
@@ -304,12 +304,12 @@ namespace Aseguranza.Ventanas
                 lblNombre,
                 "Nombre completo *",
                 286,
-                72);
+                68);
 
             Panel pnlNombre =
                 CrearPanelCampo(
                     286,
-                    97,
+                    90,
                     256);
 
             ConfigurarTextBox(
@@ -331,12 +331,12 @@ namespace Aseguranza.Ventanas
                 lblLocalidad,
                 "Localidad *",
                 18,
-                158);
+                140);
 
             Panel pnlLocalidad =
                 CrearPanelCampo(
                     18,
-                    183,
+                    162,
                     250);
 
             ConfigurarComboBox(
@@ -357,12 +357,12 @@ namespace Aseguranza.Ventanas
                 lblTurno,
                 "Turno *",
                 286,
-                158);
+                140);
 
             Panel pnlTurno =
                 CrearPanelCampo(
                     286,
-                    183,
+                    162,
                     256);
 
             ConfigurarComboBox(
@@ -383,12 +383,12 @@ namespace Aseguranza.Ventanas
                 lblPlanta,
                 "Planta *",
                 18,
-                244);
+                212);
 
             Panel pnlPlanta =
                 CrearPanelCampo(
                     18,
-                    269,
+                    234,
                     250);
 
             ConfigurarComboBox(
@@ -409,12 +409,12 @@ namespace Aseguranza.Ventanas
                 lblLinea,
                 "Línea *",
                 286,
-                244);
+                212);
 
             Panel pnlLinea =
                 CrearPanelCampo(
                     286,
-                    269,
+                    234,
                     256);
 
             ConfigurarComboBox(
@@ -440,7 +440,7 @@ namespace Aseguranza.Ventanas
             lblCamposObligatorios.Location =
                 new Point(
                     18,
-                    335);
+                    292);
 
             lblCamposObligatorios.ForeColor =
                 AppColors.Danger;
@@ -458,18 +458,18 @@ namespace Aseguranza.Ventanas
                         false,
 
                     Location =
-                        new Point(
-                            18,
-                            366),
+    new Point(
+        18,
+        316),
 
                     Size =
-                        new Size(
-                            520,
-                            55),
+    new Size(
+        520,
+        48),
 
                     Text =
-                        "La línea disponible depende de la planta seleccionada. " +
-                        "Al modificar un trabajador, el número de reloj permanece bloqueado.",
+    "La línea disponible depende de la planta seleccionada. " +
+    "Al modificar, el número de reloj permanece bloqueado.",
 
                     ForeColor =
                         AppColors.TextSecondary,
@@ -497,12 +497,12 @@ namespace Aseguranza.Ventanas
                             20),
 
                     Size =
-                        new Size(
-                            380,
-                            455),
+    new Size(
+        380,
+        390),
 
                     BackColor =
-                        AppColors.AlternateRow
+                        AppColors.SectionBackground
                 };
 
             RoundedControlHelper.ApplyRoundedRegion(
@@ -548,7 +548,7 @@ namespace Aseguranza.Ventanas
             lblCamaras.Location =
                 new Point(
                     18,
-                    51);
+                    46);
 
             lblCamaras.ForeColor =
                 AppColors.TextPrimary;
@@ -564,7 +564,7 @@ namespace Aseguranza.Ventanas
             Panel pnlCamara =
                 CrearPanelCampo(
                     18,
-                    73,
+                    65,
                     294);
 
             cbCamaras.Location =
@@ -605,7 +605,7 @@ namespace Aseguranza.Ventanas
             btnRecargarCamaras.Location =
                 new Point(
                     320,
-                    73);
+                    65);
 
             btnRecargarCamaras.Font =
                 AppFonts.Regular(
@@ -622,12 +622,12 @@ namespace Aseguranza.Ventanas
             pictureBox1.Location =
                 new Point(
                     18,
-                    125);
+                    115);
 
             pictureBox1.Size =
                 new Size(
                     344,
-                    185);
+                    145);
 
             pictureBox1.BackColor =
                 Color.White;
@@ -652,7 +652,7 @@ namespace Aseguranza.Ventanas
             lblEstadoFoto.Location =
                 new Point(
                     18,
-                    316);
+                    264);
 
             lblEstadoFoto.Size =
                 new Size(
@@ -681,7 +681,7 @@ namespace Aseguranza.Ventanas
             btnIniciarCamara.Location =
                 new Point(
                     18,
-                    343);
+                    288);
 
             ConfigurarBotonFoto(
                 btnCapturar,
@@ -692,7 +692,7 @@ namespace Aseguranza.Ventanas
             btnCapturar.Location =
                 new Point(
                     196,
-                    343);
+                    288);
 
             ConfigurarBotonFoto(
                 btnSeleccionar,
@@ -703,7 +703,7 @@ namespace Aseguranza.Ventanas
             btnSeleccionar.Location =
                 new Point(
                     18,
-                    393);
+                    338);
 
             ConfigurarBotonFoto(
                 btnQuitarFoto,
@@ -714,7 +714,7 @@ namespace Aseguranza.Ventanas
             btnQuitarFoto.Location =
                 new Point(
                     196,
-                    393);
+                    338);
 
             pnlFoto.Controls.Add(
                 btnIniciarCamara);

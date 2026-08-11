@@ -19,13 +19,18 @@ namespace Aseguranza.UI
         // =========================================================
 
         public static readonly Color AppBackground =
-            Color.FromArgb(245, 247, 250);
+            Color.FromArgb(238, 242, 247);
 
         public static readonly Color CardBackground =
             Color.White;
 
+        public static readonly Color SectionBackground =
+            Color.FromArgb(232, 237, 244);
+
         public static readonly Color AlternateRow =
             Color.FromArgb(248, 250, 252);
+
+
 
         // =========================================================
         // TEXTO

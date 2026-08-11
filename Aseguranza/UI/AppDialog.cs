@@ -6,6 +6,11 @@ namespace Aseguranza.UI
 {
     public sealed class AppDialog : Form
     {
+        private readonly Panel _pnlCard;
+        private readonly Label _lblMessage;
+        private readonly Button _btnPrimary;
+        private readonly Button? _btnSecondary;
+
         private AppDialog(
             string title,
             string message,
@@ -15,11 +20,17 @@ namespace Aseguranza.UI
             string? secondaryText = null,
             DialogResult secondaryResult = DialogResult.Cancel)
         {
-            Text = title;
+            // =====================================================
+            // FORMULARIO
+            // =====================================================
 
-            ClientSize = new Size(
-                540,
-                250);
+            Text =
+                title;
+
+            ClientSize =
+                new Size(
+                    650,
+                    340);
 
             StartPosition =
                 FormStartPosition.Manual;
@@ -27,102 +38,219 @@ namespace Aseguranza.UI
             FormBorderStyle =
                 FormBorderStyle.FixedDialog;
 
-            MaximizeBox = false;
-            MinimizeBox = false;
+            MaximizeBox =
+                false;
 
-            ShowInTaskbar = false;
+            MinimizeBox =
+                false;
+
+            ShowInTaskbar =
+                false;
 
             BackColor =
                 AppColors.AppBackground;
 
             Font =
-                AppFonts.Light(10F);
+                AppFonts.Light(
+                    10.5F);
+
+            Padding =
+                new Padding(
+                    16);
+
+            // =====================================================
+            // TARJETA PRINCIPAL
+            // =====================================================
+
+            _pnlCard =
+                new Panel
+                {
+                    Dock =
+                        DockStyle.Fill,
+
+                    BackColor =
+                        Color.White
+                };
+
+            Controls.Add(
+                _pnlCard);
+
+            // =====================================================
+            // HEADER
+            // =====================================================
+
+            Panel pnlHeader =
+                new Panel
+                {
+                    Dock =
+                        DockStyle.Top,
+
+                    Height =
+                        70,
+
+                    BackColor =
+                        AppColors.Primary
+                };
+
+            Label lblTitle =
+                new Label
+                {
+                    AutoSize =
+                        true,
+
+                    Text =
+                        title,
+
+                    ForeColor =
+                        Color.White,
+
+                    Font =
+                        AppFonts.Regular(
+                            15F,
+                            FontStyle.Bold),
+
+                    Location =
+                        new Point(
+                            22,
+                            21)
+                };
+
+            pnlHeader.Controls.Add(
+                lblTitle);
+
+            _pnlCard.Controls.Add(
+                pnlHeader);
 
             // =====================================================
             // MENSAJE
             // =====================================================
 
-            Label lblMessage =
+            _lblMessage =
                 new Label
                 {
-                    AutoSize = false,
+                    AutoSize =
+                        false,
 
-                    Text = message,
+                    Text =
+                        message,
 
                     ForeColor =
                         AppColors.TextPrimary,
 
                     Font =
-                        AppFonts.Light(10.5F),
+                        AppFonts.Light(
+                            12F),
 
                     Location =
-                        new Point(28, 28),
+                        new Point(
+                            26,
+                            95),
 
                     Size =
-                        new Size(484, 135),
+                        new Size(
+                            590,
+                            125),
 
                     TextAlign =
                         ContentAlignment.MiddleLeft
                 };
 
+            _pnlCard.Controls.Add(
+                _lblMessage);
+
             // =====================================================
-            // BOTONES
+            // BOTÓN PRINCIPAL
             // =====================================================
 
-            Button btnPrimary =
+            _btnPrimary =
                 CrearBoton(
                     primaryText,
                     accentColor,
                     primaryResult);
 
-            btnPrimary.Location =
+            _btnPrimary.Location =
                 new Point(
-                    380,
-                    185);
+                    478,
+                    252);
 
-            Controls.Add(
-                lblMessage);
+            _pnlCard.Controls.Add(
+                _btnPrimary);
 
-            Controls.Add(
-                btnPrimary);
+            // =====================================================
+            // BOTÓN SECUNDARIO
+            // =====================================================
 
             if (!string.IsNullOrWhiteSpace(
                     secondaryText))
             {
-                Button btnSecondary =
+                _btnSecondary =
                     CrearBoton(
                         secondaryText,
                         AppColors.Neutral,
                         secondaryResult);
 
-                btnSecondary.Location =
+                _btnSecondary.Location =
                     new Point(
-                        240,
-                        185);
+                        330,
+                        252);
 
-                Controls.Add(
-                    btnSecondary);
+                _pnlCard.Controls.Add(
+                    _btnSecondary);
+
+                AcceptButton =
+                    _btnPrimary;
 
                 CancelButton =
-                    btnSecondary;
+                    _btnSecondary;
 
-                // Para una operación destructiva,
-                // Cancelar recibe el foco inicialmente.
                 Shown +=
                     (_, _) =>
                     {
-                        btnSecondary.Focus();
+                        _btnSecondary.Focus();
                     };
             }
             else
             {
+                _btnSecondary =
+                    null;
+
                 AcceptButton =
-                    btnPrimary;
+                    _btnPrimary;
 
                 CancelButton =
-                    btnPrimary;
+                    _btnPrimary;
             }
+
+            // =====================================================
+            // BORDE SUAVE DE LA TARJETA
+            // =====================================================
+
+            _pnlCard.Paint +=
+                (_, e) =>
+                {
+                    using Pen pen =
+                        new Pen(
+                            Color.FromArgb(
+                                220,
+                                226,
+                                236));
+
+                    Rectangle rect =
+                        new Rectangle(
+                            0,
+                            0,
+                            _pnlCard.Width - 1,
+                            _pnlCard.Height - 1);
+
+                    e.Graphics.DrawRectangle(
+                        pen,
+                        rect);
+                };
         }
+
+        // =========================================================
+        // CREAR BOTÓN
+        // =========================================================
 
         private static Button CrearBoton(
             string text,
@@ -132,15 +260,16 @@ namespace Aseguranza.UI
             Button button =
                 new Button
                 {
-                    Text = text,
+                    Text =
+                        text,
 
                     DialogResult =
                         dialogResult,
 
                     Size =
                         new Size(
-                            120,
-                            40),
+                            128,
+                            44),
 
                     FlatStyle =
                         FlatStyle.Flat,
@@ -156,7 +285,7 @@ namespace Aseguranza.UI
 
                     Font =
                         AppFonts.Regular(
-                            10F,
+                            10.5F,
                             FontStyle.Bold),
 
                     UseVisualStyleBackColor =
@@ -166,16 +295,25 @@ namespace Aseguranza.UI
             button.FlatAppearance.BorderSize =
                 0;
 
-            RoundedControlHelper
-                .ApplyRoundedRegion(
-                    button,
-                    7);
+            button.FlatAppearance.MouseOverBackColor =
+                ControlPaint.Dark(
+                    backgroundColor,
+                    0.05F);
+
+            button.FlatAppearance.MouseDownBackColor =
+                ControlPaint.Dark(
+                    backgroundColor,
+                    0.10F);
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                button,
+                8);
 
             return button;
         }
 
         // =========================================================
-        // POSICIONAR SIEMPRE DENTRO DEL MONITOR VISIBLE
+        // POSICIONAR SOBRE OWNER
         // =========================================================
 
         private void PosicionarSobre(
@@ -183,7 +321,8 @@ namespace Aseguranza.UI
         {
             Rectangle areaVisible =
                 Screen
-                    .FromControl(owner)
+                    .FromControl(
+                        owner)
                     .WorkingArea;
 
             Rectangle ownerBounds =
@@ -218,7 +357,7 @@ namespace Aseguranza.UI
         }
 
         // =========================================================
-        // CONFIRMACIÓN
+        // CONFIRMAR
         // =========================================================
 
         public static bool Confirm(
