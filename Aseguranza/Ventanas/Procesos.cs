@@ -136,7 +136,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            pnlContenido.ClientSize.Width - 40,
+                            pnlContenido.ClientSize.Width - 200,
                             39),
 
                     BackColor =
@@ -146,6 +146,39 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Top |
                         AnchorStyles.Left |
                         AnchorStyles.Right
+                };
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                icon: null,
+                width: 140,
+                height: 39);
+
+            btnLimpiar.Name =
+                "btnLimpiar";
+
+            btnLimpiar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width - 160,
+                    42);
+
+            btnLimpiar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnLimpiar.Click +=
+                (_, _) =>
+                {
+                    txtBuscar.Clear();
+
+                    IniciarTodo();
+
+                    txtBuscar.Focus();
                 };
 
             // =====================================================
@@ -256,13 +289,15 @@ namespace Aseguranza.Ventanas
                             92),
 
                     Text =
-                        "0 procesos registrados",
+                        "Total: 0 procesos",
 
                     ForeColor =
-                        AppColors.TextSecondary,
+                        AppColors.TextPrimary,
 
                     Font =
-                        AppFonts.Light(9.5F)
+                        AppFonts.Regular(
+                            10F,
+                            FontStyle.Bold)
                 };
 
             // =====================================================
@@ -427,6 +462,9 @@ namespace Aseguranza.Ventanas
                 pnlBuscar);
 
             pnlContenido.Controls.Add(
+                btnLimpiar);
+
+            pnlContenido.Controls.Add(
                 _lblRegistros);
 
             pnlContenido.Controls.Add(
@@ -528,7 +566,7 @@ namespace Aseguranza.Ventanas
 
                 dgvProcesos.Columns["Nombre"]!
                     .FillWeight =
-                        30;
+                        24;
             }
 
             if (dgvProcesos.Columns.Contains(
@@ -544,7 +582,7 @@ namespace Aseguranza.Ventanas
 
                 dgvProcesos.Columns["Descripcion"]!
                     .FillWeight =
-                        50;
+                        58;
             }
 
             if (dgvProcesos.Columns.Contains(
@@ -560,7 +598,7 @@ namespace Aseguranza.Ventanas
 
                 dgvProcesos.Columns["VigenciaMeses"]!
                     .FillWeight =
-                        20;
+                        18;
 
                 dgvProcesos.Columns["VigenciaMeses"]!
                     .DefaultCellStyle.Alignment =
@@ -590,13 +628,13 @@ namespace Aseguranza.Ventanas
                 cantidad switch
                 {
                     0 =>
-                        "No hay procesos registrados",
+                        "Total: 0 procesos",
 
                     1 =>
-                        "1 proceso registrado",
+                        "Total: 1 proceso",
 
                     _ =>
-                        $"{cantidad} procesos registrados"
+                        $"Total: {cantidad} procesos"
                 };
         }
 
@@ -733,11 +771,10 @@ namespace Aseguranza.Ventanas
 
             if (proceso is null)
             {
-                MessageBox.Show(
-                    "Seleccione un proceso.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un proceso.");
 
                 return;
             }
@@ -766,24 +803,25 @@ namespace Aseguranza.Ventanas
 
             if (proceso is null)
             {
-                MessageBox.Show(
-                    "Seleccione un proceso.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un proceso.");
 
                 return;
             }
 
-            DialogResult confirmacion =
-                MessageBox.Show(
-                    $"¿Está seguro de eliminar el proceso \"{proceso.Nombre}\"?",
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
                     "Confirmar eliminación",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+                    "¿Está seguro de eliminar el proceso?" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    proceso.Nombre,
+                    "Eliminar");
 
-            if (confirmacion !=
-                DialogResult.Yes)
+            if (!confirmacion)
             {
                 return;
             }
@@ -793,15 +831,20 @@ namespace Aseguranza.Ventanas
                     .BorrarProceso(
                         proceso.Id);
 
-            MessageBox.Show(
-                respuesta.Nombre,
-                respuesta.Id == 1
-                    ? "Operación completada"
-                    : "No se pudo eliminar",
-                MessageBoxButtons.OK,
-                respuesta.Id == 1
-                    ? MessageBoxIcon.Information
-                    : MessageBoxIcon.Error);
+            if (respuesta.Id == 1)
+            {
+                AppDialog.ShowInfo(
+                    this,
+                    "Operación completada",
+                    respuesta.Nombre);
+            }
+            else
+            {
+                AppDialog.ShowError(
+                    this,
+                    "No se pudo eliminar",
+                    respuesta.Nombre);
+            }
 
             IniciarTodo();
         }
