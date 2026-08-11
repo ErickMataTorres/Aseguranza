@@ -1,4 +1,9 @@
 using Aseguranza.Clases;
+using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Aseguranza
 {
@@ -8,6 +13,8 @@ namespace Aseguranza
         static void Main(string[] args)
         {
             ApplicationConfiguration.Initialize();
+
+            ConfigurarRegistroGlobalDeErrores();
 
             bool inicializarSqlite = Array.Exists(
                 args,
@@ -21,7 +28,120 @@ namespace Aseguranza
                 return;
             }
 
-            Application.Run(new MenuPrincipal());
+            Application.Run(
+                new MenuPrincipal());
+        }
+
+        private static void ConfigurarRegistroGlobalDeErrores()
+        {
+            Application.SetUnhandledExceptionMode(
+                UnhandledExceptionMode.CatchException);
+
+            Application.ThreadException +=
+                (_, e) =>
+                {
+                    RegistrarErrorGlobal(
+                        "Application.ThreadException",
+                        e.Exception);
+                };
+
+            AppDomain.CurrentDomain.UnhandledException +=
+                (_, e) =>
+                {
+                    Exception? exception =
+                        e.ExceptionObject as Exception;
+
+                    RegistrarErrorGlobal(
+                        "AppDomain.UnhandledException" +
+                        $" | IsTerminating={e.IsTerminating}",
+                        exception);
+                };
+
+            TaskScheduler.UnobservedTaskException +=
+                (_, e) =>
+                {
+                    RegistrarErrorGlobal(
+                        "TaskScheduler.UnobservedTaskException",
+                        e.Exception);
+
+                    e.SetObserved();
+                };
+        }
+
+        private static void RegistrarErrorGlobal(
+            string origen,
+            Exception? exception)
+        {
+            try
+            {
+                string carpetaLogs =
+                    Path.Combine(
+                        Environment.GetFolderPath(
+                            Environment.SpecialFolder.LocalApplicationData),
+                        "Aseguranza",
+                        "Logs");
+
+                Directory.CreateDirectory(
+                    carpetaLogs);
+
+                string rutaLog =
+                    Path.Combine(
+                        carpetaLogs,
+                        "aplicacion.log");
+
+                StringBuilder sb =
+                    new StringBuilder();
+
+                sb.AppendLine(
+                    "============================================================");
+
+                sb.AppendLine(
+                    $"Fecha: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+
+                sb.AppendLine(
+                    $"Origen: {origen}");
+
+                if (exception is not null)
+                {
+                    sb.AppendLine(
+                        $"Tipo: {exception.GetType().FullName}");
+
+                    sb.AppendLine(
+                        $"Mensaje: {exception.Message}");
+
+                    sb.AppendLine(
+                        "StackTrace:");
+
+                    sb.AppendLine(
+                        exception.StackTrace ?? "(sin stack trace)");
+
+                    if (exception.InnerException is not null)
+                    {
+                        sb.AppendLine(
+                            "InnerException:");
+
+                        sb.AppendLine(
+                            exception.InnerException.ToString());
+                    }
+                }
+                else
+                {
+                    sb.AppendLine(
+                        "No se recibió una instancia Exception.");
+                }
+
+                sb.AppendLine();
+
+                File.AppendAllText(
+                    rutaLog,
+                    sb.ToString(),
+                    Encoding.UTF8);
+            }
+            catch
+            {
+                // Un fallo en el sistema de logs nunca debe
+                // provocar otro error en la aplicación.
+            }
         }
 
         private static void InicializarBaseSqlite()

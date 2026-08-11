@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using Microsoft.Web.WebView2.Core;
+using Aseguranza.UI;
 
 namespace Aseguranza.Ventanas
 {
@@ -17,11 +18,23 @@ namespace Aseguranza.Ventanas
         private readonly bool _ocultarVentanaAlImprimir = false;
         private readonly bool _guardarDirectoEnDescargas = false;
 
+        private string _noRelojCredencialActual = "";
+
+        // Evita ejecuciones simultáneas de impresión si el usuario
+        // hace doble clic o WebView2 tarda en responder.
+        private bool _generandoPdf = false;
+
+        // Diagnóstico de procesos WebView2.
+        private bool _eventosWebViewRegistrados = false;
+        private bool _webViewConFalloFatal = false;
+        private string _ultimoFalloWebView = "";
+
         public string? RutaPdfGenerado { get; private set; }
         public string? ErrorGeneracionPdf { get; private set; }
         public Verificaciones()
         {
             InitializeComponent();
+            AplicarEstiloVisual();
         }
 
         public Verificaciones(
@@ -37,12 +50,556 @@ namespace Aseguranza.Ventanas
             _ocultarVentanaAlImprimir = ocultarVentanaAlImprimir;
             _guardarDirectoEnDescargas = guardarDirectoEnDescargas;
 
+            AplicarEstiloVisual();
+
             if (_ocultarVentanaAlImprimir)
             {
                 ShowInTaskbar = false;
                 StartPosition = FormStartPosition.Manual;
                 Location = new Point(-20000, -20000);
             }
+        }
+
+        // =========================================================
+        // INTERFAZ MODERNA
+        // =========================================================
+
+        private void AplicarEstiloVisual()
+        {
+            SuspendLayout();
+
+            FormStyler.ApplyBase(
+                this,
+                "Verificaciones",
+                new Size(
+                    1180,
+                    760));
+
+            DoubleBuffered =
+                true;
+
+            // Controles heredados de la vista WinForms antigua.
+            // Se conservan porque participan en la generación de
+            // la credencial, pero ya no forman parte de la UI visible.
+            lblVerificador.Visible =
+                false;
+
+            lblNoReloj.Visible =
+                false;
+
+            lblTrabajador.Visible =
+                false;
+
+            pnlAdelante.Visible =
+                false;
+
+            pnlReverso.Visible =
+                false;
+
+            FormStyler.CreateHeader(
+                this,
+                "Verificación de certificaciones",
+                "Consulta al trabajador y genera la vista previa de su credencial.",
+                height: 105,
+                titleX: 38,
+                titleY: 20,
+                subtitleX: 40,
+                subtitleY: 61);
+
+            Panel pnlContenido =
+                FormStyler.CreateCard(
+                    this,
+                    new Point(
+                        20,
+                        125),
+                    new Size(
+                        1140,
+                        615),
+                    radius: 14);
+
+            // =====================================================
+            // BÚSQUEDA
+            // =====================================================
+
+            Panel pnlBusqueda =
+                new Panel
+                {
+                    Location =
+                        new Point(
+                            20,
+                            18),
+
+                    Size =
+                        new Size(
+                            1100,
+                            112),
+
+                    BackColor =
+                        AppColors.SectionBackground
+                };
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                pnlBusqueda,
+                10);
+
+            pnlContenido.Controls.Add(
+                pnlBusqueda);
+
+            Label lblTituloBusqueda =
+                new Label
+                {
+                    AutoSize =
+                        true,
+
+                    Text =
+                        "Buscar trabajador",
+
+                    Location =
+                        new Point(
+                            18,
+                            12),
+
+                    ForeColor =
+                        AppColors.TextPrimary,
+
+                    Font =
+                        AppFonts.Regular(
+                            13F,
+                            FontStyle.Bold),
+
+                    BackColor =
+                        Color.Transparent
+                };
+
+            pnlBusqueda.Controls.Add(
+                lblTituloBusqueda);
+
+            Label lblCampoReloj =
+                CrearEtiquetaCampo(
+                    "No. Reloj *",
+                    new Point(
+                        18,
+                        46));
+
+            pnlBusqueda.Controls.Add(
+                lblCampoReloj);
+
+            Panel pnlNoReloj =
+                new Panel
+                {
+                    Location =
+                        new Point(
+                            18,
+                            68),
+
+                    Size =
+                        new Size(
+                            190,
+                            40),
+
+                    BackColor =
+                        Color.White
+                };
+
+            txtNoReloj.Parent =
+                pnlNoReloj;
+
+            txtNoReloj.Location =
+                new Point(
+                    10,
+                    9);
+
+            txtNoReloj.Size =
+                new Size(
+                    170,
+                    24);
+
+            txtNoReloj.BorderStyle =
+                BorderStyle.None;
+
+            txtNoReloj.Multiline =
+                false;
+
+            txtNoReloj.BackColor =
+                Color.White;
+
+            txtNoReloj.ForeColor =
+                AppColors.TextPrimary;
+
+            txtNoReloj.Font =
+                AppFonts.Regular(
+                    11F);
+
+            InputStyler.ApplyOutlinedInput(
+                pnlNoReloj,
+                txtNoReloj,
+                radius: 7);
+
+            pnlBusqueda.Controls.Add(
+                pnlNoReloj);
+
+            Label lblCampoNombre =
+                CrearEtiquetaCampo(
+                    "Trabajador",
+                    new Point(
+                        226,
+                        46));
+
+            pnlBusqueda.Controls.Add(
+                lblCampoNombre);
+
+            Panel pnlNombreBusqueda =
+                new Panel
+                {
+                    Location =
+                        new Point(
+                            226,
+                            68),
+
+                    Size =
+                        new Size(
+                            390,
+                            40),
+
+                    BackColor =
+                        Color.White
+                };
+
+            txtNombre.Parent =
+                pnlNombreBusqueda;
+
+            txtNombre.Location =
+                new Point(
+                    10,
+                    9);
+
+            txtNombre.Size =
+                new Size(
+                    370,
+                    24);
+
+            txtNombre.BorderStyle =
+                BorderStyle.None;
+
+            txtNombre.Multiline =
+                false;
+
+            txtNombre.ReadOnly =
+                true;
+
+            txtNombre.BackColor =
+                Color.White;
+
+            txtNombre.ForeColor =
+                AppColors.TextPrimary;
+
+            txtNombre.Font =
+                AppFonts.Regular(
+                    11F,
+                    FontStyle.Bold);
+
+            InputStyler.ApplyOutlinedInput(
+                pnlNombreBusqueda,
+                txtNombre,
+                radius: 7,
+                borderColor: AppColors.BorderMedium);
+
+            pnlBusqueda.Controls.Add(
+                pnlNombreBusqueda);
+
+            Button btnBuscar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnBuscar,
+                "Buscar",
+                AppColors.Primary,
+                AppIcons.Search,
+                width: 120,
+                height: 40);
+
+            btnBuscar.Location =
+                new Point(
+                    635,
+                    68);
+
+            btnBuscar.Click +=
+                async (_, _) =>
+                {
+                    await BuscarDesdeInterfazAsync();
+                };
+
+            pnlBusqueda.Controls.Add(
+                btnBuscar);
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                string.Empty,
+                width: 120,
+                height: 40);
+
+            if (btnLimpiar.Image is not null)
+            {
+                Image imagenTemporal =
+                    btnLimpiar.Image;
+
+                btnLimpiar.Image =
+                    null;
+
+                imagenTemporal.Dispose();
+            }
+
+            btnLimpiar.Padding =
+                new Padding(
+                    12,
+                    0,
+                    12,
+                    0);
+
+            btnLimpiar.Location =
+                new Point(
+                    765,
+                    68);
+
+            btnLimpiar.Click +=
+                async (_, _) =>
+                {
+                    await LimpiarBusquedaDesdeInterfazAsync();
+                };
+
+            pnlBusqueda.Controls.Add(
+                btnLimpiar);
+
+            ButtonStyler.Apply(
+                btnImprimirHtml,
+                "Imprimir PDF",
+                AppColors.Primary,
+                AppIcons.Save,
+                width: 165,
+                height: 40);
+
+            btnImprimirHtml.Parent =
+                pnlBusqueda;
+
+            btnImprimirHtml.Location =
+                new Point(
+                    915,
+                    68);
+
+            ActualizarEstadoBotonImprimir(
+                false);
+
+            // =====================================================
+            // VISTA PREVIA
+            // =====================================================
+
+            Label lblVistaPrevia =
+                new Label
+                {
+                    AutoSize =
+                        true,
+
+                    Text =
+                        "Vista previa de credencial",
+
+                    Location =
+                        new Point(
+                            20,
+                            145),
+
+                    ForeColor =
+                        AppColors.TextPrimary,
+
+                    Font =
+                        AppFonts.Regular(
+                            13F,
+                            FontStyle.Bold),
+
+                    BackColor =
+                        Color.Transparent
+                };
+
+            pnlContenido.Controls.Add(
+                lblVistaPrevia);
+
+            Panel pnlVista =
+                new Panel
+                {
+                    Location =
+                        new Point(
+                            20,
+                            175),
+
+                    Size =
+                        new Size(
+                            1100,
+                            410),
+
+                    BackColor =
+                        Color.White,
+
+                    Padding =
+                        new Padding(
+                            1)
+                };
+
+            RoundedControlHelper.ApplyRoundedRegion(
+                pnlVista,
+                10);
+
+            pnlVista.Paint +=
+                (_, e) =>
+                {
+                    using Pen pen =
+                        new Pen(
+                            AppColors.BorderMedium);
+
+                    Rectangle rect =
+                        new Rectangle(
+                            0,
+                            0,
+                            pnlVista.Width - 1,
+                            pnlVista.Height - 1);
+
+                    using var path =
+                        RoundedControlHelper.CreateRoundedPath(
+                            rect,
+                            10);
+
+                    e.Graphics.DrawPath(
+                        pen,
+                        path);
+                };
+
+            webViewCertificacion.Parent =
+                pnlVista;
+
+            webViewCertificacion.Dock =
+                DockStyle.Fill;
+
+            webViewCertificacion.Margin =
+                Padding.Empty;
+
+            webViewCertificacion.DefaultBackgroundColor =
+                Color.White;
+
+            pnlContenido.Controls.Add(
+                pnlVista);
+
+            ResumeLayout(
+                true);
+        }
+
+        private static Label CrearEtiquetaCampo(
+            string texto,
+            Point location)
+        {
+            return new Label
+            {
+                AutoSize =
+                    true,
+
+                Text =
+                    texto,
+
+                Location =
+                    location,
+
+                ForeColor =
+                    AppColors.TextSecondary,
+
+                Font =
+                    AppFonts.Regular(
+                        10F,
+                        FontStyle.Bold),
+
+                BackColor =
+                    Color.Transparent
+            };
+        }
+
+        private void ActualizarEstadoBotonImprimir(
+            bool habilitado)
+        {
+            btnImprimirHtml.Enabled =
+                habilitado;
+
+            ButtonStyler.UpdateEnabledState(
+                btnImprimirHtml,
+                AppColors.Primary);
+        }
+
+        private async Task BuscarDesdeInterfazAsync()
+        {
+            string noReloj =
+                txtNoReloj.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    noReloj))
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Validación",
+                    "Ingrese un número de reloj.");
+
+                txtNoReloj.Focus();
+
+                return;
+            }
+
+            UseWaitCursor =
+                true;
+
+            try
+            {
+                await ConsultarYMostrarCredencialAsync(
+                    noReloj);
+            }
+            catch (Exception ex)
+            {
+                _noRelojCredencialActual =
+                    string.Empty;
+
+                ActualizarEstadoBotonImprimir(
+                    false);
+
+                AppDialog.ShowError(
+                    this,
+                    "Error al consultar",
+                    "No fue posible consultar las certificaciones.\n\n" +
+                    ex.Message);
+            }
+            finally
+            {
+                UseWaitCursor =
+                    false;
+
+                txtNoReloj.SelectAll();
+
+                txtNoReloj.Focus();
+            }
+        }
+
+        private async Task LimpiarBusquedaDesdeInterfazAsync()
+        {
+            _noRelojCredencialActual =
+                string.Empty;
+
+            LimpiarVistaBusqueda();
+
+            txtNoReloj.Clear();
+
+            ActualizarEstadoBotonImprimir(
+                false);
+
+            await MostrarHtmlInicialAsync();
+
+            txtNoReloj.Focus();
         }
 
         private async void Verificaciones_Load(object sender, EventArgs e)
@@ -109,7 +666,12 @@ namespace Aseguranza.Ventanas
 
             if (dt == null || dt.Rows.Count == 0)
             {
-                MostrarVistaCompleta();
+                _noRelojCredencialActual =
+                    string.Empty;
+
+                ActualizarEstadoBotonImprimir(
+                    false);
+
                 await MostrarHtmlInicialAsync();
 
                 if (_imprimirAutomaticamente && _ocultarVentanaAlImprimir)
@@ -119,12 +681,10 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    MessageBox.Show(
+                    AppDialog.ShowInfo(
                         this,
-                        "No se encontraron certificaciones.",
-                        "Información",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        "Sin certificaciones",
+                        "No se encontraron certificaciones para el trabajador seleccionado.");
                 }
 
                 txtNoReloj.SelectAll();
@@ -147,7 +707,26 @@ namespace Aseguranza.Ventanas
             GenerarProcesosCertificados();
 
             MostrarSoloVistaHtml();
-            await MostrarCertificacionHtmlAsync();
+
+            bool htmlGenerado =
+                await MostrarCertificacionHtmlAsync();
+
+            if (!htmlGenerado)
+            {
+                _noRelojCredencialActual =
+                    string.Empty;
+
+                ActualizarEstadoBotonImprimir(
+                    false);
+
+                return false;
+            }
+
+            _noRelojCredencialActual =
+                noReloj;
+
+            ActualizarEstadoBotonImprimir(
+                true);
 
             return true;
         }
@@ -206,6 +785,121 @@ namespace Aseguranza.Ventanas
         private async Task InicializarWebViewAsync()
         {
             await webViewCertificacion.EnsureCoreWebView2Async();
+
+            RegistrarEventosWebView2();
+        }
+
+        private void RegistrarEventosWebView2()
+        {
+            if (_eventosWebViewRegistrados ||
+                webViewCertificacion.CoreWebView2 is null)
+            {
+                return;
+            }
+
+            webViewCertificacion.CoreWebView2.ProcessFailed +=
+                CoreWebView2_ProcessFailed;
+
+            _eventosWebViewRegistrados =
+                true;
+        }
+
+        private void CoreWebView2_ProcessFailed(
+            object? sender,
+            CoreWebView2ProcessFailedEventArgs e)
+        {
+            try
+            {
+                string tipo =
+                    e.ProcessFailedKind.ToString();
+
+                string razon =
+                    e.Reason.ToString();
+
+                bool fatal =
+                    tipo.Equals(
+                        "BrowserProcessExited",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    tipo.Equals(
+                        "RenderProcessExited",
+                        StringComparison.OrdinalIgnoreCase);
+
+                if (fatal)
+                {
+                    _webViewConFalloFatal =
+                        true;
+
+                    _ultimoFalloWebView =
+                        $"{tipo} / {razon} / ExitCode: {e.ExitCode}";
+                }
+
+                RegistrarLogWebView2(
+                    e);
+            }
+            catch
+            {
+                // Nunca permitimos que el propio diagnóstico
+                // provoque otra excepción durante ProcessFailed.
+            }
+        }
+
+        private void RegistrarLogWebView2(
+            CoreWebView2ProcessFailedEventArgs e)
+        {
+            string carpetaLogs =
+                Path.Combine(
+                    Environment.GetFolderPath(
+                        Environment.SpecialFolder.LocalApplicationData),
+                    "Aseguranza",
+                    "Logs");
+
+            Directory.CreateDirectory(
+                carpetaLogs);
+
+            string rutaLog =
+                Path.Combine(
+                    carpetaLogs,
+                    "webview2.log");
+
+            StringBuilder sb =
+                new StringBuilder();
+
+            sb.AppendLine(
+                "============================================================");
+
+            sb.AppendLine(
+                $"Fecha: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+
+            sb.AppendLine(
+                $"ProcessFailedKind: {e.ProcessFailedKind}");
+
+            sb.AppendLine(
+                $"Reason: {e.Reason}");
+
+            sb.AppendLine(
+                $"ExitCode: {e.ExitCode}");
+
+            sb.AppendLine(
+                $"ProcessDescription: {e.ProcessDescription}");
+
+            sb.AppendLine(
+                $"FailureSourceModulePath: {e.FailureSourceModulePath}");
+
+            if (webViewCertificacion.CoreWebView2 is not null)
+            {
+                sb.AppendLine(
+                    $"Runtime: {webViewCertificacion.CoreWebView2.Environment.BrowserVersionString}");
+
+                sb.AppendLine(
+                    $"FailureReportFolder: {webViewCertificacion.CoreWebView2.Environment.FailureReportFolderPath}");
+            }
+
+            sb.AppendLine();
+
+            File.AppendAllText(
+                rutaLog,
+                sb.ToString(),
+                Encoding.UTF8);
         }
 
         private async void txtNoReloj_KeyPress(object sender, KeyPressEventArgs e)
@@ -215,16 +909,23 @@ namespace Aseguranza.Ventanas
 
             e.Handled = true;
 
-            string noReloj = txtNoReloj.Text.Trim();
-
-            await ConsultarYMostrarCredencialAsync(noReloj);
-
-            txtNoReloj.SelectAll();
-            txtNoReloj.Focus();
+            await BuscarDesdeInterfazAsync();
         }
 
         private void txtNoReloj_TextChanged(object sender, EventArgs e)
         {
+            string textoActual =
+                txtNoReloj.Text.Trim();
+
+            bool coincideConCredencial =
+                !string.IsNullOrWhiteSpace(
+                    _noRelojCredencialActual) &&
+                textoActual.Equals(
+                    _noRelojCredencialActual,
+                    StringComparison.OrdinalIgnoreCase);
+
+            ActualizarEstadoBotonImprimir(
+                coincideConCredencial);
         }
 
         private void OcultarColumnas()
@@ -275,13 +976,14 @@ namespace Aseguranza.Ventanas
 
         private void MostrarVistaCompleta()
         {
-            pnlAdelante.Visible = true;
-            pnlReverso.Visible = true;
+            // La interfaz moderna utiliza únicamente WebView2 como
+            // vista visible. Los paneles WinForms antiguos se
+            // conservan ocultos como soporte de datos.
+            pnlAdelante.Visible =
+                false;
 
-            //webViewCertificacion.Location = new Point(123, 465);
-            //webViewCertificacion.Size = new Size(906, 318);
-
-
+            pnlReverso.Visible =
+                false;
         }
         private void GenerarProcesosCertificados()
         {
@@ -345,9 +1047,10 @@ namespace Aseguranza.Ventanas
             flowProcesosCertificados.Controls.Add(lbl);
         }
 
-        private async Task MostrarCertificacionHtmlAsync()
+        private async Task<bool> MostrarCertificacionHtmlAsync()
         {
-            if (dgvCertificaciones.Rows.Count == 0) return;
+            if (dgvCertificaciones.Rows.Count == 0)
+                return false;
 
             if (webViewCertificacion.CoreWebView2 == null)
                 await InicializarWebViewAsync();
@@ -357,8 +1060,25 @@ namespace Aseguranza.Ventanas
 
             if (!File.Exists(rutaHtml))
             {
-                MessageBox.Show("No se encontró la plantilla HTML: " + rutaHtml);
-                return;
+                string mensaje =
+                    "No se encontró la plantilla HTML necesaria para generar la credencial.\n\n" +
+                    rutaHtml;
+
+                if (_imprimirAutomaticamente &&
+                    _ocultarVentanaAlImprimir)
+                {
+                    ErrorGeneracionPdf =
+                        mensaje;
+                }
+                else
+                {
+                    AppDialog.ShowError(
+                        this,
+                        "Plantilla no encontrada",
+                        mensaje);
+                }
+
+                return false;
             }
 
             string html = File.ReadAllText(rutaHtml, Encoding.UTF8);
@@ -374,6 +1094,8 @@ namespace Aseguranza.Ventanas
             html = html.Replace("{{TABLA_PROCESOS}}", GenerarTablaProcesosHtml());
 
             await NavegarHtmlAsync(html);
+
+            return true;
         }
 
         private async Task EsperarRenderWebViewAsync()
@@ -848,67 +1570,130 @@ namespace Aseguranza.Ventanas
         }
 
         private async Task GenerarPdfCredencialAsync(
-    bool pedirRuta = true,
-    bool mostrarMensajes = true)
+            bool pedirRuta = true,
+            bool mostrarMensajes = true)
         {
+            RutaPdfGenerado =
+                null;
 
-            RutaPdfGenerado = null;
-            ErrorGeneracionPdf = null;
+            ErrorGeneracionPdf =
+                null;
 
-            if (webViewCertificacion.CoreWebView2 == null)
-                await InicializarWebViewAsync();
+            string reloj =
+                txtNoReloj.Text.Trim();
 
-            await EsperarRenderWebViewAsync();
+            string nombre =
+                txtNombre.Text.Trim();
 
-            string reloj = txtNoReloj.Text.Trim();
-            string nombre = txtNombre.Text.Trim();
-
-            if (string.IsNullOrWhiteSpace(reloj) || string.IsNullOrWhiteSpace(nombre))
+            if (string.IsNullOrWhiteSpace(reloj) ||
+                string.IsNullOrWhiteSpace(nombre))
             {
                 ErrorGeneracionPdf =
                     "No hay datos suficientes para generar la credencial.";
 
                 if (mostrarMensajes)
                 {
-                    MessageBox.Show(
+                    AppDialog.ShowWarning(
                         this,
-                        ErrorGeneracionPdf,
-                        "Información",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        "Información insuficiente",
+                        ErrorGeneracionPdf);
                 }
 
                 return;
             }
 
-            string nombreArchivo = LimpiarTextoParaArchivo(nombre);
-            string archivo = $"Credencial_{reloj}_{nombreArchivo}.pdf";
+            string nombreArchivo =
+                LimpiarTextoParaArchivo(
+                    nombre);
+
+            string archivo =
+                $"Credencial_{reloj}_{nombreArchivo}.pdf";
 
             string rutaDestino;
 
+            // Elegimos primero la ruta. Así no tocamos WebView2
+            // mientras el usuario está entrando al SaveFileDialog.
             if (pedirRuta)
             {
-                using SaveFileDialog saveFileDialog = new SaveFileDialog();
+                using SaveFileDialog saveFileDialog =
+                    new SaveFileDialog();
 
-                saveFileDialog.Title = "Guardar credencial";
-                saveFileDialog.Filter = "Archivo PDF (*.pdf)|*.pdf";
-                saveFileDialog.FileName = archivo;
+                saveFileDialog.Title =
+                    "Guardar credencial";
 
-                if (saveFileDialog.ShowDialog(this) != DialogResult.OK)
+                saveFileDialog.Filter =
+                    "Archivo PDF (*.pdf)|*.pdf";
+
+                saveFileDialog.FileName =
+                    archivo;
+
+                saveFileDialog.AddExtension =
+                    true;
+
+                saveFileDialog.DefaultExt =
+                    "pdf";
+
+                // Desactivamos la confirmación nativa de sobrescritura.
+                // En algunas cadenas de formularios modales de WinForms,
+                // esa segunda ventana de Windows puede quedar detrás del
+                // formulario propietario. La confirmación la manejamos
+                // nosotros con AppDialog.
+                saveFileDialog.OverwritePrompt =
+                    false;
+
+                if (saveFileDialog.ShowDialog(this) !=
+                    DialogResult.OK)
+                {
                     return;
+                }
 
-                rutaDestino = saveFileDialog.FileName;
+                rutaDestino =
+                    saveFileDialog.FileName;
+
+                if (File.Exists(
+                        rutaDestino))
+                {
+                    bool reemplazar =
+                        AppDialog.Confirm(
+                            this,
+                            "Archivo existente",
+                            "Ya existe un archivo con ese nombre." +
+                            Environment.NewLine +
+                            Environment.NewLine +
+                            Path.GetFileName(
+                                rutaDestino) +
+                            Environment.NewLine +
+                            Environment.NewLine +
+                            "¿Desea reemplazarlo?",
+                            "Reemplazar");
+
+                    if (!reemplazar)
+                    {
+                        return;
+                    }
+                }
             }
             else
             {
-                string carpetaDescargas = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "Downloads");
+                string carpetaDescargas =
+                    Path.Combine(
+                        Environment.GetFolderPath(
+                            Environment.SpecialFolder.UserProfile),
+                        "Downloads");
 
-                if (!Directory.Exists(carpetaDescargas))
-                    carpetaDescargas = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                if (!Directory.Exists(
+                        carpetaDescargas))
+                {
+                    carpetaDescargas =
+                        Environment.GetFolderPath(
+                            Environment.SpecialFolder.DesktopDirectory);
+                }
 
-                rutaDestino = ObtenerRutaDisponible(Path.Combine(carpetaDescargas, archivo));
+                rutaDestino =
+                    ObtenerRutaDisponible(
+                        Path.Combine(
+                            carpetaDescargas,
+                            archivo));
             }
 
             if (webViewCertificacion.CoreWebView2 is null)
@@ -916,7 +1701,18 @@ namespace Aseguranza.Ventanas
                 await InicializarWebViewAsync();
             }
 
-            var coreWebView2 =
+            if (_webViewConFalloFatal)
+            {
+                throw new InvalidOperationException(
+                    "WebView2 presentó un fallo de proceso antes de imprimir." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    _ultimoFalloWebView);
+            }
+
+            await EsperarRenderWebViewAsync();
+
+            CoreWebView2? coreWebView2 =
                 webViewCertificacion.CoreWebView2;
 
             if (coreWebView2 is null)
@@ -925,41 +1721,88 @@ namespace Aseguranza.Ventanas
                     "No fue posible inicializar WebView2 para generar el PDF.");
             }
 
-            bool resultado =
-                await coreWebView2.PrintToPdfAsync(
-                    rutaDestino);
+            string rutaTemporal =
+                rutaDestino +
+                ".tmp";
 
-            if (resultado)
+            try
             {
+                if (File.Exists(
+                        rutaTemporal))
+                {
+                    File.Delete(
+                        rutaTemporal);
+                }
+
+                // WebView2 genera el PDF en memoria. La escritura
+                // física del archivo la hacemos nosotros con .NET.
+                using Stream pdfStream =
+                    await coreWebView2.PrintToPdfStreamAsync(
+                        null);
+
+                if (pdfStream is null ||
+                    !pdfStream.CanRead)
+                {
+                    throw new InvalidOperationException(
+                        "WebView2 no devolvió datos PDF válidos.");
+                }
+
+                await using (
+                    FileStream archivoPdf =
+                        new FileStream(
+                            rutaTemporal,
+                            FileMode.Create,
+                            FileAccess.Write,
+                            FileShare.None,
+                            bufferSize: 81920,
+                            useAsync: true))
+                {
+                    await pdfStream.CopyToAsync(
+                        archivoPdf);
+
+                    await archivoPdf.FlushAsync();
+                }
+
+                File.Move(
+                    rutaTemporal,
+                    rutaDestino,
+                    overwrite: true);
+
                 RutaPdfGenerado =
                     rutaDestino;
 
                 if (mostrarMensajes)
                 {
-                    MessageBox.Show(
+                    AppDialog.ShowInfo(
                         this,
-                        $"Credencial generada correctamente.\n\nArchivo:\n{rutaDestino}",
-                        "Información",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        "Credencial generada",
+                        "La credencial se generó correctamente." +
+                        Environment.NewLine +
+                        Environment.NewLine +
+                        $"Archivo:{Environment.NewLine}{rutaDestino}");
                 }
             }
-            else
+            catch
             {
-                ErrorGeneracionPdf =
-                    "No se pudo generar el PDF.";
-
-                if (mostrarMensajes)
+                try
                 {
-                    MessageBox.Show(
-                        this,
-                        ErrorGeneracionPdf,
-                        "Información",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
+                    if (File.Exists(
+                            rutaTemporal))
+                    {
+                        File.Delete(
+                            rutaTemporal);
+                    }
                 }
+                catch
+                {
+                    // La limpieza del temporal nunca debe ocultar
+                    // la excepción original.
+                }
+
+                throw;
             }
         }
+
         private string LimpiarTextoParaArchivo(string texto)
         {
             string limpio = texto.ToUpper().Trim();
@@ -999,7 +1842,75 @@ namespace Aseguranza.Ventanas
 
         private async void btnImprimirHtml_Click(object sender, EventArgs e)
         {
-            await GenerarPdfCredencialAsync(true);
+            // Un evento async void no debe dejar escapar excepciones:
+            // si WebView2 o el diálogo de guardado falla, WinForms puede
+            // considerar la excepción no controlada y cerrar el proceso.
+            if (_generandoPdf)
+            {
+                return;
+            }
+
+            _generandoPdf =
+                true;
+
+            try
+            {
+                ActualizarEstadoBotonImprimir(
+                    false);
+
+                UseWaitCursor =
+                    true;
+
+                await GenerarPdfCredencialAsync(
+                    pedirRuta: true,
+                    mostrarMensajes: true);
+            }
+            catch (Exception ex)
+            {
+                RutaPdfGenerado =
+                    null;
+
+                ErrorGeneracionPdf =
+                    "Ocurrió un error al generar el PDF de la credencial.\n\n" +
+                    ex.Message;
+
+                System.Diagnostics.Debug.WriteLine(
+                    ex);
+
+                if (!IsDisposed &&
+                    IsHandleCreated)
+                {
+                    AppDialog.ShowError(
+                        this,
+                        "Error al imprimir",
+                        ErrorGeneracionPdf);
+                }
+            }
+            finally
+            {
+                _generandoPdf =
+                    false;
+
+                UseWaitCursor =
+                    false;
+
+                if (!IsDisposed &&
+                    IsHandleCreated)
+                {
+                    string textoActual =
+                        txtNoReloj.Text.Trim();
+
+                    bool coincideConCredencial =
+                        !string.IsNullOrWhiteSpace(
+                            _noRelojCredencialActual) &&
+                        textoActual.Equals(
+                            _noRelojCredencialActual,
+                            StringComparison.OrdinalIgnoreCase);
+
+                    ActualizarEstadoBotonImprimir(
+                        coincideConCredencial);
+                }
+            }
         }
         private async Task ImprimirDirectoAsync()
         {
