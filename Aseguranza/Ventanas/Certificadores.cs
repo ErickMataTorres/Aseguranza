@@ -118,7 +118,7 @@ namespace Aseguranza.Ventanas
                             210),
 
                     BackColor =
-                        AppColors.AlternateRow,
+                        AppColors.SectionBackground,
 
                     Anchor =
                         AnchorStyles.Top |
@@ -152,7 +152,7 @@ namespace Aseguranza.Ventanas
 
                     Font =
                         AppFonts.Regular(
-                            11F,
+                            13F,
                             FontStyle.Bold)
                 };
 
@@ -197,7 +197,7 @@ namespace Aseguranza.Ventanas
 
             lblNoReloj.Font =
                 AppFonts.Regular(
-                    9.5F,
+                    10F,
                     FontStyle.Bold);
 
             Panel pnlNoReloj =
@@ -317,7 +317,7 @@ namespace Aseguranza.Ventanas
 
             ConfigurarEtiquetaValor(
                 lblMostrarLocalidad,
-                88,
+                110,
                 180);
 
             // =====================================================
@@ -438,7 +438,7 @@ namespace Aseguranza.Ventanas
                             210),
 
                     BackColor =
-                        AppColors.AlternateRow,
+                        AppColors.SectionBackground,
 
                     Anchor =
                         AnchorStyles.Top |
@@ -468,7 +468,7 @@ namespace Aseguranza.Ventanas
 
                     Font =
                         AppFonts.Regular(
-                            11F,
+                            13F,
                             FontStyle.Bold)
                 };
 
@@ -572,7 +572,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            pnlContenido.ClientSize.Width - 40,
+                            pnlContenido.ClientSize.Width - 200,
                             39),
 
                     BackColor =
@@ -582,6 +582,39 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Top |
                         AnchorStyles.Left |
                         AnchorStyles.Right
+                };
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                icon: null,
+                width: 140,
+                height: 39);
+
+            btnLimpiar.Name =
+                "btnLimpiar";
+
+            btnLimpiar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width - 160,
+                    273);
+
+            btnLimpiar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnLimpiar.Click +=
+                (_, _) =>
+                {
+                    txtBuscar.Clear();
+
+                    CargarCertificadores();
+
+                    txtBuscar.Focus();
                 };
 
             Label lblIconoBuscar =
@@ -684,13 +717,15 @@ namespace Aseguranza.Ventanas
                             323),
 
                     Text =
-                        "0 certificadores registrados",
+                        "Total: 0 certificadores",
 
                     ForeColor =
-                        AppColors.TextSecondary,
+                        AppColors.TextPrimary,
 
                     Font =
-                        AppFonts.Light(9.5F)
+                        AppFonts.Regular(
+                            10F,
+                            FontStyle.Bold)
                 };
 
             // =====================================================
@@ -831,6 +866,9 @@ namespace Aseguranza.Ventanas
                 pnlBuscar);
 
             pnlContenido.Controls.Add(
+                btnLimpiar);
+
+            pnlContenido.Controls.Add(
                 _lblRegistros);
 
             pnlContenido.Controls.Add(
@@ -877,7 +915,7 @@ namespace Aseguranza.Ventanas
 
             label.Font =
                 AppFonts.Regular(
-                    9F,
+                    10F,
                     FontStyle.Bold);
         }
 
@@ -898,7 +936,9 @@ namespace Aseguranza.Ventanas
                 AppColors.TextPrimary;
 
             label.Font =
-                AppFonts.Light(9.5F);
+                AppFonts.Regular(
+                    12F,
+                    FontStyle.Bold);
         }
 
         // =========================================================
@@ -1080,13 +1120,13 @@ namespace Aseguranza.Ventanas
                 cantidad switch
                 {
                     0 =>
-                        "No hay certificadores registrados",
+                        "Total: 0 certificadores",
 
                     1 =>
-                        "1 certificador registrado",
+                        "Total: 1 certificador",
 
                     _ =>
-                        $"{cantidad} certificadores registrados"
+                        $"Total: {cantidad} certificadores"
                 };
         }
 
@@ -1295,11 +1335,10 @@ namespace Aseguranza.Ventanas
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "El trabajador no existe.",
+                AppDialog.ShowWarning(
+                    this,
                     "Trabajador no encontrado",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El trabajador no existe.");
 
                 LimpiarSeleccionTrabajador();
 
@@ -1346,11 +1385,10 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                 noReloj))
             {
-                MessageBox.Show(
-                    "Debe seleccionar un trabajador primero.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Debe seleccionar un trabajador primero.");
 
                 btnBuscar.Focus();
 
@@ -1370,22 +1408,20 @@ namespace Aseguranza.Ventanas
 
             if (respuesta.Id == 1)
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowInfo(
+                    this,
                     "Operación completada",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    respuesta.Nombre);
 
                 ReiniciarPantalla();
 
                 return;
             }
 
-            MessageBox.Show(
-                respuesta.Nombre,
+            AppDialog.ShowWarning(
+                this,
                 "No se pudo agregar",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning);
+                respuesta.Nombre);
 
             LimpiarSeleccionTrabajador();
         }
@@ -1401,11 +1437,10 @@ namespace Aseguranza.Ventanas
             if (dgvCertificadores.Rows.Count == 0 ||
                 dgvCertificadores.CurrentRow is null)
             {
-                MessageBox.Show(
-                    "No hay un certificador seleccionado para eliminar.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "No hay un certificador seleccionado para eliminar.");
 
                 return;
             }
@@ -1435,15 +1470,14 @@ namespace Aseguranza.Ventanas
                     ? "¿Está seguro de eliminar el certificador seleccionado?"
                     : $"¿Está seguro de eliminar a \"{nombre}\" de la lista de certificadores?";
 
-            DialogResult confirmacion =
-                MessageBox.Show(
-                    mensajeConfirmacion,
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
                     "Confirmar eliminación",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+                    mensajeConfirmacion,
+                    "Eliminar");
 
-            if (confirmacion !=
-                DialogResult.Yes)
+            if (!confirmacion)
             {
                 return;
             }
@@ -1453,15 +1487,20 @@ namespace Aseguranza.Ventanas
                     .BorrarCertificador(
                         id);
 
-            MessageBox.Show(
-                respuesta.Nombre,
-                respuesta.Id == 1
-                    ? "Operación completada"
-                    : "No se pudo eliminar",
-                MessageBoxButtons.OK,
-                respuesta.Id == 1
-                    ? MessageBoxIcon.Information
-                    : MessageBoxIcon.Error);
+            if (respuesta.Id == 1)
+            {
+                AppDialog.ShowInfo(
+                    this,
+                    "Operación completada",
+                    respuesta.Nombre);
+            }
+            else
+            {
+                AppDialog.ShowError(
+                    this,
+                    "No se pudo eliminar",
+                    respuesta.Nombre);
+            }
 
             ReiniciarPantalla();
         }
