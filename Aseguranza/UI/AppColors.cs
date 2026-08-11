@@ -30,8 +30,6 @@ namespace Aseguranza.UI
         public static readonly Color AlternateRow =
             Color.FromArgb(248, 250, 252);
 
-
-
         // =========================================================
         // TEXTO
         // =========================================================
@@ -84,5 +82,20 @@ namespace Aseguranza.UI
 
         public static readonly Color HeaderSubtitle =
             Color.FromArgb(225, 231, 255);
+
+        // =========================================================
+        // INTERACCIÓN
+        // =========================================================
+
+        public static readonly Color HoverBackground =
+            Color.FromArgb(220, 228, 242);
+
+        public static readonly Color PressedBackground =
+            Color.FromArgb(207, 218, 238);
+
+
     }
+
+
+
 }
