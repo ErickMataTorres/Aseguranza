@@ -16,6 +16,9 @@ namespace Aseguranza.Ventanas
         private readonly bool _imprimirAutomaticamente = false;
         private readonly bool _ocultarVentanaAlImprimir = false;
         private readonly bool _guardarDirectoEnDescargas = false;
+
+        public string? RutaPdfGenerado { get; private set; }
+        public string? ErrorGeneracionPdf { get; private set; }
         public Verificaciones()
         {
             InitializeComponent();
@@ -54,14 +57,36 @@ namespace Aseguranza.Ventanas
 
                 bool credencialGenerada = await ConsultarYMostrarCredencialAsync(_noRelojInicial);
 
-                if (_imprimirAutomaticamente && credencialGenerada)
+                if (_imprimirAutomaticamente)
                 {
-                    BeginInvoke(new Action(async () =>
+                    if (credencialGenerada)
                     {
-                        await EsperarRenderWebViewAsync();
-                        await GenerarPdfCredencialAsync(!_guardarDirectoEnDescargas);
-                        Close();
-                    }));
+                        BeginInvoke(new Action(async () =>
+                        {
+                            try
+                            {
+                                await EsperarRenderWebViewAsync();
+
+                                await GenerarPdfCredencialAsync(
+                                    !_guardarDirectoEnDescargas,
+                                    mostrarMensajes: false);
+                            }
+                            catch (Exception ex)
+                            {
+                                ErrorGeneracionPdf =
+                                    "Ocurrió un error al generar la credencial.\n\n" +
+                                    ex.Message;
+                            }
+                            finally
+                            {
+                                Close();
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        BeginInvoke(new Action(Close));
+                    }
                 }
 
                 txtNoReloj.SelectAll();
@@ -87,7 +112,20 @@ namespace Aseguranza.Ventanas
                 MostrarVistaCompleta();
                 await MostrarHtmlInicialAsync();
 
-                MessageBox.Show("No se encontraron certificaciones.");
+                if (_imprimirAutomaticamente && _ocultarVentanaAlImprimir)
+                {
+                    ErrorGeneracionPdf =
+                        "No se encontraron certificaciones para el trabajador seleccionado.";
+                }
+                else
+                {
+                    MessageBox.Show(
+                        this,
+                        "No se encontraron certificaciones.",
+                        "Información",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
 
                 txtNoReloj.SelectAll();
                 txtNoReloj.Focus();
@@ -809,8 +847,14 @@ namespace Aseguranza.Ventanas
             return "<span style='font-size:12px;'>SIN FOTO</span>";
         }
 
-        private async Task GenerarPdfCredencialAsync(bool pedirRuta = true)
+        private async Task GenerarPdfCredencialAsync(
+    bool pedirRuta = true,
+    bool mostrarMensajes = true)
         {
+
+            RutaPdfGenerado = null;
+            ErrorGeneracionPdf = null;
+
             if (webViewCertificacion.CoreWebView2 == null)
                 await InicializarWebViewAsync();
 
@@ -821,7 +865,19 @@ namespace Aseguranza.Ventanas
 
             if (string.IsNullOrWhiteSpace(reloj) || string.IsNullOrWhiteSpace(nombre))
             {
-                MessageBox.Show("No hay datos suficientes para generar la credencial.", "Información");
+                ErrorGeneracionPdf =
+                    "No hay datos suficientes para generar la credencial.";
+
+                if (mostrarMensajes)
+                {
+                    MessageBox.Show(
+                        this,
+                        ErrorGeneracionPdf,
+                        "Información",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+
                 return;
             }
 
@@ -838,7 +894,7 @@ namespace Aseguranza.Ventanas
                 saveFileDialog.Filter = "Archivo PDF (*.pdf)|*.pdf";
                 saveFileDialog.FileName = archivo;
 
-                if (saveFileDialog.ShowDialog() != DialogResult.OK)
+                if (saveFileDialog.ShowDialog(this) != DialogResult.OK)
                     return;
 
                 rutaDestino = saveFileDialog.FileName;
@@ -875,15 +931,33 @@ namespace Aseguranza.Ventanas
 
             if (resultado)
             {
-                MessageBox.Show(
-                    $"Credencial generada correctamente.\n\nArchivo:\n{rutaDestino}",
-                    "Información",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                RutaPdfGenerado =
+                    rutaDestino;
+
+                if (mostrarMensajes)
+                {
+                    MessageBox.Show(
+                        this,
+                        $"Credencial generada correctamente.\n\nArchivo:\n{rutaDestino}",
+                        "Información",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
             }
             else
             {
-                MessageBox.Show("No se pudo generar el PDF.", "Información");
+                ErrorGeneracionPdf =
+                    "No se pudo generar el PDF.";
+
+                if (mostrarMensajes)
+                {
+                    MessageBox.Show(
+                        this,
+                        ErrorGeneracionPdf,
+                        "Información",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                }
             }
         }
         private string LimpiarTextoParaArchivo(string texto)

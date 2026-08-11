@@ -12,8 +12,10 @@ namespace Aseguranza
 
         private void btnCertificaciones_Click(object sender, EventArgs e)
         {
-            Ventanas.Certificaciones ventana = new Ventanas.Certificaciones();
-            ventana.ShowDialog();
+            using Ventanas.Certificaciones ventana =
+                new Ventanas.Certificaciones();
+
+            ventana.ShowDialog(this);
         }
 
         private void certificarToolStripMenuItem_Click(object sender, EventArgs e)
@@ -62,8 +64,10 @@ namespace Aseguranza
 
         private void certificacionToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Ventanas.Certificaciones ventana = new Ventanas.Certificaciones();
-            ventana.ShowDialog();
+            using Ventanas.Certificaciones ventana =
+                new Ventanas.Certificaciones();
+
+            ventana.ShowDialog(this);
         }
 
         private void MenuPrincipal_Load(object sender, EventArgs e)
