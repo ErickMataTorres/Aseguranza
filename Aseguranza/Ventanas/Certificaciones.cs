@@ -2315,19 +2315,18 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnBorrarTrabajador_Click(
-            object sender,
-            EventArgs e)
+    object sender,
+    EventArgs e)
         {
             Clases.Trabajador? trabajador =
                 ObtenerTrabajadorSeleccionado();
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador para borrar.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador para borrar.");
 
                 return;
             }
@@ -2336,27 +2335,24 @@ namespace Aseguranza.Ventanas
                     trabajador,
                     out string noReloj))
             {
-                MessageBox.Show(
-                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                AppDialog.ShowWarning(
+                    this,
                     "Validación",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El trabajador seleccionado no tiene un número de reloj válido.");
 
                 return;
             }
 
-            DialogResult confirmacion =
-                MessageBox.Show(
+            bool confirmar =
+                AppDialog.Confirm(
                     this,
+                    "Confirmar eliminación",
                     "¿Está seguro de borrar al trabajador?\n\n" +
                     $"No. Reloj: {noReloj}\n" +
                     $"Nombre: {trabajador.Nombre}",
-                    "Confirmar borrado",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
+                    "Eliminar");
 
-            if (confirmacion !=
-                DialogResult.Yes)
+            if (!confirmar)
             {
                 return;
             }
@@ -2368,11 +2364,10 @@ namespace Aseguranza.Ventanas
 
             if (respuesta.Id != 1)
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowError(
+                    this,
                     "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    respuesta.Nombre);
 
                 return;
             }
@@ -2391,30 +2386,27 @@ namespace Aseguranza.Ventanas
                 if (!string.IsNullOrWhiteSpace(
                         carpetaRespaldo))
                 {
-                    MessageBox.Show(
-                        "La carpeta física del trabajador se movió a respaldo:\n\n" +
-                        carpetaRespaldo,
+                    AppDialog.ShowInfo(
+                        this,
                         "Respaldo generado",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        "La carpeta física del trabajador se movió a respaldo:\n\n" +
+                        carpetaRespaldo);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
+                AppDialog.ShowWarning(
+                    this,
+                    "Advertencia",
                     "El trabajador fue eliminado de la base de datos, " +
                     "pero no fue posible mover su carpeta al respaldo.\n\n" +
-                    ex.Message,
-                    "Advertencia",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    ex.Message);
             }
 
-            MessageBox.Show(
-                respuesta.Nombre,
+            AppDialog.ShowInfo(
+                this,
                 "Operación completada",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+                respuesta.Nombre);
 
             CargarTrabajadores();
         }
@@ -2483,19 +2475,18 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnImprimirCredencial_Click(
-            object sender,
-            EventArgs e)
+    object sender,
+    EventArgs e)
         {
             Clases.Trabajador? trabajador =
                 ObtenerTrabajadorSeleccionado();
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador.");
 
                 return;
             }
@@ -2504,11 +2495,10 @@ namespace Aseguranza.Ventanas
                     trabajador,
                     out string noReloj))
             {
-                MessageBox.Show(
-                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                AppDialog.ShowWarning(
+                    this,
                     "Validación",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El trabajador seleccionado no tiene un número de reloj válido.");
 
                 return;
             }
@@ -2524,28 +2514,25 @@ namespace Aseguranza.Ventanas
                 this);
 
             if (!string.IsNullOrWhiteSpace(
-        ventana.RutaPdfGenerado))
+                    ventana.RutaPdfGenerado))
             {
-                MessageBox.Show(
+                AppDialog.ShowInfo(
                     this,
-                    "Credencial generada correctamente.\n\n" +
-                    $"Archivo:\n{ventana.RutaPdfGenerado}",
-                    "Información",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Credencial generada",
+                    "La credencial se generó correctamente.\n\n" +
+                    $"Archivo:\n{ventana.RutaPdfGenerado}");
+
+                return;
             }
-            else if (!string.IsNullOrWhiteSpace(
-                         ventana.ErrorGeneracionPdf))
+
+            if (!string.IsNullOrWhiteSpace(
+                    ventana.ErrorGeneracionPdf))
             {
-                MessageBox.Show(
+                AppDialog.ShowWarning(
                     this,
-                    ventana.ErrorGeneracionPdf,
                     "No fue posible generar la credencial",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    ventana.ErrorGeneracionPdf);
             }
-
-
         }
 
         // =========================================================
