@@ -134,7 +134,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            pnlContenido.ClientSize.Width - 40,
+                            pnlContenido.ClientSize.Width - 200,
                             39),
 
                     BackColor =
@@ -144,6 +144,39 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Top |
                         AnchorStyles.Left |
                         AnchorStyles.Right
+                };
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                icon: null,
+                width: 140,
+                height: 39);
+
+            btnLimpiar.Name =
+                "btnLimpiar";
+
+            btnLimpiar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width - 160,
+                    42);
+
+            btnLimpiar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnLimpiar.Click +=
+                (_, _) =>
+                {
+                    txtBuscar.Clear();
+
+                    IniciarTodo();
+
+                    txtBuscar.Focus();
                 };
 
             // -----------------------------------------------------
@@ -254,13 +287,15 @@ namespace Aseguranza.Ventanas
                             92),
 
                     Text =
-                        "0 turnos registrados",
+                        "Total: 0 turnos",
 
                     ForeColor =
-                        AppColors.TextSecondary,
+                        AppColors.TextPrimary,
 
                     Font =
-                        AppFonts.Light(9.5F)
+                        AppFonts.Regular(
+                            10F,
+                            FontStyle.Bold)
                 };
 
             // -----------------------------------------------------
@@ -425,6 +460,9 @@ namespace Aseguranza.Ventanas
                 pnlBuscar);
 
             pnlContenido.Controls.Add(
+                btnLimpiar);
+
+            pnlContenido.Controls.Add(
                 _lblRegistros);
 
             pnlContenido.Controls.Add(
@@ -536,13 +574,13 @@ namespace Aseguranza.Ventanas
                 cantidad switch
                 {
                     0 =>
-                        "No hay turnos registrados",
+                        "Total: 0 turnos",
 
                     1 =>
-                        "1 turno registrado",
+                        "Total: 1 turno",
 
                     _ =>
-                        $"{cantidad} turnos registrados"
+                        $"Total: {cantidad} turnos"
                 };
         }
 
@@ -652,11 +690,10 @@ namespace Aseguranza.Ventanas
 
             if (turno is null)
             {
-                MessageBox.Show(
-                    "Seleccione un turno.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un turno.");
 
                 return;
             }
@@ -685,24 +722,25 @@ namespace Aseguranza.Ventanas
 
             if (turno is null)
             {
-                MessageBox.Show(
-                    "Seleccione un turno.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un turno.");
 
                 return;
             }
 
-            DialogResult confirmacion =
-                MessageBox.Show(
-                    $"¿Está seguro de eliminar el turno \"{turno.Nombre}\"?",
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
                     "Confirmar eliminación",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+                    "¿Está seguro de eliminar el turno?" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    turno.Nombre,
+                    "Eliminar");
 
-            if (confirmacion !=
-                DialogResult.Yes)
+            if (!confirmacion)
             {
                 return;
             }
@@ -712,15 +750,20 @@ namespace Aseguranza.Ventanas
                     .BorrarTurno(
                         turno.Id);
 
-            MessageBox.Show(
-                respuesta.Nombre,
-                respuesta.Id == 1
-                    ? "Operación completada"
-                    : "No se pudo eliminar",
-                MessageBoxButtons.OK,
-                respuesta.Id == 1
-                    ? MessageBoxIcon.Information
-                    : MessageBoxIcon.Error);
+            if (respuesta.Id == 1)
+            {
+                AppDialog.ShowInfo(
+                    this,
+                    "Operación completada",
+                    respuesta.Nombre);
+            }
+            else
+            {
+                AppDialog.ShowError(
+                    this,
+                    "No se pudo eliminar",
+                    respuesta.Nombre);
+            }
 
             IniciarTodo();
         }
