@@ -14,6 +14,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private Label? _lblRegistros;
+        private Label? _lblAvisoLimite;
 
         private bool _estiloAplicado;
 
@@ -136,7 +137,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            pnlContenido.ClientSize.Width - 40,
+                            pnlContenido.ClientSize.Width - 200,
                             42),
 
                     BackColor =
@@ -146,6 +147,39 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Top |
                         AnchorStyles.Left |
                         AnchorStyles.Right
+                };
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                icon: null,
+                width: 140,
+                height: 42);
+
+            btnLimpiar.Name =
+                "btnLimpiar";
+
+            btnLimpiar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width - 160,
+                    47);
+
+            btnLimpiar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnLimpiar.Click +=
+                (_, _) =>
+                {
+                    txtBuscar.Clear();
+
+                    CargarTrabajadores();
+
+                    txtBuscar.Focus();
                 };
 
             // =====================================================
@@ -256,13 +290,40 @@ namespace Aseguranza.Ventanas
                             101),
 
                     Text =
-                        "0 trabajadores registrados",
+                        "Total: 0 trabajadores",
+
+                    ForeColor =
+                        AppColors.TextPrimary,
+
+                    Font =
+                        AppFonts.Regular(
+                            10F,
+                            FontStyle.Bold)
+                };
+
+            _lblAvisoLimite =
+                new Label
+                {
+                    Name =
+                        "lblAvisoLimite",
+
+                    AutoSize =
+                        true,
+
+                    Location =
+                        new Point(
+                            20,
+                            123),
+
+                    Text =
+                        "Se muestran hasta 100 trabajadores. Use Buscar para localizar otros registros.",
 
                     ForeColor =
                         AppColors.TextSecondary,
 
                     Font =
-                        AppFonts.Light(9.5F)
+                        AppFonts.Light(
+                            9F)
                 };
 
             // =====================================================
@@ -285,12 +346,12 @@ namespace Aseguranza.Ventanas
                     Location =
                         new Point(
                             20,
-                            127),
+                            150),
 
                     Size =
                         new Size(
                             pnlContenido.ClientSize.Width - 40,
-                            pnlContenido.ClientSize.Height - 205),
+                            pnlContenido.ClientSize.Height - 228),
 
                     BackColor =
                         Color.White,
@@ -427,7 +488,13 @@ namespace Aseguranza.Ventanas
                 pnlBuscar);
 
             pnlContenido.Controls.Add(
+                btnLimpiar);
+
+            pnlContenido.Controls.Add(
                 _lblRegistros);
+
+            pnlContenido.Controls.Add(
+                _lblAvisoLimite);
 
             pnlContenido.Controls.Add(
                 pnlTabla);
@@ -615,14 +682,21 @@ namespace Aseguranza.Ventanas
                 cantidad switch
                 {
                     0 =>
-                        "No hay trabajadores registrados",
+                        "Total: 0 trabajadores",
 
                     1 =>
-                        "1 trabajador registrado",
+                        "Total: 1 trabajador",
 
                     _ =>
-                        $"{cantidad} trabajadores registrados"
+                        $"Total: {cantidad} trabajadores"
                 };
+
+            if (_lblAvisoLimite is not null)
+            {
+                _lblAvisoLimite.Visible =
+                    string.IsNullOrWhiteSpace(
+                        txtBuscar.Text);
+            }
         }
 
         // =========================================================
@@ -799,11 +873,10 @@ namespace Aseguranza.Ventanas
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador.");
 
                 return;
             }
@@ -832,11 +905,10 @@ namespace Aseguranza.Ventanas
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador.");
 
                 return;
             }
@@ -847,15 +919,17 @@ namespace Aseguranza.Ventanas
                     ? trabajador.NoReloj ?? string.Empty
                     : trabajador.Nombre;
 
-            DialogResult confirmacion =
-                MessageBox.Show(
-                    $"¿Está seguro de eliminar al trabajador \"{nombreMostrar}\"?",
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
                     "Confirmar eliminación",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+                    "¿Está seguro de eliminar al trabajador?" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    nombreMostrar,
+                    "Eliminar");
 
-            if (confirmacion !=
-                DialogResult.Yes)
+            if (!confirmacion)
             {
                 return;
             }
@@ -871,11 +945,10 @@ namespace Aseguranza.Ventanas
 
             if (respuesta.Id != 1)
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowError(
+                    this,
                     "No se pudo eliminar",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    respuesta.Nombre);
 
                 return;
             }
@@ -894,30 +967,31 @@ namespace Aseguranza.Ventanas
                 if (!string.IsNullOrWhiteSpace(
                     carpetaRespaldo))
                 {
-                    MessageBox.Show(
-                        "La carpeta física del trabajador se movió a respaldo:\n\n" +
-                        carpetaRespaldo,
+                    AppDialog.ShowInfo(
+                        this,
                         "Respaldo generado",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        "La carpeta física del trabajador se movió a respaldo:" +
+                        Environment.NewLine +
+                        Environment.NewLine +
+                        carpetaRespaldo);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "El trabajador fue eliminado de la base de datos, " +
-                    "pero no fue posible mover su carpeta al respaldo.\n\n" +
-                    ex.Message,
+                AppDialog.ShowWarning(
+                    this,
                     "Advertencia",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El trabajador fue eliminado de la base de datos, " +
+                    "pero no fue posible mover su carpeta al respaldo." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    ex.Message);
             }
 
-            MessageBox.Show(
-                respuesta.Nombre,
+            AppDialog.ShowInfo(
+                this,
                 "Operación completada",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+                respuesta.Nombre);
 
             CargarTrabajadores();
         }
