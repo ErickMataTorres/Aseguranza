@@ -1,19 +1,41 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
 namespace Aseguranza.UI
 {
     public sealed class AppDialog : Form
     {
+        // =========================================================
+        // TIPOS DE DIÁLOGO
+        // =========================================================
+
+        private enum DialogType
+        {
+            Information,
+            Confirmation,
+            Warning,
+            Error
+        }
+
+        // =========================================================
+        // CAMPOS
+        // =========================================================
+
         private readonly Panel _pnlCard;
         private readonly Label _lblMessage;
         private readonly Button _btnPrimary;
         private readonly Button? _btnSecondary;
 
+        // =========================================================
+        // CONSTRUCTOR
+        // =========================================================
+
         private AppDialog(
             string title,
             string message,
+            DialogType dialogType,
             Color accentColor,
             string primaryText,
             DialogResult primaryResult,
@@ -25,18 +47,18 @@ namespace Aseguranza.UI
             // =====================================================
 
             Text =
-                title;
+                string.Empty;
 
             ClientSize =
                 new Size(
                     650,
-                    340);
+                    370);
 
             StartPosition =
                 FormStartPosition.Manual;
 
             FormBorderStyle =
-                FormBorderStyle.FixedDialog;
+                FormBorderStyle.None;
 
             MaximizeBox =
                 false;
@@ -47,16 +69,36 @@ namespace Aseguranza.UI
             ShowInTaskbar =
                 false;
 
+            KeyPreview =
+                true;
+
             BackColor =
-                AppColors.AppBackground;
+                AppColors.BorderMedium;
 
             Font =
                 AppFonts.Light(
-                    10.5F);
+                    10F);
 
             Padding =
                 new Padding(
-                    16);
+                    1);
+
+            // =====================================================
+            // ESC
+            // =====================================================
+
+            KeyDown +=
+                (_, e) =>
+                {
+                    if (e.KeyCode == Keys.Escape &&
+                        CancelButton is Button btnCancel)
+                    {
+                        btnCancel.PerformClick();
+
+                        e.Handled =
+                            true;
+                    }
+                };
 
             // =====================================================
             // TARJETA PRINCIPAL
@@ -69,7 +111,7 @@ namespace Aseguranza.UI
                         DockStyle.Fill,
 
                     BackColor =
-                        Color.White
+                        AppColors.CardBackground
                 };
 
             Controls.Add(
@@ -86,7 +128,7 @@ namespace Aseguranza.UI
                         DockStyle.Top,
 
                     Height =
-                        70,
+                        58,
 
                     BackColor =
                         AppColors.Primary
@@ -106,13 +148,16 @@ namespace Aseguranza.UI
 
                     Font =
                         AppFonts.Regular(
-                            15F,
+                            13F,
                             FontStyle.Bold),
 
                     Location =
                         new Point(
                             22,
-                            21)
+                            17),
+
+                    BackColor =
+                        Color.Transparent
                 };
 
             pnlHeader.Controls.Add(
@@ -120,6 +165,22 @@ namespace Aseguranza.UI
 
             _pnlCard.Controls.Add(
                 pnlHeader);
+
+            // =====================================================
+            // ICONO
+            // =====================================================
+
+            Panel pnlIcon =
+                CrearIcono(
+                    dialogType);
+
+            pnlIcon.Location =
+                new Point(
+                    299,
+                    84);
+
+            _pnlCard.Controls.Add(
+                pnlIcon);
 
             // =====================================================
             // MENSAJE
@@ -138,21 +199,24 @@ namespace Aseguranza.UI
                         AppColors.TextPrimary,
 
                     Font =
-                        AppFonts.Light(
-                            12F),
+                        AppFonts.Regular(
+                            13F),
 
                     Location =
                         new Point(
-                            26,
-                            95),
+                            40,
+                            148),
 
                     Size =
                         new Size(
-                            590,
-                            125),
+                            570,
+                            105),
 
                     TextAlign =
-                        ContentAlignment.MiddleLeft
+                        ContentAlignment.MiddleCenter,
+
+                    BackColor =
+                        Color.Transparent
                 };
 
             _pnlCard.Controls.Add(
@@ -167,11 +231,6 @@ namespace Aseguranza.UI
                     primaryText,
                     accentColor,
                     primaryResult);
-
-            _btnPrimary.Location =
-                new Point(
-                    478,
-                    252);
 
             _pnlCard.Controls.Add(
                 _btnPrimary);
@@ -189,13 +248,18 @@ namespace Aseguranza.UI
                         AppColors.Neutral,
                         secondaryResult);
 
-                _btnSecondary.Location =
-                    new Point(
-                        330,
-                        252);
-
                 _pnlCard.Controls.Add(
                     _btnSecondary);
+
+                _btnSecondary.Location =
+                    new Point(
+                        192,
+                        295);
+
+                _btnPrimary.Location =
+                    new Point(
+                        336,
+                        295);
 
                 AcceptButton =
                     _btnPrimary;
@@ -203,6 +267,8 @@ namespace Aseguranza.UI
                 CancelButton =
                     _btnSecondary;
 
+                // En una confirmación destructiva,
+                // Cancelar recibe el foco inicialmente.
                 Shown +=
                     (_, _) =>
                     {
@@ -214,38 +280,152 @@ namespace Aseguranza.UI
                 _btnSecondary =
                     null;
 
+                _btnPrimary.Location =
+                    new Point(
+                        261,
+                        295);
+
                 AcceptButton =
                     _btnPrimary;
 
                 CancelButton =
                     _btnPrimary;
             }
+        }
 
-            // =====================================================
-            // BORDE SUAVE DE LA TARJETA
-            // =====================================================
+        // =========================================================
+        // CREAR ICONO
+        // =========================================================
 
-            _pnlCard.Paint +=
+        private static Panel CrearIcono(
+            DialogType dialogType)
+        {
+            string simbolo;
+
+            Color colorPrincipal;
+
+            Color colorFondo;
+
+            switch (dialogType)
+            {
+                case DialogType.Confirmation:
+
+                    simbolo =
+                        "?";
+
+                    colorPrincipal =
+                        AppColors.Primary;
+
+                    colorFondo =
+                        Color.FromArgb(
+                            224,
+                            231,
+                            255);
+
+                    break;
+
+                case DialogType.Warning:
+
+                    simbolo =
+                        "!";
+
+                    colorPrincipal =
+                        Color.FromArgb(
+                            202,
+                            138,
+                            4);
+
+                    colorFondo =
+                        Color.FromArgb(
+                            254,
+                            243,
+                            199);
+
+                    break;
+
+                case DialogType.Error:
+
+                    simbolo =
+                        "×";
+
+                    colorPrincipal =
+                        AppColors.Danger;
+
+                    colorFondo =
+                        Color.FromArgb(
+                            254,
+                            226,
+                            226);
+
+                    break;
+
+                default:
+
+                    simbolo =
+                        "✓";
+
+                    colorPrincipal =
+                        AppColors.Primary;
+
+                    colorFondo =
+                        Color.FromArgb(
+                            224,
+                            231,
+                            255);
+
+                    break;
+            }
+
+            Panel panel =
+                new Panel
+                {
+                    Size =
+                        new Size(
+                            52,
+                            52),
+
+                    BackColor =
+                        Color.Transparent
+                };
+
+            panel.Paint +=
                 (_, e) =>
                 {
-                    using Pen pen =
-                        new Pen(
-                            Color.FromArgb(
-                                220,
-                                226,
-                                236));
+                    e.Graphics.SmoothingMode =
+                        SmoothingMode.AntiAlias;
 
-                    Rectangle rect =
+                    Rectangle circulo =
                         new Rectangle(
-                            0,
-                            0,
-                            _pnlCard.Width - 1,
-                            _pnlCard.Height - 1);
+                            1,
+                            1,
+                            panel.Width - 3,
+                            panel.Height - 3);
 
-                    e.Graphics.DrawRectangle(
-                        pen,
-                        rect);
+                    using SolidBrush fondoBrush =
+                        new SolidBrush(
+                            colorFondo);
+
+                    e.Graphics.FillEllipse(
+                        fondoBrush,
+                        circulo);
+
+                    using Font fuente =
+                        AppFonts.Regular(
+                            20F,
+                            FontStyle.Bold);
+
+                    TextRenderer.DrawText(
+                        e.Graphics,
+                        simbolo,
+                        fuente,
+                        circulo,
+                        colorPrincipal,
+                        TextFormatFlags.HorizontalCenter |
+                        TextFormatFlags.VerticalCenter |
+                        TextFormatFlags.NoPadding);
                 };
+
+            return panel;
         }
 
         // =========================================================
@@ -285,7 +465,7 @@ namespace Aseguranza.UI
 
                     Font =
                         AppFonts.Regular(
-                            10.5F,
+                            11F,
                             FontStyle.Bold),
 
                     UseVisualStyleBackColor =
@@ -357,7 +537,7 @@ namespace Aseguranza.UI
         }
 
         // =========================================================
-        // CONFIRMAR
+        // CONFIRMACIÓN
         // =========================================================
 
         public static bool Confirm(
@@ -370,6 +550,7 @@ namespace Aseguranza.UI
                 new AppDialog(
                     title,
                     message,
+                    DialogType.Confirmation,
                     AppColors.Danger,
                     confirmText,
                     DialogResult.Yes,
@@ -397,6 +578,7 @@ namespace Aseguranza.UI
                 new AppDialog(
                     title,
                     message,
+                    DialogType.Information,
                     AppColors.Primary,
                     "Aceptar",
                     DialogResult.OK);
@@ -417,14 +599,18 @@ namespace Aseguranza.UI
             string title,
             string message)
         {
+            Color warningColor =
+                Color.FromArgb(
+                    217,
+                    119,
+                    6);
+
             using AppDialog dialog =
                 new AppDialog(
                     title,
                     message,
-                    Color.FromArgb(
-                        217,
-                        119,
-                        6),
+                    DialogType.Warning,
+                    warningColor,
                     "Aceptar",
                     DialogResult.OK);
 
@@ -448,6 +634,7 @@ namespace Aseguranza.UI
                 new AppDialog(
                     title,
                     message,
+                    DialogType.Error,
                     AppColors.Danger,
                     "Aceptar",
                     DialogResult.OK);
