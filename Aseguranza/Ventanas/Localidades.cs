@@ -136,7 +136,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            pnlContenido.ClientSize.Width - 40,
+                            pnlContenido.ClientSize.Width - 200,
                             39),
 
                     BackColor =
@@ -146,6 +146,39 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Top |
                         AnchorStyles.Left |
                         AnchorStyles.Right
+                };
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                icon: null,
+                width: 140,
+                height: 39);
+
+            btnLimpiar.Name =
+                "btnLimpiar";
+
+            btnLimpiar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width - 160,
+                    42);
+
+            btnLimpiar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnLimpiar.Click +=
+                (_, _) =>
+                {
+                    txtBuscar.Clear();
+
+                    IniciarTodo();
+
+                    txtBuscar.Focus();
                 };
 
             // -----------------------------------------------------
@@ -256,13 +289,15 @@ namespace Aseguranza.Ventanas
                             92),
 
                     Text =
-                        "0 localidades registradas",
+                        "Total: 0 localidades",
 
                     ForeColor =
-                        AppColors.TextSecondary,
+                        AppColors.TextPrimary,
 
                     Font =
-                        AppFonts.Light(9.5F)
+                        AppFonts.Regular(
+                            10F,
+                            FontStyle.Bold)
                 };
 
             // -----------------------------------------------------
@@ -427,6 +462,9 @@ namespace Aseguranza.Ventanas
                 pnlBuscar);
 
             pnlContenido.Controls.Add(
+                btnLimpiar);
+
+            pnlContenido.Controls.Add(
                 _lblRegistros);
 
             pnlContenido.Controls.Add(
@@ -538,13 +576,13 @@ namespace Aseguranza.Ventanas
                 cantidad switch
                 {
                     0 =>
-                        "No hay localidades registradas",
+                        "Total: 0 localidades",
 
                     1 =>
-                        "1 localidad registrada",
+                        "Total: 1 localidad",
 
                     _ =>
-                        $"{cantidad} localidades registradas"
+                        $"Total: {cantidad} localidades"
                 };
         }
 
@@ -656,11 +694,10 @@ namespace Aseguranza.Ventanas
 
             if (localidad is null)
             {
-                MessageBox.Show(
-                    "Seleccione una localidad.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione una localidad.");
 
                 return;
             }
@@ -689,24 +726,25 @@ namespace Aseguranza.Ventanas
 
             if (localidad is null)
             {
-                MessageBox.Show(
-                    "Seleccione una localidad.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione una localidad.");
 
                 return;
             }
 
-            DialogResult confirmacion =
-                MessageBox.Show(
-                    $"¿Está seguro de eliminar la localidad \"{localidad.Nombre}\"?",
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
                     "Confirmar eliminación",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+                    "¿Está seguro de eliminar la localidad?" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    localidad.Nombre,
+                    "Eliminar");
 
-            if (confirmacion !=
-                DialogResult.Yes)
+            if (!confirmacion)
             {
                 return;
             }
@@ -716,15 +754,20 @@ namespace Aseguranza.Ventanas
                     .BorrarLocalidad(
                         localidad.Id);
 
-            MessageBox.Show(
-                respuesta.Nombre,
-                respuesta.Id == 1
-                    ? "Operación completada"
-                    : "No se pudo eliminar",
-                MessageBoxButtons.OK,
-                respuesta.Id == 1
-                    ? MessageBoxIcon.Information
-                    : MessageBoxIcon.Error);
+            if (respuesta.Id == 1)
+            {
+                AppDialog.ShowInfo(
+                    this,
+                    "Operación completada",
+                    respuesta.Nombre);
+            }
+            else
+            {
+                AppDialog.ShowError(
+                    this,
+                    "No se pudo eliminar",
+                    respuesta.Nombre);
+            }
 
             IniciarTodo();
         }
