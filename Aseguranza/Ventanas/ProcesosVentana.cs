@@ -97,6 +97,9 @@ namespace Aseguranza.Ventanas
             DoubleBuffered =
                 true;
 
+            KeyPreview =
+                true;
+
             AcceptButton =
                 btnAceptar;
 
@@ -539,11 +542,10 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                 nombre))
             {
-                MessageBox.Show(
-                    "El nombre del proceso no puede estar vacío.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El nombre del proceso no puede estar vacío.");
 
                 txtNombre.Focus();
 
@@ -553,11 +555,10 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                 descripcion))
             {
-                MessageBox.Show(
-                    "La descripción del proceso no puede estar vacía.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "La descripción del proceso no puede estar vacía.");
 
                 txtDescripcion.Focus();
 
@@ -567,11 +568,10 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                 vigenciaTexto))
             {
-                MessageBox.Show(
-                    "La vigencia del proceso no puede estar vacía.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "La vigencia del proceso no puede estar vacía.");
 
                 txtVigencia.Focus();
 
@@ -582,15 +582,52 @@ namespace Aseguranza.Ventanas
                 vigenciaTexto,
                 out int vigenciaMeses))
             {
-                MessageBox.Show(
-                    "La vigencia debe ser un número entero válido.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato incorrecto",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "La vigencia debe ser un número entero válido.");
 
                 txtVigencia.Focus();
 
                 txtVigencia.SelectAll();
+
+                return;
+            }
+
+            if (vigenciaMeses <= 0)
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Dato incorrecto",
+                    "La vigencia debe ser mayor que cero.");
+
+                txtVigencia.Focus();
+
+                txtVigencia.SelectAll();
+
+                return;
+            }
+
+            string nombreNormalizado =
+                nombre.ToUpperInvariant();
+
+            int idExcluir =
+                procesoActual?.Id ??
+                0;
+
+            if (Clases.Proceso.ExisteNombre(
+                    nombreNormalizado,
+                    idExcluir))
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Proceso duplicado",
+                    "Ya existe un proceso con el nombre \"" +
+                    nombreNormalizado +
+                    "\".");
+
+                txtNombre.Focus();
+                txtNombre.SelectAll();
 
                 return;
             }
@@ -600,10 +637,10 @@ namespace Aseguranza.Ventanas
                 new Clases.Proceso();
 
             proceso.Nombre =
-                nombre.ToUpper();
+                nombreNormalizado;
 
             proceso.Descripcion =
-                descripcion.ToUpper();
+                descripcion.ToUpperInvariant();
 
             proceso.VigenciaMeses =
                 vigenciaMeses;
@@ -614,11 +651,10 @@ namespace Aseguranza.Ventanas
             if (respuesta.Id == 1 ||
                 respuesta.Id == 2)
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowInfo(
+                    this,
                     "Operación completada",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    respuesta.Nombre);
 
                 DialogResult =
                     DialogResult.OK;
@@ -628,11 +664,10 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            MessageBox.Show(
-                respuesta.Nombre,
+            AppDialog.ShowError(
+                this,
                 "No se pudo guardar",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+                respuesta.Nombre);
         }
 
         // =========================================================
@@ -647,6 +682,29 @@ namespace Aseguranza.Ventanas
                 DialogResult.Cancel;
 
             Close();
+        }
+
+        // =========================================================
+        // TECLADO
+        // =========================================================
+
+        protected override bool ProcessCmdKey(
+            ref Message msg,
+            Keys keyData)
+        {
+            if (keyData == Keys.Escape)
+            {
+                DialogResult =
+                    DialogResult.Cancel;
+
+                Close();
+
+                return true;
+            }
+
+            return base.ProcessCmdKey(
+                ref msg,
+                keyData);
         }
 
         // =========================================================

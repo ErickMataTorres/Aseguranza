@@ -115,6 +115,26 @@ CREATE TABLE IF NOT EXISTS ExpedienteTrabajador (
         FOREIGN KEY (IdTrabajador) REFERENCES Trabajador(Id)
 );
 
+
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Turno_Nombre_Normalizado
+    ON Turno (UPPER(TRIM(Nombre)));
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Localidad_Nombre_Normalizado
+    ON Localidad (UPPER(TRIM(Nombre)));
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Planta_Nombre_Normalizado
+    ON Planta (UPPER(TRIM(Nombre)));
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Proceso_Nombre_Normalizado
+    ON Proceso (UPPER(TRIM(Nombre)));
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Linea_Planta_Nombre_Normalizado
+    ON Linea (IdPlanta, UPPER(TRIM(Nombre)));
+
 CREATE INDEX IF NOT EXISTS IX_Linea_IdPlanta
     ON Linea(IdPlanta);
 
@@ -153,3 +173,49 @@ VALUES (
     1,
     'Esquema SQLite inicial de Aseguranza'
 );
+
+INSERT OR IGNORE INTO SchemaVersion (
+    Version,
+    Descripcion
+)
+VALUES (
+    2,
+    'Turno protegido contra nombres duplicados normalizados'
+);
+
+INSERT OR IGNORE INTO SchemaVersion (
+    Version,
+    Descripcion
+)
+VALUES (
+    3,
+    'Planta protegida contra nombres duplicados normalizados'
+);
+
+INSERT OR IGNORE INTO SchemaVersion (
+    Version,
+    Descripcion
+)
+VALUES (
+    4,
+    'Linea protegida por planta contra nombres duplicados normalizados'
+);
+
+INSERT OR IGNORE INTO SchemaVersion (
+    Version,
+    Descripcion
+)
+VALUES (
+    5,
+    'Proceso protegido contra nombres duplicados normalizados'
+);
+
+INSERT OR IGNORE INTO SchemaVersion (
+    Version,
+    Descripcion
+)
+VALUES (
+    6,
+    'Localidad protegida contra nombres duplicados normalizados'
+);
+

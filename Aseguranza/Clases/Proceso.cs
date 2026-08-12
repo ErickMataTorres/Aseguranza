@@ -1,4 +1,5 @@
 ﻿using Aseguranza.Data;
+using System;
 using System.Data;
 
 namespace Aseguranza.Clases
@@ -26,6 +27,72 @@ namespace Aseguranza.Clases
             return RepositorioFactory
                 .CrearProcesoRepository()
                 .Borrar(id);
+        }
+
+        // =========================================================
+        // VALIDAR DUPLICADO
+        // =========================================================
+
+        public static bool ExisteNombre(
+            string nombre,
+            int idExcluir = 0)
+        {
+            string nombreNormalizado =
+                (nombre ?? string.Empty)
+                    .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    nombreNormalizado))
+            {
+                return false;
+            }
+
+            DataTable procesos =
+                ConsultarProcesos(
+                    string.Empty);
+
+            if (!procesos.Columns.Contains(
+                    "Nombre"))
+            {
+                return false;
+            }
+
+            foreach (DataRow fila in procesos.Rows)
+            {
+                string nombreExistente =
+                    Convert.ToString(
+                        fila["Nombre"])
+                        ?.Trim()
+                    ?? string.Empty;
+
+                if (!string.Equals(
+                        nombreExistente,
+                        nombreNormalizado,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                int idExistente =
+                    0;
+
+                if (procesos.Columns.Contains(
+                        "Id") &&
+                    fila["Id"] != DBNull.Value)
+                {
+                    idExistente =
+                        Convert.ToInt32(
+                            fila["Id"]);
+                }
+
+                if (idExistente !=
+                    idExcluir)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public Mensaje GuardarProceso()

@@ -122,6 +122,9 @@ namespace Aseguranza.Ventanas
             DoubleBuffered =
                 true;
 
+            KeyPreview =
+                true;
+
             AcceptButton =
                 btnAceptar;
 
@@ -443,11 +446,10 @@ namespace Aseguranza.Ventanas
 
             if (cbPlantas.SelectedIndex < 0)
             {
-                MessageBox.Show(
-                    "Seleccione una planta.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione una planta.");
 
                 cbPlantas.Focus();
 
@@ -457,11 +459,10 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                 nombre))
             {
-                MessageBox.Show(
-                    "El nombre de la línea no puede estar vacío.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El nombre de la línea no puede estar vacío.");
 
                 txtNombre.Focus();
 
@@ -470,13 +471,46 @@ namespace Aseguranza.Ventanas
 
             if (cbPlantas.SelectedValue is null)
             {
-                MessageBox.Show(
-                    "No fue posible obtener la planta seleccionada.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "No fue posible obtener la planta seleccionada.");
 
                 cbPlantas.Focus();
+
+                return;
+            }
+
+            int idPlanta =
+                Convert.ToInt32(
+                    cbPlantas.SelectedValue);
+
+            string nombreNormalizado =
+                nombre.ToUpperInvariant();
+
+            int idExcluir =
+                lineaActual?.Id ??
+                0;
+
+            if (Clases.Linea.ExisteNombreEnPlanta(
+                    idPlanta,
+                    nombreNormalizado,
+                    idExcluir))
+            {
+                string nombrePlanta =
+                    cbPlantas.Text.Trim();
+
+                AppDialog.ShowWarning(
+                    this,
+                    "Línea duplicada",
+                    "Ya existe la línea \"" +
+                    nombreNormalizado +
+                    "\" en la planta \"" +
+                    nombrePlanta +
+                    "\".");
+
+                txtNombre.Focus();
+                txtNombre.SelectAll();
 
                 return;
             }
@@ -486,11 +520,10 @@ namespace Aseguranza.Ventanas
                 new Clases.Linea();
 
             linea.IdPlanta =
-                Convert.ToInt32(
-                    cbPlantas.SelectedValue);
+                idPlanta;
 
             linea.Nombre =
-                nombre.ToUpper();
+                nombreNormalizado;
 
             Clases.Mensaje respuesta =
                 linea.GuardarLinea();
@@ -498,11 +531,10 @@ namespace Aseguranza.Ventanas
             if (respuesta.Id == 1 ||
                 respuesta.Id == 2)
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowInfo(
+                    this,
                     "Operación completada",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    respuesta.Nombre);
 
                 DialogResult =
                     DialogResult.OK;
@@ -512,11 +544,10 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            MessageBox.Show(
-                respuesta.Nombre,
+            AppDialog.ShowError(
+                this,
                 "No se pudo guardar",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+                respuesta.Nombre);
         }
 
         // =========================================================
@@ -531,6 +562,29 @@ namespace Aseguranza.Ventanas
                 DialogResult.Cancel;
 
             Close();
+        }
+
+        // =========================================================
+        // TECLADO
+        // =========================================================
+
+        protected override bool ProcessCmdKey(
+            ref Message msg,
+            Keys keyData)
+        {
+            if (keyData == Keys.Escape)
+            {
+                DialogResult =
+                    DialogResult.Cancel;
+
+                Close();
+
+                return true;
+            }
+
+            return base.ProcessCmdKey(
+                ref msg,
+                keyData);
         }
 
         // =========================================================

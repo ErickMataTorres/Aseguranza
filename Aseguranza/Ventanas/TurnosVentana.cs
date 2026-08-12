@@ -89,6 +89,9 @@ namespace Aseguranza.Ventanas
             DoubleBuffered =
                 true;
 
+            KeyPreview =
+                true;
+
             AcceptButton =
                 btnAceptar;
 
@@ -327,13 +330,36 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                 nombre))
             {
-                MessageBox.Show(
-                    "El nombre del turno no puede estar vacío.",
+                AppDialog.ShowWarning(
+                    this,
                     "Dato requerido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El nombre del turno no puede estar vacío.");
 
                 txtNombre.Focus();
+
+                return;
+            }
+
+            string nombreNormalizado =
+                nombre.ToUpperInvariant();
+
+            int idExcluir =
+                turnoActual?.Id ??
+                0;
+
+            if (Clases.Turno.ExisteNombre(
+                    nombreNormalizado,
+                    idExcluir))
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Turno duplicado",
+                    "Ya existe un turno con el nombre \"" +
+                    nombreNormalizado +
+                    "\".");
+
+                txtNombre.Focus();
+                txtNombre.SelectAll();
 
                 return;
             }
@@ -343,7 +369,7 @@ namespace Aseguranza.Ventanas
                 new Clases.Turno();
 
             turno.Nombre =
-                nombre.ToUpper();
+                nombreNormalizado;
 
             Clases.Mensaje respuesta =
                 turno.GuardarTurno();
@@ -351,11 +377,10 @@ namespace Aseguranza.Ventanas
             if (respuesta.Id == 1 ||
                 respuesta.Id == 2)
             {
-                MessageBox.Show(
-                    respuesta.Nombre,
+                AppDialog.ShowInfo(
+                    this,
                     "Operación completada",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    respuesta.Nombre);
 
                 DialogResult =
                     DialogResult.OK;
@@ -365,11 +390,10 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            MessageBox.Show(
-                respuesta.Nombre,
+            AppDialog.ShowError(
+                this,
                 "No se pudo guardar",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+                respuesta.Nombre);
         }
 
         // =========================================================
@@ -384,6 +408,29 @@ namespace Aseguranza.Ventanas
                 DialogResult.Cancel;
 
             Close();
+        }
+
+        // =========================================================
+        // TECLADO
+        // =========================================================
+
+        protected override bool ProcessCmdKey(
+            ref Message msg,
+            Keys keyData)
+        {
+            if (keyData == Keys.Escape)
+            {
+                DialogResult =
+                    DialogResult.Cancel;
+
+                Close();
+
+                return true;
+            }
+
+            return base.ProcessCmdKey(
+                ref msg,
+                keyData);
         }
 
         // =========================================================
