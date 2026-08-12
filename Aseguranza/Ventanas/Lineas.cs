@@ -136,7 +136,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            pnlContenido.ClientSize.Width - 40,
+                            pnlContenido.ClientSize.Width - 200,
                             39),
 
                     BackColor =
@@ -146,6 +146,39 @@ namespace Aseguranza.Ventanas
                         AnchorStyles.Top |
                         AnchorStyles.Left |
                         AnchorStyles.Right
+                };
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                icon: null,
+                width: 140,
+                height: 39);
+
+            btnLimpiar.Name =
+                "btnLimpiar";
+
+            btnLimpiar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width - 160,
+                    42);
+
+            btnLimpiar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnLimpiar.Click +=
+                (_, _) =>
+                {
+                    txtBuscar.Clear();
+
+                    IniciarTodo();
+
+                    txtBuscar.Focus();
                 };
 
             // =====================================================
@@ -256,13 +289,15 @@ namespace Aseguranza.Ventanas
                             92),
 
                     Text =
-                        "0 líneas registradas",
+                        "Total: 0 líneas",
 
                     ForeColor =
-                        AppColors.TextSecondary,
+                        AppColors.TextPrimary,
 
                     Font =
-                        AppFonts.Light(9.5F)
+                        AppFonts.Regular(
+                            10F,
+                            FontStyle.Bold)
                 };
 
             // =====================================================
@@ -425,6 +460,9 @@ namespace Aseguranza.Ventanas
 
             pnlContenido.Controls.Add(
                 pnlBuscar);
+
+            pnlContenido.Controls.Add(
+                btnLimpiar);
 
             pnlContenido.Controls.Add(
                 _lblRegistros);
@@ -592,13 +630,13 @@ namespace Aseguranza.Ventanas
                 cantidad switch
                 {
                     0 =>
-                        "No hay líneas registradas",
+                        "Total: 0 líneas",
 
                     1 =>
-                        "1 línea registrada",
+                        "Total: 1 línea",
 
                     _ =>
-                        $"{cantidad} líneas registradas"
+                        $"Total: {cantidad} líneas"
                 };
         }
 
@@ -684,6 +722,44 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
+        // OBTENER NOMBRE DE PLANTA SELECCIONADA
+        // =========================================================
+
+        private string ObtenerNombrePlantaSeleccionada()
+        {
+            if (dgvLineas.CurrentRow is null)
+            {
+                return string.Empty;
+            }
+
+            if (dgvLineas.Columns.Contains(
+                "NombrePlanta"))
+            {
+                return Convert.ToString(
+                    dgvLineas
+                        .CurrentRow
+                        .Cells["NombrePlanta"]
+                        .Value)
+                    ?? string.Empty;
+            }
+
+            // Compatibilidad por si alguna consulta devuelve
+            // la columna simplemente como "Planta".
+            if (dgvLineas.Columns.Contains(
+                "Planta"))
+            {
+                return Convert.ToString(
+                    dgvLineas
+                        .CurrentRow
+                        .Cells["Planta"]
+                        .Value)
+                    ?? string.Empty;
+            }
+
+            return string.Empty;
+        }
+
+        // =========================================================
         // AGREGAR
         // =========================================================
 
@@ -715,11 +791,10 @@ namespace Aseguranza.Ventanas
 
             if (linea is null)
             {
-                MessageBox.Show(
-                    "Seleccione una línea.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione una línea.");
 
                 return;
             }
@@ -748,24 +823,41 @@ namespace Aseguranza.Ventanas
 
             if (linea is null)
             {
-                MessageBox.Show(
-                    "Seleccione una línea.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione una línea.");
 
                 return;
             }
 
-            DialogResult confirmacion =
-                MessageBox.Show(
-                    $"¿Está seguro de eliminar la línea \"{linea.Nombre}\"?",
-                    "Confirmar eliminación",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+            string planta =
+                ObtenerNombrePlantaSeleccionada();
 
-            if (confirmacion !=
-                DialogResult.Yes)
+            string detalle =
+                "Línea: " +
+                linea.Nombre;
+
+            if (!string.IsNullOrWhiteSpace(
+                    planta))
+            {
+                detalle +=
+                    Environment.NewLine +
+                    "Planta: " +
+                    planta;
+            }
+
+            bool confirmacion =
+                AppDialog.Confirm(
+                    this,
+                    "Confirmar eliminación",
+                    "¿Está seguro de eliminar la línea?" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    detalle,
+                    "Eliminar");
+
+            if (!confirmacion)
             {
                 return;
             }
@@ -775,15 +867,20 @@ namespace Aseguranza.Ventanas
                     .BorrarLinea(
                         linea.Id);
 
-            MessageBox.Show(
-                respuesta.Nombre,
-                respuesta.Id == 1
-                    ? "Operación completada"
-                    : "No se pudo eliminar",
-                MessageBoxButtons.OK,
-                respuesta.Id == 1
-                    ? MessageBoxIcon.Information
-                    : MessageBoxIcon.Error);
+            if (respuesta.Id == 1)
+            {
+                AppDialog.ShowInfo(
+                    this,
+                    "Operación completada",
+                    respuesta.Nombre);
+            }
+            else
+            {
+                AppDialog.ShowError(
+                    this,
+                    "No se pudo eliminar",
+                    respuesta.Nombre);
+            }
 
             IniciarTodo();
         }
