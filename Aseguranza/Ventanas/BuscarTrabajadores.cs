@@ -17,6 +17,13 @@ namespace Aseguranza.Ventanas
         public event Action<Clases.Trabajador>?
             trabajadorSeleccionado;
 
+        public Clases.Trabajador?
+            TrabajadorSeleccionado
+        {
+            get;
+            private set;
+        }
+
         // =========================================================
         // ESTADO VISUAL
         // =========================================================
@@ -766,6 +773,9 @@ namespace Aseguranza.Ventanas
             Clases.Trabajador trabajador =
                 CrearTrabajadorDesdeFila(
                     fila);
+
+            TrabajadorSeleccionado =
+                trabajador;
 
             trabajadorSeleccionado?.Invoke(
                 trabajador);

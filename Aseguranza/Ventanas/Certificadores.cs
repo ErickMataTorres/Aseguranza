@@ -213,7 +213,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            320,
+                            190,
                             42),
 
                     BackColor =
@@ -224,7 +224,7 @@ namespace Aseguranza.Ventanas
                 true;
 
             txtNoReloj.ReadOnly =
-                true;
+                false;
 
             txtNoReloj.Location =
                 new Point(
@@ -249,7 +249,7 @@ namespace Aseguranza.Ventanas
                 AppFonts.Light(11F);
 
             txtNoReloj.PlaceholderText =
-                "Selecciona un trabajador...";
+                "Escribe No. Reloj...";
 
             InputStyler.ApplyOutlinedInput(
                 pnlNoReloj,
@@ -258,21 +258,52 @@ namespace Aseguranza.Ventanas
             pnlNoReloj.Controls.Add(
                 txtNoReloj);
 
+            txtNoReloj.TextChanged +=
+                (_, _) =>
+                {
+                    LimpiarDetallesTrabajador();
+                };
+
             // =====================================================
-            // BOTÓN SELECCIONAR
+            // BOTONES DE BÚSQUEDA / SELECCIÓN
             // =====================================================
 
             ButtonStyler.Apply(
                 btnBuscar,
-                "Seleccionar",
-                AppColors.Secondary,
+                "Buscar",
+                AppColors.Primary,
                 AppIcons.Search,
-                width: 160);
+                width: 120);
 
             btnBuscar.Location =
                 new Point(
-                    350,
+                    220,
                     94);
+
+            // =====================================================
+            // BOTÓN SELECCIONAR
+            // =====================================================
+
+            Button btnSeleccionar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnSeleccionar,
+                "Seleccionar",
+                AppColors.Secondary,
+                AppIcons.Search,
+                width: 150);
+
+            btnSeleccionar.Location =
+                new Point(
+                    352,
+                    94);
+
+            btnSeleccionar.Click +=
+                (_, _) =>
+                {
+                    SeleccionarTrabajadorDesdeVentana();
+                };
 
             // =====================================================
             // BOTÓN AGREGAR CERTIFICADOR
@@ -283,11 +314,11 @@ namespace Aseguranza.Ventanas
                 "Agregar certificador",
                 AppColors.Primary,
                 AppIcons.Add,
-                width: 220);
+                width: 228);
 
             btnAgregar.Location =
                 new Point(
-                    522,
+                    514,
                     94);
 
             // =====================================================
@@ -383,6 +414,9 @@ namespace Aseguranza.Ventanas
 
             pnlTrabajador.Controls.Add(
                 btnBuscar);
+
+            pnlTrabajador.Controls.Add(
+                btnSeleccionar);
 
             pnlTrabajador.Controls.Add(
                 btnAgregar);
@@ -1181,6 +1215,11 @@ namespace Aseguranza.Ventanas
             txtNoReloj.Text =
                 string.Empty;
 
+            LimpiarDetallesTrabajador();
+        }
+
+        private void LimpiarDetallesTrabajador()
+        {
             lblMostrarNombre.Text =
                 "—";
 
@@ -1220,7 +1259,7 @@ namespace Aseguranza.Ventanas
 
             CargarCertificadores();
 
-            btnBuscar.Focus();
+            txtNoReloj.Focus();
         }
 
         // =========================================================
@@ -1323,8 +1362,15 @@ namespace Aseguranza.Ventanas
                 txtNoReloj.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(
-                noReloj))
+                    noReloj))
             {
+                AppDialog.ShowWarning(
+                    this,
+                    "Dato requerido",
+                    "Ingrese un número de reloj.");
+
+                txtNoReloj.Focus();
+
                 return;
             }
 
@@ -1338,9 +1384,12 @@ namespace Aseguranza.Ventanas
                 AppDialog.ShowWarning(
                     this,
                     "Trabajador no encontrado",
-                    "El trabajador no existe.");
+                    "No se encontró un trabajador con el número de reloj indicado.");
 
-                LimpiarSeleccionTrabajador();
+                LimpiarDetallesTrabajador();
+
+                txtNoReloj.SelectAll();
+                txtNoReloj.Focus();
 
                 return;
             }
@@ -1357,18 +1406,23 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            BuscarTrabajadorPorNoReloj();
+        }
+
+        private void SeleccionarTrabajadorDesdeVentana()
+        {
             using BuscarTrabajadores ventana =
                 new BuscarTrabajadores();
 
-            ventana.trabajadorSeleccionado +=
-                trabajador =>
-                {
-                    MostrarTrabajador(
-                        trabajador);
-                };
+            if (ventana.ShowDialog(this) !=
+                DialogResult.OK ||
+                ventana.TrabajadorSeleccionado is null)
+            {
+                return;
+            }
 
-            ventana.ShowDialog(
-                this);
+            MostrarTrabajador(
+                ventana.TrabajadorSeleccionado);
         }
 
         // =========================================================

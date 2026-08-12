@@ -194,7 +194,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            190,
+                            160,
                             40),
 
                     BackColor =
@@ -211,7 +211,7 @@ namespace Aseguranza.Ventanas
 
             txtNoReloj.Size =
                 new Size(
-                    170,
+                    140,
                     24);
 
             txtNoReloj.BorderStyle =
@@ -242,7 +242,7 @@ namespace Aseguranza.Ventanas
                 CrearEtiquetaCampo(
                     "Trabajador",
                     new Point(
-                        226,
+                        190,
                         46));
 
             pnlBusqueda.Controls.Add(
@@ -253,12 +253,12 @@ namespace Aseguranza.Ventanas
                 {
                     Location =
                         new Point(
-                            226,
+                            190,
                             68),
 
                     Size =
                         new Size(
-                            390,
+                            290,
                             40),
 
                     BackColor =
@@ -275,7 +275,7 @@ namespace Aseguranza.Ventanas
 
             txtNombre.Size =
                 new Size(
-                    370,
+                    270,
                     24);
 
             txtNombre.BorderStyle =
@@ -320,7 +320,7 @@ namespace Aseguranza.Ventanas
 
             btnBuscar.Location =
                 new Point(
-                    635,
+                    490,
                     68);
 
             btnBuscar.Click +=
@@ -332,6 +332,58 @@ namespace Aseguranza.Ventanas
             pnlBusqueda.Controls.Add(
                 btnBuscar);
 
+            // =====================================================
+            // BOTÓN SELECCIONAR
+            // =====================================================
+
+            Button btnSeleccionar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnSeleccionar,
+                "Seleccionar",
+                AppColors.Secondary,
+                AppIcons.Search,
+                width: 175,
+                height: 40);
+
+            btnSeleccionar.Location =
+                new Point(
+                    620,
+                    68);
+
+            // Centramos el icono y el texto como un solo conjunto.
+            // ButtonStyler alinea normalmente la imagen a la izquierda,
+            // pero en este botón ancho se percibía desplazada.
+            btnSeleccionar.ImageAlign =
+                ContentAlignment.MiddleCenter;
+
+            btnSeleccionar.TextAlign =
+                ContentAlignment.MiddleCenter;
+
+            btnSeleccionar.TextImageRelation =
+                TextImageRelation.ImageBeforeText;
+
+            // El layout interno de ButtonBase tiende a dejar el conjunto
+            // icono + texto unos píxeles hacia la izquierda cuando se usa
+            // ImageBeforeText. Compensamos únicamente el área de contenido,
+            // sin mover el botón ni cambiar su tamaño.
+            btnSeleccionar.Padding =
+                new Padding(
+                    14,
+                    0,
+                    0,
+                    0);
+
+            btnSeleccionar.Click +=
+                async (_, _) =>
+                {
+                    await SeleccionarTrabajadorDesdeInterfazAsync();
+                };
+
+            pnlBusqueda.Controls.Add(
+                btnSeleccionar);
+
             Button btnLimpiar =
                 new Button();
 
@@ -340,7 +392,7 @@ namespace Aseguranza.Ventanas
                 "Limpiar",
                 AppColors.Neutral,
                 string.Empty,
-                width: 120,
+                width: 110,
                 height: 40);
 
             if (btnLimpiar.Image is not null)
@@ -363,7 +415,7 @@ namespace Aseguranza.Ventanas
 
             btnLimpiar.Location =
                 new Point(
-                    765,
+                    805,
                     68);
 
             btnLimpiar.Click +=
@@ -388,7 +440,7 @@ namespace Aseguranza.Ventanas
 
             btnImprimirHtml.Location =
                 new Point(
-                    915,
+                    925,
                     68);
 
             ActualizarEstadoBotonImprimir(
@@ -583,6 +635,41 @@ namespace Aseguranza.Ventanas
 
                 txtNoReloj.Focus();
             }
+        }
+
+        private async Task SeleccionarTrabajadorDesdeInterfazAsync()
+        {
+            using BuscarTrabajadores ventana =
+                new BuscarTrabajadores();
+
+            if (ventana.ShowDialog(this) !=
+                DialogResult.OK ||
+                ventana.TrabajadorSeleccionado is null)
+            {
+                return;
+            }
+
+            string noReloj =
+                ventana.TrabajadorSeleccionado
+                    .NoReloj?
+                    .Trim()
+                ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(
+                    noReloj))
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Validación",
+                    "El trabajador seleccionado no tiene un número de reloj válido.");
+
+                return;
+            }
+
+            txtNoReloj.Text =
+                noReloj;
+
+            await BuscarDesdeInterfazAsync();
         }
 
         private async Task LimpiarBusquedaDesdeInterfazAsync()
