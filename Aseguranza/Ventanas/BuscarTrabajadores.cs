@@ -79,6 +79,9 @@ namespace Aseguranza.Ventanas
             DoubleBuffered =
                 true;
 
+            KeyPreview =
+                true;
+
             AcceptButton =
                 btnAceptar;
 
@@ -152,7 +155,7 @@ namespace Aseguranza.Ventanas
 
                     Size =
                         new Size(
-                            pnlContenido.ClientSize.Width - 40,
+                            pnlContenido.ClientSize.Width - 190,
                             42),
 
                     BackColor =
@@ -252,6 +255,43 @@ namespace Aseguranza.Ventanas
 
             pnlBuscar.Controls.Add(
                 txtBuscar);
+
+            // =====================================================
+            // BOTÓN LIMPIAR
+            // =====================================================
+
+            Button btnLimpiar =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnLimpiar,
+                "Limpiar",
+                AppColors.Neutral,
+                icon: null,
+                width: 130,
+                height: 42);
+
+            btnLimpiar.Name =
+                "btnLimpiar";
+
+            btnLimpiar.Location =
+                new Point(
+                    pnlContenido.ClientSize.Width - 150,
+                    47);
+
+            btnLimpiar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnLimpiar.Click +=
+                (_, _) =>
+                {
+                    txtBuscar.Clear();
+
+                    CargarTrabajadores();
+
+                    txtBuscar.Focus();
+                };
 
             // =====================================================
             // CONTADOR
@@ -413,6 +453,9 @@ namespace Aseguranza.Ventanas
 
             pnlContenido.Controls.Add(
                 pnlBuscar);
+
+            pnlContenido.Controls.Add(
+                btnLimpiar);
 
             pnlContenido.Controls.Add(
                 _lblRegistros);
@@ -600,10 +643,10 @@ namespace Aseguranza.Ventanas
                         "No se encontraron trabajadores",
 
                     1 =>
-                        "1 trabajador encontrado",
+                        "1 trabajador mostrado",
 
                     _ =>
-                        $"{cantidad} trabajadores encontrados"
+                        $"{cantidad} trabajadores mostrados"
                 };
         }
 
@@ -699,11 +742,10 @@ namespace Aseguranza.Ventanas
         {
             if (dgvTrabajadores.CurrentRow is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador.");
 
                 return;
             }
@@ -713,11 +755,10 @@ namespace Aseguranza.Ventanas
                     .DataBoundItem
                 is not DataRowView fila)
             {
-                MessageBox.Show(
-                    "No fue posible obtener la información del trabajador seleccionado.",
+                AppDialog.ShowWarning(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "No fue posible obtener la información del trabajador seleccionado.");
 
                 return;
             }
@@ -859,6 +900,29 @@ namespace Aseguranza.Ventanas
             {
                 return 0;
             }
+        }
+
+        // =========================================================
+        // TECLADO
+        // =========================================================
+
+        protected override bool ProcessCmdKey(
+            ref Message msg,
+            Keys keyData)
+        {
+            if (keyData == Keys.Escape)
+            {
+                DialogResult =
+                    DialogResult.Cancel;
+
+                Close();
+
+                return true;
+            }
+
+            return base.ProcessCmdKey(
+                ref msg,
+                keyData);
         }
 
         // =========================================================
