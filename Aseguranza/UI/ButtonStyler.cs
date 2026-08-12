@@ -9,7 +9,7 @@ namespace Aseguranza.UI
             Button button,
             string text,
             Color backgroundColor,
-            string icon,
+            string? icon,
             int width = 138,
             int height = 42)
         {
@@ -54,27 +54,48 @@ namespace Aseguranza.UI
                     10F,
                     FontStyle.Bold);
 
-            button.Image =
-                AppIcons.CreateBitmap(
-                    icon,
-                    Color.White,
-                    16);
+            if (string.IsNullOrWhiteSpace(
+                    icon))
+            {
+                button.Image =
+                    null;
 
-            button.ImageAlign =
-                ContentAlignment.MiddleLeft;
+                button.ImageAlign =
+                    ContentAlignment.MiddleCenter;
 
-            button.TextAlign =
-                ContentAlignment.MiddleCenter;
+                button.TextAlign =
+                    ContentAlignment.MiddleCenter;
 
-            button.TextImageRelation =
-                TextImageRelation.ImageBeforeText;
+                button.TextImageRelation =
+                    TextImageRelation.Overlay;
 
-            button.Padding =
-                new Padding(
-                    12,
-                    0,
-                    12,
-                    0);
+                button.Padding =
+                    Padding.Empty;
+            }
+            else
+            {
+                button.Image =
+                    AppIcons.CreateBitmap(
+                        icon,
+                        Color.White,
+                        16);
+
+                button.ImageAlign =
+                    ContentAlignment.MiddleLeft;
+
+                button.TextAlign =
+                    ContentAlignment.MiddleCenter;
+
+                button.TextImageRelation =
+                    TextImageRelation.ImageBeforeText;
+
+                button.Padding =
+                    new Padding(
+                        12,
+                        0,
+                        12,
+                        0);
+            }
 
             RoundedControlHelper.ApplyRoundedRegion(
                 button,

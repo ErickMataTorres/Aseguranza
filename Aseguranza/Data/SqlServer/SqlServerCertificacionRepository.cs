@@ -1,4 +1,4 @@
-using Aseguranza.Clases;
+﻿using Aseguranza.Clases;
 using Aseguranza.Data.Interfaces;
 using Microsoft.Data.SqlClient;
 using System;
@@ -260,7 +260,7 @@ namespace Aseguranza.Data.SqlServer
                     lector["Id"]),
 
                 Nombre = Convert.ToString(
-                    lector["Nombre"])
+                    lector["Nombre"]) ?? string.Empty
             };
         }
 

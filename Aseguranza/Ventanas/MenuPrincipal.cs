@@ -775,7 +775,7 @@ namespace Aseguranza
         // =========================================================
 
         private void btnCertificaciones_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Certificaciones ventana =
@@ -790,7 +790,7 @@ namespace Aseguranza
         // =========================================================
 
         private void certificarToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Localidades ventana =
@@ -805,7 +805,7 @@ namespace Aseguranza
         // =========================================================
 
         private void localidadToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Turnos ventana =
@@ -820,7 +820,7 @@ namespace Aseguranza
         // =========================================================
 
         private void plantaToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Plantas ventana =
@@ -835,7 +835,7 @@ namespace Aseguranza
         // =========================================================
 
         private void lineaToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Lineas ventana =
@@ -850,7 +850,7 @@ namespace Aseguranza
         // =========================================================
 
         private void trabajadorToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Trabajadores ventana =
@@ -865,7 +865,7 @@ namespace Aseguranza
         // =========================================================
 
         private void certificadorToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Certificadores ventana =
@@ -880,7 +880,7 @@ namespace Aseguranza
         // =========================================================
 
         private void procesoToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Procesos ventana =
@@ -895,7 +895,7 @@ namespace Aseguranza
         // =========================================================
 
         private void certificacionToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Certificaciones ventana =
@@ -910,7 +910,7 @@ namespace Aseguranza
         // =========================================================
 
         private void verificadorToolStripMenuItem_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using Ventanas.Verificaciones ventana =
@@ -925,7 +925,7 @@ namespace Aseguranza
         // =========================================================
 
         private void MenuPrincipal_Load(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             // La interfaz moderna se configura

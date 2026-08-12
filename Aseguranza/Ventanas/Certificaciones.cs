@@ -107,7 +107,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void Certificaciones_Load(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             /*
@@ -1471,12 +1471,11 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            MessageBox.Show(
-                "No se encontró el trabajador en la lista actual.\n\n" +
-                $"No. Reloj buscado: {noReloj}",
+            AppDialog.ShowInfo(
+                this,
                 "Aviso",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+                "No se encontró el trabajador en la lista actual.\n\n" +
+                $"No. Reloj buscado: {noReloj}");
 
             SeleccionarPrimero();
         }
@@ -1795,7 +1794,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void dgvTrabajadores_CellFormatting(
-            object sender,
+            object? sender,
             DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0)
@@ -2001,7 +2000,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void cbMostrarPor_SelectedIndexChanged(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             CargarTrabajadores();
@@ -2017,14 +2016,14 @@ namespace Aseguranza.Ventanas
         }
 
         private void btnBuscar_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             EjecutarBusqueda();
         }
 
         private void txtBuscar_KeyPress(
-            object sender,
+            object? sender,
             KeyPressEventArgs e)
         {
             if (e.KeyChar !=
@@ -2040,7 +2039,7 @@ namespace Aseguranza.Ventanas
         }
 
         private void txtBuscar_KeyDown(
-            object sender,
+            object? sender,
             KeyEventArgs e)
         {
             if (e.KeyCode !=
@@ -2063,7 +2062,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnLimpiarBusqueda_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             RestablecerBusqueda();
@@ -2099,7 +2098,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void dgvTrabajadores_SelectionChanged(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             SincronizarSeleccionUI();
@@ -2110,7 +2109,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void dgvTrabajadores_CellDoubleClick(
-            object sender,
+            object? sender,
             DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0)
@@ -2150,7 +2149,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnCertificaciones_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             AbrirCertificaciones();
@@ -2163,11 +2162,10 @@ namespace Aseguranza.Ventanas
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador.");
 
                 return;
             }
@@ -2176,11 +2174,10 @@ namespace Aseguranza.Ventanas
                     trabajador,
                     out string noReloj))
             {
-                MessageBox.Show(
-                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                AppDialog.ShowWarning(
+                    this,
                     "Validación",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El trabajador seleccionado no tiene un número de reloj válido.");
 
                 return;
             }
@@ -2201,7 +2198,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnAgregarTrabajador_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             using TrabajadoresVentana ventana =
@@ -2220,12 +2217,11 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                     noRelojNuevo))
             {
-                MessageBox.Show(
-                    "El trabajador se guardó, pero no se recibió el No. Reloj " +
-                    "para seleccionarlo automáticamente.",
+                AppDialog.ShowWarning(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El trabajador se guardó, pero no se recibió el No. Reloj " +
+                    "para seleccionarlo automáticamente.");
 
                 CargarTrabajadores();
 
@@ -2270,7 +2266,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnModificarTrabajador_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             Clases.Trabajador? trabajador =
@@ -2278,11 +2274,10 @@ namespace Aseguranza.Ventanas
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador para modificar.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador para modificar.");
 
                 return;
             }
@@ -2315,7 +2310,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnBorrarTrabajador_Click(
-    object sender,
+    object? sender,
     EventArgs e)
         {
             Clases.Trabajador? trabajador =
@@ -2432,7 +2427,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnVistaPreviaCredencial_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             Clases.Trabajador? trabajador =
@@ -2440,11 +2435,10 @@ namespace Aseguranza.Ventanas
 
             if (trabajador is null)
             {
-                MessageBox.Show(
-                    "Seleccione un trabajador.",
+                AppDialog.ShowInfo(
+                    this,
                     "Aviso",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "Seleccione un trabajador.");
 
                 return;
             }
@@ -2453,11 +2447,10 @@ namespace Aseguranza.Ventanas
                     trabajador,
                     out string noReloj))
             {
-                MessageBox.Show(
-                    "El trabajador seleccionado no tiene un número de reloj válido.",
+                AppDialog.ShowWarning(
+                    this,
                     "Validación",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "El trabajador seleccionado no tiene un número de reloj válido.");
 
                 return;
             }
@@ -2475,7 +2468,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnImprimirCredencial_Click(
-    object sender,
+    object? sender,
     EventArgs e)
         {
             Clases.Trabajador? trabajador =
@@ -2540,7 +2533,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void dgvTrabajadores_MouseDown(
-            object sender,
+            object? sender,
             MouseEventArgs e)
         {
             if (e.Button !=
@@ -2589,7 +2582,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void cmsTrabajadores_Opening(
-            object sender,
+            object? sender,
             CancelEventArgs e)
         {
             bool haySeleccion =
@@ -2610,14 +2603,14 @@ namespace Aseguranza.Ventanas
         }
 
         private void tsmVerCertificaciones_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             AbrirCertificaciones();
         }
 
         private void tsmVistaPreviaCredencial_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             btnVistaPreviaCredencial_Click(
@@ -2626,7 +2619,7 @@ namespace Aseguranza.Ventanas
         }
 
         private void tsmImprimirCredencial_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             btnImprimirCredencial_Click(
@@ -2635,7 +2628,7 @@ namespace Aseguranza.Ventanas
         }
 
         private void tsmModificarTrabajador_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             btnModificarTrabajador_Click(
@@ -2648,7 +2641,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void dgvTrabajadores_CellMouseEnter(
-            object sender,
+            object? sender,
             DataGridViewCellEventArgs e)
         {
             /*
@@ -2658,7 +2651,7 @@ namespace Aseguranza.Ventanas
         }
 
         private void dgvTrabajadores_CellMouseLeave(
-            object sender,
+            object? sender,
             DataGridViewCellEventArgs e)
         {
             /*
@@ -2739,7 +2732,7 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void btnRegresar_Click(
-            object sender,
+            object? sender,
             EventArgs e)
         {
             Close();

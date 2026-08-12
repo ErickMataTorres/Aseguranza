@@ -1,4 +1,4 @@
-using Aseguranza.Clases;
+﻿using Aseguranza.Clases;
 using Aseguranza.Data.Interfaces;
 using Microsoft.Data.SqlClient;
 using System;
@@ -170,7 +170,7 @@ namespace Aseguranza.Data.SqlServer
             return new Mensaje
             {
                 Id = Convert.ToInt32(lector["Id"]),
-                Nombre = Convert.ToString(lector["Nombre"])
+                Nombre = Convert.ToString(lector["Nombre"]) ?? string.Empty
             };
         }
 

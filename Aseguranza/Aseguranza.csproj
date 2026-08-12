@@ -6,6 +6,13 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!--
+      WebView2 currently exposes a WPF assembly to WinForms projects,
+      which can produce MSB3277 for WindowsBase even when WPF is not used.
+      Keep the WebView2 package intact and demote only this known warning.
+    -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,15 +29,22 @@
     <Content Include="Database\SQLite\AseguranzaSQLite.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    
+
     <Content Include="Plantillas\Certificacion.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AForge" Version="2.2.5" />
-    <PackageReference Include="AForge.Video.DirectShow" Version="2.2.5" />
+    <!--
+      AForge 2.2.5 targets .NET Framework. The camera workflow has been
+      validated in this application, so suppress NU1701 only for these
+      specific legacy camera packages.
+    -->
+    <PackageReference Include="AForge" Version="2.2.5" NoWarn="NU1701" />
+    <PackageReference Include="AForge.Video" Version="2.2.5" NoWarn="NU1701" />
+    <PackageReference Include="AForge.Video.DirectShow" Version="2.2.5" NoWarn="NU1701" />
+
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.3" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.23" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />

@@ -1,4 +1,4 @@
-using Aseguranza.Clases;
+﻿using Aseguranza.Clases;
 using Aseguranza.Data.Interfaces;
 using Microsoft.Data.SqlClient;
 using System;
@@ -375,7 +375,7 @@ namespace Aseguranza.Data.SqlServer
             return new Mensaje
             {
                 Id = LeerEntero(lector, "Id"),
-                Nombre = LeerTexto(lector, "Nombre")
+                Nombre = LeerTexto(lector, "Nombre") ?? string.Empty
             };
         }
 

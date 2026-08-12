@@ -626,7 +626,7 @@ namespace Aseguranza.Ventanas
 
             pictureBox1.Size =
                 new Size(
-                    344,
+                    326,
                     145);
 
             pictureBox1.BackColor =
@@ -808,6 +808,8 @@ namespace Aseguranza.Ventanas
 
             ssEstado.BringToFront();
 
+            ConfigurarIndicadoresValidacion();
+
             pnlContenido.BringToFront();
 
             pnlCabecera.BringToFront();
@@ -881,7 +883,7 @@ namespace Aseguranza.Ventanas
 
             textBox.Size =
                 new Size(
-                    panel.ClientSize.Width - 24,
+                    panel.ClientSize.Width - 48,
                     25);
 
             textBox.Anchor =
@@ -923,7 +925,7 @@ namespace Aseguranza.Ventanas
 
             comboBox.Size =
                 new Size(
-                    panel.ClientSize.Width - 16,
+                    panel.ClientSize.Width - 42,
                     28);
 
             comboBox.Anchor =
@@ -989,6 +991,49 @@ namespace Aseguranza.Ventanas
             RoundedControlHelper.ApplyRoundedRegion(
                 boton,
                 7);
+        }
+
+        // =========================================================
+        // INDICADORES DE VALIDACIÓN
+        // =========================================================
+
+        private void ConfigurarIndicadoresValidacion()
+        {
+            epValidacion.BlinkStyle =
+                ErrorBlinkStyle.NeverBlink;
+
+            ConfigurarIndicadorValidacion(
+                txtNoReloj);
+
+            ConfigurarIndicadorValidacion(
+                txtNombre);
+
+            ConfigurarIndicadorValidacion(
+                cbLocalidad);
+
+            ConfigurarIndicadorValidacion(
+                cbTurno);
+
+            ConfigurarIndicadorValidacion(
+                cbPlanta);
+
+            ConfigurarIndicadorValidacion(
+                cbLinea);
+
+            ConfigurarIndicadorValidacion(
+                pictureBox1);
+        }
+
+        private void ConfigurarIndicadorValidacion(
+            Control control)
+        {
+            epValidacion.SetIconAlignment(
+                control,
+                ErrorIconAlignment.MiddleRight);
+
+            epValidacion.SetIconPadding(
+                control,
+                3);
         }
 
         // =========================================================
@@ -1459,11 +1504,10 @@ namespace Aseguranza.Ventanas
 
             if (!esValido)
             {
-                MessageBox.Show(
-                    "Hay información incompleta. Revise los campos marcados.",
+                AppDialog.ShowWarning(
+                    this,
                     "Información incompleta",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Hay información incompleta. Revise los campos marcados.");
             }
 
             return esValido;
@@ -1805,13 +1849,12 @@ namespace Aseguranza.Ventanas
                     "No se pudieron cargar las cámaras.",
                     true);
 
-                MessageBox.Show(
+                AppDialog.ShowWarning(
+                    this,
+                    "Error de cámara",
                     "No se pudieron cargar las cámaras.\n\n" +
                     "Detalle: " +
-                    ex.Message,
-                    "Error de cámara",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    ex.Message);
             }
         }
 
@@ -2069,11 +2112,10 @@ namespace Aseguranza.Ventanas
             if (camara is not null &&
                 camara.IsRunning)
             {
-                MessageBox.Show(
-                    "La cámara está activa. Primero capture la fotografía o detenga la cámara antes de guardar.",
+                AppDialog.ShowWarning(
+                    this,
                     "Cámara activa",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "La cámara está activa. Primero capture la fotografía o detenga la cámara antes de guardar.");
 
                 return;
             }
@@ -2157,11 +2199,10 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    MessageBox.Show(
-                        "Debe capturar o seleccionar una fotografía.",
+                    AppDialog.ShowWarning(
+                        this,
                         "Foto requerida",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
+                        "Debe capturar o seleccionar una fotografía.");
 
                     return;
                 }
@@ -2192,11 +2233,10 @@ namespace Aseguranza.Ventanas
                 if (respuesta.Id == 1 ||
                     respuesta.Id == 3)
                 {
-                    MessageBox.Show(
-                        respuesta.Nombre,
+                    AppDialog.ShowInfo(
+                        this,
                         "Resultado",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        respuesta.Nombre);
 
                     NoRelojGuardado =
                         txtNoReloj.Text.Trim();
@@ -2211,11 +2251,10 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    MessageBox.Show(
-                        respuesta.Nombre,
+                    AppDialog.ShowError(
+                        this,
                         "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                        respuesta.Nombre);
 
                     MostrarEstado(
                         "No se pudo guardar el trabajador.",
@@ -2224,13 +2263,12 @@ namespace Aseguranza.Ventanas
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
+                AppDialog.ShowError(
+                    this,
+                    "Error",
                     "Ocurrió un error al guardar el trabajador.\n\n" +
                     "Detalle: " +
-                    ex.Message,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    ex.Message);
 
                 MostrarEstado(
                     "Ocurrió un error al guardar.",
@@ -2318,14 +2356,13 @@ namespace Aseguranza.Ventanas
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
+                AppDialog.ShowWarning(
+                    this,
+                    "Imagen no válida",
                     "No se pudo cargar la imagen seleccionada.\n\n" +
                     "Verifique que el archivo sea una imagen válida JPG, PNG o BMP.\n\n" +
                     "Detalle: " +
-                    ex.Message,
-                    "Imagen no válida",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    ex.Message);
 
                 MostrarEstado(
                     "No se pudo cargar la imagen seleccionada.",
@@ -2357,16 +2394,15 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            DialogResult respuesta =
-                MessageBox.Show(
+            bool confirmarCierre =
+                AppDialog.Confirm(
+                    this,
+                    "Cambios sin guardar",
                     "Hay información capturada sin guardar.\n\n" +
                     "¿Desea cerrar la ventana y descartar los cambios?",
-                    "Cambios sin guardar",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+                    "Descartar");
 
-            if (respuesta !=
-                DialogResult.Yes)
+            if (!confirmarCierre)
             {
                 e.Cancel =
                     true;
@@ -2487,11 +2523,10 @@ namespace Aseguranza.Ventanas
 
             if (cbCamaras.SelectedItem is null)
             {
-                MessageBox.Show(
-                    "Seleccione una cámara.",
+                AppDialog.ShowWarning(
+                    this,
                     "Cámara",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Seleccione una cámara.");
 
                 MostrarEstado(
                     "Seleccione una cámara para iniciar.",
@@ -2544,22 +2579,20 @@ namespace Aseguranza.Ventanas
             if (camara is null ||
                 !camara.IsRunning)
             {
-                MessageBox.Show(
-                    "La cámara no está activa.",
+                AppDialog.ShowWarning(
+                    this,
                     "Advertencia",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "La cámara no está activa.");
 
                 return;
             }
 
             if (pictureBox1.Image is null)
             {
-                MessageBox.Show(
-                    "Todavía no se ha recibido una imagen de la cámara.",
+                AppDialog.ShowWarning(
+                    this,
                     "Advertencia",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Todavía no se ha recibido una imagen de la cámara.");
 
                 return;
             }
@@ -2737,11 +2770,10 @@ namespace Aseguranza.Ventanas
         {
             if (pictureBox1.Image is null)
             {
-                MessageBox.Show(
-                    "No hay fotografía para mostrar.",
+                AppDialog.ShowInfo(
+                    this,
                     "Vista previa",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "No hay fotografía para mostrar.");
 
                 return;
             }
@@ -2888,15 +2920,14 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
-            DialogResult respuesta =
-                MessageBox.Show(
-                    "¿Desea quitar la fotografía actual?",
+            bool confirmar =
+                AppDialog.Confirm(
+                    this,
                     "Quitar fotografía",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
+                    "¿Desea quitar la fotografía actual?",
+                    "Quitar");
 
-            if (respuesta !=
-                DialogResult.Yes)
+            if (!confirmar)
             {
                 return;
             }

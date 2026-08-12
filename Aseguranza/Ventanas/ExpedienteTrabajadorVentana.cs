@@ -496,8 +496,13 @@ namespace Aseguranza.Ventanas
 
         private void CargarExpediente()
         {
-            DataTable dt = Clases.ExpedienteTrabajador.ConsultarExpedienteTrabajador(idTrabajador);
-            dgvExpediente.DataSource = dt;
+            DataTable dt =
+                Clases.ExpedienteTrabajador
+                    .ConsultarExpedienteTrabajador(
+                        idTrabajador);
+
+            dgvExpediente.DataSource =
+                dt;
 
             OcultarColumnasExpediente();
             ConfigurarColumnasExpediente();
@@ -505,8 +510,105 @@ namespace Aseguranza.Ventanas
             PintarArchivosFaltantes();
 
             ActualizarResumenExpediente();
+
+            SincronizarSeleccionExpediente();
+        }
+
+        // =========================================================
+        // SINCRONIZAR SELECCIÓN DEL EXPEDIENTE
+        // =========================================================
+
+        private void SincronizarSeleccionExpediente()
+        {
+            if (dgvExpediente.Rows.Count == 0)
+            {
+                dgvExpediente.ClearSelection();
+
+                dgvExpediente.CurrentCell =
+                    null;
+
+                ActualizarEstadoBotones();
+                ActualizarArchivoSeleccionado();
+                MostrarVistaPreviaSeleccionada();
+
+                return;
+            }
+
+            if (dgvExpediente.CurrentRow is null)
+            {
+                dgvExpediente.ClearSelection();
+
+                DataGridViewRow primeraFila =
+                    dgvExpediente.Rows[0];
+
+                primeraFila.Selected =
+                    true;
+
+                DataGridViewCell? primeraCeldaVisible =
+                    primeraFila.Cells
+                        .Cast<DataGridViewCell>()
+                        .FirstOrDefault(
+                            celda =>
+                                celda.Visible);
+
+                if (primeraCeldaVisible is not null)
+                {
+                    dgvExpediente.CurrentCell =
+                        primeraCeldaVisible;
+                }
+            }
+
             ActualizarEstadoBotones();
             ActualizarArchivoSeleccionado();
+            MostrarVistaPreviaSeleccionada();
+
+            // WinForms puede terminar de establecer CurrentRow después
+            // de asignar el DataSource. Esta segunda sincronización
+            // garantiza que los botones queden correctos desde el inicio.
+            if (IsHandleCreated &&
+                !IsDisposed &&
+                !Disposing)
+            {
+                BeginInvoke(
+                    new Action(
+                        () =>
+                        {
+                            if (IsDisposed ||
+                                Disposing)
+                            {
+                                return;
+                            }
+
+                            if (dgvExpediente.Rows.Count > 0 &&
+                                dgvExpediente.CurrentRow is null)
+                            {
+                                dgvExpediente.ClearSelection();
+
+                                DataGridViewRow primeraFila =
+                                    dgvExpediente.Rows[0];
+
+                                primeraFila.Selected =
+                                    true;
+
+                                DataGridViewCell? primeraCeldaVisible =
+                                    primeraFila.Cells
+                                        .Cast<DataGridViewCell>()
+                                        .FirstOrDefault(
+                                            celda =>
+                                                celda.Visible);
+
+                                if (primeraCeldaVisible is not null)
+                                {
+                                    dgvExpediente.CurrentCell =
+                                        primeraCeldaVisible;
+                                }
+                            }
+
+                            ActualizarEstadoBotones();
+                            ActualizarArchivoSeleccionado();
+                            MostrarVistaPreviaSeleccionada();
+                        }));
+            }
         }
 
         private void ActualizarArchivoSeleccionado()
@@ -665,20 +767,52 @@ namespace Aseguranza.Ventanas
 
         private void FuenteVideo_NewFrame(object sender, NewFrameEventArgs eventArgs)
         {
-            Bitmap frame = (Bitmap)eventArgs.Frame.Clone();
+            Bitmap frame =
+                (Bitmap)eventArgs.Frame.Clone();
 
-            if (pbCamara.InvokeRequired)
+            if (!camaraActiva ||
+                IsDisposed ||
+                pbCamara.IsDisposed)
             {
-                pbCamara.BeginInvoke(new MethodInvoker(delegate
+                frame.Dispose();
+                return;
+            }
+
+            try
+            {
+                if (pbCamara.InvokeRequired)
                 {
+                    pbCamara.BeginInvoke(
+                        new MethodInvoker(
+                            delegate
+                            {
+                                if (!camaraActiva ||
+                                    IsDisposed ||
+                                    pbCamara.IsDisposed)
+                                {
+                                    frame.Dispose();
+                                    return;
+                                }
+
+                                pbCamara.Image?.Dispose();
+                                pbCamara.Image = frame;
+                            }));
+                }
+                else
+                {
+                    if (!camaraActiva)
+                    {
+                        frame.Dispose();
+                        return;
+                    }
+
                     pbCamara.Image?.Dispose();
                     pbCamara.Image = frame;
-                }));
+                }
             }
-            else
+            catch
             {
-                pbCamara.Image?.Dispose();
-                pbCamara.Image = frame;
+                frame.Dispose();
             }
         }
 
@@ -737,46 +871,64 @@ namespace Aseguranza.Ventanas
         }
 
 
-        private void DetenerCamara()
+        private void DetenerCamara(
+            bool conservarImagenActual = false)
         {
             try
             {
+                camaraActiva = false;
+
                 if (fuenteVideo != null)
                 {
+                    fuenteVideo.NewFrame -=
+                        FuenteVideo_NewFrame;
+
                     if (fuenteVideo.IsRunning)
                     {
                         fuenteVideo.SignalToStop();
                         fuenteVideo.WaitForStop();
                     }
 
-                    fuenteVideo.NewFrame -= FuenteVideo_NewFrame;
                     fuenteVideo = null;
                 }
 
-                camaraActiva = false;
+                btnIniciarCamara.Text =
+                    "Iniciar cámara";
 
-                btnIniciarCamara.Text = "Iniciar cámara";
-                btnCapturar.Enabled = false;
+                btnCapturar.Enabled =
+                    false;
+
                 ButtonStyler.UpdateEnabledState(
                     btnCapturar,
                     AppColors.Primary);
-                cbCamaras.Enabled = true;
 
-                pbCamara.Image?.Dispose();
-                pbCamara.Image = null;
+                cbCamaras.Enabled =
+                    true;
 
-                MostrarVistaPreviaSeleccionada();
+                if (!conservarImagenActual)
+                {
+                    pbCamara.Image?.Dispose();
+                    pbCamara.Image = null;
+
+                    MostrarVistaPreviaSeleccionada();
+                }
             }
             catch
             {
                 camaraActiva = false;
 
-                btnIniciarCamara.Text = "Iniciar cámara";
-                btnCapturar.Enabled = false;
+                btnIniciarCamara.Text =
+                    "Iniciar cámara";
+
+                btnCapturar.Enabled =
+                    false;
+
                 ButtonStyler.UpdateEnabledState(
                     btnCapturar,
                     AppColors.Primary);
-                cbCamaras.Enabled = true;
+
+                cbCamaras.Enabled =
+                    true;
             }
         }
 
@@ -1231,15 +1383,31 @@ namespace Aseguranza.Ventanas
 
             try
             {
-                using Bitmap fotoCapturada = new Bitmap(pbCamara.Image);
+                using Bitmap fotoCapturada =
+                    new Bitmap(
+                        pbCamara.Image);
 
-                string nombreArchivo = $"{DateTime.Now:yyyyMMdd_HHmmss}_FotoExpediente.jpg";
+                // Al capturar, la cámara debe detenerse para liberar
+                // el dispositivo y dejar claro qué imagen se tomó.
+                DetenerCamara(
+                    conservarImagenActual: true);
+
+                string nombreArchivo =
+                    $"{DateTime.Now:yyyyMMdd_HHmmss}_FotoExpediente.jpg";
 
                 GuardarImagenEnExpediente(
                     fotoCapturada,
                     nombreArchivo,
-                    txtComentario.Text.Trim()
-                );
+                    txtComentario.Text.Trim());
+
+                // CargarExpediente puede actualizar la selección del grid.
+                // Volvemos a mostrar explícitamente la foto capturada para
+                // que la vista previa quede congelada en esa imagen.
+                pbCamara.Image?.Dispose();
+
+                pbCamara.Image =
+                    new Bitmap(
+                        fotoCapturada);
             }
             catch (Exception error)
             {

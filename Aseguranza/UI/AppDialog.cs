@@ -34,7 +34,7 @@ namespace Aseguranza.UI
 
         private AppDialog(
             string title,
-            string message,
+            string? message,
             DialogType dialogType,
             Color accentColor,
             string primaryText,
@@ -193,7 +193,8 @@ namespace Aseguranza.UI
                         false,
 
                     Text =
-                        message,
+                        message ??
+                        string.Empty,
 
                     ForeColor =
                         AppColors.TextPrimary,
@@ -543,7 +544,7 @@ namespace Aseguranza.UI
         public static bool Confirm(
             Form owner,
             string title,
-            string message,
+            string? message,
             string confirmText = "Confirmar")
         {
             using AppDialog dialog =
@@ -572,7 +573,7 @@ namespace Aseguranza.UI
         public static void ShowInfo(
             Form owner,
             string title,
-            string message)
+            string? message)
         {
             using AppDialog dialog =
                 new AppDialog(
@@ -597,7 +598,7 @@ namespace Aseguranza.UI
         public static void ShowWarning(
             Form owner,
             string title,
-            string message)
+            string? message)
         {
             Color warningColor =
                 Color.FromArgb(
@@ -628,7 +629,7 @@ namespace Aseguranza.UI
         public static void ShowError(
             Form owner,
             string title,
-            string message)
+            string? message)
         {
             using AppDialog dialog =
                 new AppDialog(
