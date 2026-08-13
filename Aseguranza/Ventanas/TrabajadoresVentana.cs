@@ -1008,17 +1008,21 @@ namespace Aseguranza.Ventanas
             ConfigurarIndicadorValidacion(
                 txtNombre);
 
+            // En los ComboBox modernos el extremo derecho se utiliza
+            // para la flecha personalizada. El ErrorProvider se coloca
+            // sobre la etiqueta del campo para evitar que el icono quede
+            // recortado u oculto detrás de la flecha.
             ConfigurarIndicadorValidacion(
-                cbLocalidad);
+                lblLocalidad);
 
             ConfigurarIndicadorValidacion(
-                cbTurno);
+                lblTurno);
 
             ConfigurarIndicadorValidacion(
-                cbPlanta);
+                lblPlanta);
 
             ConfigurarIndicadorValidacion(
-                cbLinea);
+                lblLinea);
 
             ConfigurarIndicadorValidacion(
                 pictureBox1);
@@ -1399,19 +1403,19 @@ namespace Aseguranza.Ventanas
                 string.Empty);
 
             epValidacion.SetError(
-                cbLocalidad,
+                lblLocalidad,
                 string.Empty);
 
             epValidacion.SetError(
-                cbTurno,
+                lblTurno,
                 string.Empty);
 
             epValidacion.SetError(
-                cbPlanta,
+                lblPlanta,
                 string.Empty);
 
             epValidacion.SetError(
-                cbLinea,
+                lblLinea,
                 string.Empty);
 
             epValidacion.SetError(
@@ -1452,7 +1456,7 @@ namespace Aseguranza.Ventanas
                 cbLocalidad.SelectedValue is null)
             {
                 epValidacion.SetError(
-                    cbLocalidad,
+                    lblLocalidad,
                     "Seleccione la localidad.");
 
                 esValido =
@@ -1463,7 +1467,7 @@ namespace Aseguranza.Ventanas
                 cbTurno.SelectedValue is null)
             {
                 epValidacion.SetError(
-                    cbTurno,
+                    lblTurno,
                     "Seleccione el turno.");
 
                 esValido =
@@ -1474,7 +1478,7 @@ namespace Aseguranza.Ventanas
                 cbPlanta.SelectedValue is null)
             {
                 epValidacion.SetError(
-                    cbPlanta,
+                    lblPlanta,
                     "Seleccione la planta.");
 
                 esValido =
@@ -1485,7 +1489,7 @@ namespace Aseguranza.Ventanas
                 cbLinea.SelectedValue is null)
             {
                 epValidacion.SetError(
-                    cbLinea,
+                    lblLinea,
                     "Seleccione la línea.");
 
                 esValido =
@@ -2064,7 +2068,7 @@ namespace Aseguranza.Ventanas
             EventArgs e)
         {
             epValidacion.SetError(
-                cbPlanta,
+                lblPlanta,
                 string.Empty);
         }
 
@@ -2632,7 +2636,7 @@ namespace Aseguranza.Ventanas
             EventArgs e)
         {
             epValidacion.SetError(
-                cbLocalidad,
+                lblLocalidad,
                 string.Empty);
         }
 
@@ -2677,7 +2681,7 @@ namespace Aseguranza.Ventanas
             EventArgs e)
         {
             epValidacion.SetError(
-                cbTurno,
+                lblTurno,
                 string.Empty);
         }
 
@@ -2686,7 +2690,7 @@ namespace Aseguranza.Ventanas
             EventArgs e)
         {
             epValidacion.SetError(
-                cbLinea,
+                lblLinea,
                 string.Empty);
         }
 

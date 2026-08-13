@@ -15,11 +15,29 @@ namespace Aseguranza.Ventanas
         private Button? _btnSelectorFechaCertificacion;
         private Panel? _pnlControlesDatosOcultos;
 
+        private readonly ErrorProvider _epValidacion =
+            new ErrorProvider();
+
+        private Panel _pnlProceso =
+            null!;
+
+        private Panel _pnlCertificador =
+            null!;
+
+        private Panel _pnlFechaCertificacion =
+            null!;
+
         public CertificacionesTrabajadorVentana(
             Certificacion? certificacion,
             Trabajador trabajador)
         {
             InitializeComponent();
+
+            _epValidacion.ContainerControl =
+                this;
+
+            _epValidacion.BlinkStyle =
+                ErrorBlinkStyle.NeverBlink;
 
             certificacionActual = certificacion;
             trabajadorActual = trabajador;
@@ -259,7 +277,7 @@ namespace Aseguranza.Ventanas
                 "Proceso *",
                 new Point(18, 78));
 
-            Panel pnlProceso =
+            _pnlProceso =
                 CrearPanelCampo(
                     18,
                     101,
@@ -268,13 +286,16 @@ namespace Aseguranza.Ventanas
 
             ConfigurarComboBox(
                 cbProcesos,
-                pnlProceso);
+                _pnlProceso);
+
+            ConfigurarIndicadorValidacion(
+                _pnlProceso);
 
             pnlCertificacion.Controls.Add(
                 lblProceso);
 
             pnlCertificacion.Controls.Add(
-                pnlProceso);
+                _pnlProceso);
 
             // =====================================================
             // CERTIFICADOR
@@ -285,7 +306,7 @@ namespace Aseguranza.Ventanas
                 "Certificador *",
                 new Point(376, 78));
 
-            Panel pnlCertificador =
+            _pnlCertificador =
                 CrearPanelCampo(
                     376,
                     101,
@@ -294,13 +315,28 @@ namespace Aseguranza.Ventanas
 
             ConfigurarComboBox(
                 cbCertificadores,
-                pnlCertificador);
+                _pnlCertificador);
+
+            ConfigurarIndicadorValidacion(
+                _pnlCertificador);
+
+            cbCertificadores.SelectedIndexChanged +=
+                (_, _) =>
+                {
+                    if (cbCertificadores.SelectedIndex >= 0 &&
+                        cbCertificadores.SelectedValue is not null)
+                    {
+                        _epValidacion.SetError(
+                            _pnlCertificador,
+                            string.Empty);
+                    }
+                };
 
             pnlCertificacion.Controls.Add(
                 lblCertificador);
 
             pnlCertificacion.Controls.Add(
-                pnlCertificador);
+                _pnlCertificador);
 
             // =====================================================
             // FECHA DE CERTIFICACIÓN
@@ -311,7 +347,7 @@ namespace Aseguranza.Ventanas
                 "Fecha de certificación *",
                 new Point(18, 158));
 
-            Panel pnlFechaCertificacion =
+            _pnlFechaCertificacion =
                 CrearPanelCampo(
                     18,
                     181,
@@ -320,14 +356,17 @@ namespace Aseguranza.Ventanas
 
             ConfigurarSelectorFecha(
                 dtpFechaCertificacion,
-                pnlFechaCertificacion,
+                _pnlFechaCertificacion,
                 habilitado: true);
+
+            ConfigurarIndicadorValidacion(
+                _pnlFechaCertificacion);
 
             pnlCertificacion.Controls.Add(
                 lblFechaCertificacion);
 
             pnlCertificacion.Controls.Add(
-                pnlFechaCertificacion);
+                _pnlFechaCertificacion);
 
             // =====================================================
             // FECHA DE VENCIMIENTO
@@ -874,6 +913,37 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
+        // INDICADORES DE VALIDACIÓN
+        // =========================================================
+
+        private void ConfigurarIndicadorValidacion(
+            Control control)
+        {
+            _epValidacion.SetIconAlignment(
+                control,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                control,
+                2);
+        }
+
+        private void LimpiarErroresValidacion()
+        {
+            _epValidacion.SetError(
+                _pnlProceso,
+                string.Empty);
+
+            _epValidacion.SetError(
+                _pnlCertificador,
+                string.Empty);
+
+            _epValidacion.SetError(
+                _pnlFechaCertificacion,
+                string.Empty);
+        }
+
+        // =========================================================
         // LOAD
         // =========================================================
 
@@ -950,6 +1020,14 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            if (cbProcesos.SelectedIndex >= 0 &&
+                cbProcesos.SelectedValue is not null)
+            {
+                _epValidacion.SetError(
+                    _pnlProceso,
+                    string.Empty);
+            }
+
             ActualizarFechaVencimiento();
         }
 
@@ -957,6 +1035,10 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            _epValidacion.SetError(
+                _pnlFechaCertificacion,
+                string.Empty);
+
             ActualizarFechaVencimiento();
         }
 
@@ -1022,6 +1104,12 @@ namespace Aseguranza.Ventanas
             if (dtpFechaCertificacion.Value <
                 new DateTime(1753, 1, 1))
             {
+                _epValidacion.SetError(
+                    _pnlFechaCertificacion,
+                    "Seleccione una fecha de certificación válida.");
+
+                _btnSelectorFechaCertificacion?.Focus();
+
                 AppDialog.ShowWarning(
                     this,
                     "Validación",
@@ -1088,28 +1176,50 @@ namespace Aseguranza.Ventanas
 
         private bool Validar()
         {
+            LimpiarErroresValidacion();
+
+            bool esValido =
+                true;
+
+            Control? primerControlInvalido =
+                null;
+
             if (cbProcesos.SelectedIndex < 0 ||
                 cbProcesos.SelectedValue is null)
             {
-                AppDialog.ShowWarning(
-                    this,
-                    "Validación",
-                    "Selecciona un proceso.");
+                _epValidacion.SetError(
+                    _pnlProceso,
+                    "Seleccione un proceso.");
 
-                cbProcesos.Focus();
+                primerControlInvalido =
+                    cbProcesos;
 
-                return false;
+                esValido =
+                    false;
             }
 
             if (cbCertificadores.SelectedIndex < 0 ||
                 cbCertificadores.SelectedValue is null)
             {
+                _epValidacion.SetError(
+                    _pnlCertificador,
+                    "Seleccione un certificador.");
+
+                primerControlInvalido ??=
+                    cbCertificadores;
+
+                esValido =
+                    false;
+            }
+
+            if (!esValido)
+            {
+                primerControlInvalido?.Focus();
+
                 AppDialog.ShowWarning(
                     this,
-                    "Validación",
-                    "Selecciona un certificador.");
-
-                cbCertificadores.Focus();
+                    "Información incompleta",
+                    "Hay información incompleta. Revise los campos marcados.");
 
                 return false;
             }
@@ -1117,12 +1227,16 @@ namespace Aseguranza.Ventanas
             if (dtpFechaVencimiento.Value.Date <=
                 dtpFechaCertificacion.Value.Date)
             {
+                _epValidacion.SetError(
+                    _pnlFechaCertificacion,
+                    "La fecha seleccionada no produce una vigencia válida.");
+
+                _btnSelectorFechaCertificacion?.Focus();
+
                 AppDialog.ShowWarning(
                     this,
                     "Validación",
                     "La fecha de vencimiento no es válida.");
-
-                _btnSelectorFechaCertificacion?.Focus();
 
                 return false;
             }

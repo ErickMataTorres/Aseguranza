@@ -168,7 +168,7 @@ namespace Aseguranza.Ventanas
                 "Certificaciones",
                 new Size(
                     1180,
-                    650));
+                    800));
 
             DoubleBuffered =
                 true;
@@ -814,6 +814,13 @@ namespace Aseguranza.Ventanas
             int yTabla =
                 201;
 
+            /*
+             * Con ClientSize 1180 x 800:
+             * 40 px de encabezado + 10 filas de 36 px = 400 px.
+             * El panel queda en 402 px porque usa Padding(1).
+             * Así se muestran 10 trabajadores completos sin reducir
+             * la altura ni la legibilidad de las filas.
+             */
             int altoTabla =
                 pnlContenido.ClientSize.Height -
                 yTabla -

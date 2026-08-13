@@ -56,8 +56,8 @@ namespace Aseguranza
             FormStyler.CreateHeader(
                 this,
                 "Sistema de Certificaciones",
-                "Gestión y control de certificaciones del personal",
-                height: 105,
+                "Administración y control de certificaciones del personal",
+                height: 110,
                 titleX: 38,
                 titleY: 20,
                 subtitleX: 40,
@@ -240,7 +240,7 @@ namespace Aseguranza
                         true,
 
                     Text =
-                        "Sistema de gestión de certificaciones",
+                        "Sistema de administración de certificaciones",
 
                     Location =
                         new Point(
@@ -260,6 +260,39 @@ namespace Aseguranza
 
             pnlContenido.Controls.Add(
                 lblPie);
+
+            // =====================================================
+            // CONFIGURACIÓN
+            // =====================================================
+
+            Button btnConfiguracion =
+                new Button();
+
+            ButtonStyler.Apply(
+                btnConfiguracion,
+                "⚙  Configuración",
+                AppColors.Secondary,
+                string.Empty,
+                width: 176,
+                height: 42);
+
+            btnConfiguracion.Location =
+                new Point(
+                    640,
+                    442);
+
+            btnConfiguracion.Click +=
+                (_, _) =>
+                {
+                    using Ventanas.ConfiguracionVentana ventana =
+                        new Ventanas.ConfiguracionVentana();
+
+                    ventana.ShowDialog(
+                        this);
+                };
+
+            pnlContenido.Controls.Add(
+                btnConfiguracion);
 
             // =====================================================
             // SALIR

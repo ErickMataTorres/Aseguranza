@@ -15,6 +15,14 @@ namespace Aseguranza.Ventanas
 
         private bool _estiloAplicado;
 
+
+        private readonly ErrorProvider _epValidacion =
+            new ErrorProvider();
+
+        private Panel _pnlNombre =
+            null!;
+
+
         // =========================================================
         // CONSTRUCTOR
         // =========================================================
@@ -23,6 +31,12 @@ namespace Aseguranza.Ventanas
             Clases.Turno? turno)
         {
             InitializeComponent();
+
+            _epValidacion.ContainerControl =
+                this;
+
+            _epValidacion.BlinkStyle =
+                ErrorBlinkStyle.NeverBlink;
 
             turnoActual =
                 turno;
@@ -134,7 +148,7 @@ namespace Aseguranza.Ventanas
             // -----------------------------------------------------
 
             lblNombre.Text =
-                "Nombre del turno";
+                "Nombre del turno *";
 
             lblNombre.AutoSize =
                 true;
@@ -156,7 +170,7 @@ namespace Aseguranza.Ventanas
             // CONTENEDOR TEXTBOX
             // -----------------------------------------------------
 
-            Panel pnlNombre =
+            _pnlNombre =
                 new Panel
                 {
                     Name =
@@ -192,7 +206,7 @@ namespace Aseguranza.Ventanas
 
             txtNombre.Size =
                 new Size(
-                    pnlNombre.ClientSize.Width - 24,
+                    _pnlNombre.ClientSize.Width - 24,
                     25);
 
             txtNombre.Anchor =
@@ -216,11 +230,32 @@ namespace Aseguranza.Ventanas
                 "Ej. Primer turno";
 
             InputStyler.ApplyOutlinedInput(
-                pnlNombre,
+                _pnlNombre,
                 txtNombre);
 
-            pnlNombre.Controls.Add(
+
+            txtNombre.TextChanged +=
+                (_, _) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(
+                            txtNombre.Text))
+                    {
+                        _epValidacion.SetError(
+                            _pnlNombre,
+                            string.Empty);
+                    }
+                };
+
+            _pnlNombre.Controls.Add(
                 txtNombre);
+
+            _epValidacion.SetIconAlignment(
+                _pnlNombre,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                _pnlNombre,
+                0);
 
             // -----------------------------------------------------
             // AYUDA
@@ -296,7 +331,7 @@ namespace Aseguranza.Ventanas
                 lblNombre);
 
             pnlContenido.Controls.Add(
-                pnlNombre);
+                _pnlNombre);
 
             pnlContenido.Controls.Add(
                 lblAyuda);
@@ -317,6 +352,41 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
+        // VALIDACIÓN
+        // =========================================================
+
+        private void LimpiarErroresValidacion()
+        {
+            _epValidacion.SetError(
+                _pnlNombre,
+                string.Empty);
+        }
+
+        private bool ValidarInformacion()
+        {
+            LimpiarErroresValidacion();
+
+            if (!string.IsNullOrWhiteSpace(
+                    txtNombre.Text))
+            {
+                return true;
+            }
+
+            _epValidacion.SetError(
+                _pnlNombre,
+                "Capture el nombre del turno.");
+
+            txtNombre.Focus();
+
+            AppDialog.ShowWarning(
+                this,
+                "Información incompleta",
+                "Hay información incompleta. Revise el campo marcado.");
+
+            return false;
+        }
+
+        // =========================================================
         // GUARDAR / ACTUALIZAR
         // =========================================================
 
@@ -324,21 +394,13 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
-            string nombre =
-                txtNombre.Text.Trim();
-
-            if (string.IsNullOrWhiteSpace(
-                nombre))
+            if (!ValidarInformacion())
             {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato requerido",
-                    "El nombre del turno no puede estar vacío.");
-
-                txtNombre.Focus();
-
                 return;
             }
+
+            string nombre =
+                txtNombre.Text.Trim();
 
             string nombreNormalizado =
                 nombre.ToUpperInvariant();
@@ -357,6 +419,10 @@ namespace Aseguranza.Ventanas
                     "Ya existe un turno con el nombre \"" +
                     nombreNormalizado +
                     "\".");
+
+                _epValidacion.SetError(
+                    _pnlNombre,
+                    "Ya existe un turno con este nombre.");
 
                 txtNombre.Focus();
                 txtNombre.SelectAll();

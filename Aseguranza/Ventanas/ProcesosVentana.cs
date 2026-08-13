@@ -15,6 +15,20 @@ namespace Aseguranza.Ventanas
 
         private bool _estiloAplicado;
 
+
+        private readonly ErrorProvider _epValidacion =
+            new ErrorProvider();
+
+        private Panel _pnlNombre =
+            null!;
+
+        private Panel _pnlDescripcion =
+            null!;
+
+        private Panel _pnlVigencia =
+            null!;
+
+
         // =========================================================
         // CONSTRUCTOR
         // =========================================================
@@ -23,6 +37,12 @@ namespace Aseguranza.Ventanas
             Clases.Proceso? proceso)
         {
             InitializeComponent();
+
+            _epValidacion.ContainerControl =
+                this;
+
+            _epValidacion.BlinkStyle =
+                ErrorBlinkStyle.NeverBlink;
 
             procesoActual =
                 proceso;
@@ -142,7 +162,7 @@ namespace Aseguranza.Ventanas
             // =====================================================
 
             lblNombre.Text =
-                "Nombre del proceso";
+                "Nombre del proceso *";
 
             lblNombre.AutoSize =
                 true;
@@ -164,7 +184,7 @@ namespace Aseguranza.Ventanas
             // NOMBRE - CONTENEDOR
             // =====================================================
 
-            Panel pnlNombre =
+            _pnlNombre =
                 new Panel
                 {
                     Name =
@@ -200,7 +220,7 @@ namespace Aseguranza.Ventanas
 
             txtNombre.Size =
                 new Size(
-                    pnlNombre.ClientSize.Width - 24,
+                    _pnlNombre.ClientSize.Width - 24,
                     25);
 
             txtNombre.Anchor =
@@ -224,18 +244,38 @@ namespace Aseguranza.Ventanas
                 "Ej. INSPECCIÓN";
 
             InputStyler.ApplyOutlinedInput(
-                pnlNombre,
+                _pnlNombre,
                 txtNombre);
 
-            pnlNombre.Controls.Add(
+
+            txtNombre.TextChanged +=
+                (_, _) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(txtNombre.Text))
+                    {
+                        _epValidacion.SetError(
+                            _pnlNombre,
+                            string.Empty);
+                    }
+                };
+
+            _pnlNombre.Controls.Add(
                 txtNombre);
+
+            _epValidacion.SetIconAlignment(
+                _pnlNombre,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                _pnlNombre,
+                0);
 
             // =====================================================
             // DESCRIPCIÓN - LABEL
             // =====================================================
 
             lblDescripcion.Text =
-                "Descripción";
+                "Descripción *";
 
             lblDescripcion.AutoSize =
                 true;
@@ -257,7 +297,7 @@ namespace Aseguranza.Ventanas
             // DESCRIPCIÓN - CONTENEDOR
             // =====================================================
 
-            Panel pnlDescripcion =
+            _pnlDescripcion =
                 new Panel
                 {
                     Name =
@@ -293,7 +333,7 @@ namespace Aseguranza.Ventanas
 
             txtDescripcion.Size =
                 new Size(
-                    pnlDescripcion.ClientSize.Width - 24,
+                    _pnlDescripcion.ClientSize.Width - 24,
                     25);
 
             txtDescripcion.Anchor =
@@ -317,18 +357,38 @@ namespace Aseguranza.Ventanas
                 "Describe brevemente el proceso...";
 
             InputStyler.ApplyOutlinedInput(
-                pnlDescripcion,
+                _pnlDescripcion,
                 txtDescripcion);
 
-            pnlDescripcion.Controls.Add(
+
+            txtDescripcion.TextChanged +=
+                (_, _) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(txtDescripcion.Text))
+                    {
+                        _epValidacion.SetError(
+                            _pnlDescripcion,
+                            string.Empty);
+                    }
+                };
+
+            _pnlDescripcion.Controls.Add(
                 txtDescripcion);
+
+            _epValidacion.SetIconAlignment(
+                _pnlDescripcion,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                _pnlDescripcion,
+                0);
 
             // =====================================================
             // VIGENCIA - LABEL
             // =====================================================
 
             lblVigencia.Text =
-                "Vigencia (meses)";
+                "Vigencia (meses) *";
 
             lblVigencia.AutoSize =
                 true;
@@ -350,7 +410,7 @@ namespace Aseguranza.Ventanas
             // VIGENCIA - CONTENEDOR
             // =====================================================
 
-            Panel pnlVigencia =
+            _pnlVigencia =
                 new Panel
                 {
                     Name =
@@ -386,7 +446,7 @@ namespace Aseguranza.Ventanas
 
             txtVigencia.Size =
                 new Size(
-                    pnlVigencia.ClientSize.Width - 24,
+                    _pnlVigencia.ClientSize.Width - 24,
                     25);
 
             txtVigencia.Anchor =
@@ -410,11 +470,31 @@ namespace Aseguranza.Ventanas
                 "Ej. 12";
 
             InputStyler.ApplyOutlinedInput(
-                pnlVigencia,
+                _pnlVigencia,
                 txtVigencia);
 
-            pnlVigencia.Controls.Add(
+
+            txtVigencia.TextChanged +=
+                (_, _) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(txtVigencia.Text))
+                    {
+                        _epValidacion.SetError(
+                            _pnlVigencia,
+                            string.Empty);
+                    }
+                };
+
+            _pnlVigencia.Controls.Add(
                 txtVigencia);
+
+            _epValidacion.SetIconAlignment(
+                _pnlVigencia,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                _pnlVigencia,
+                0);
 
             // =====================================================
             // AYUDA
@@ -490,19 +570,19 @@ namespace Aseguranza.Ventanas
                 lblNombre);
 
             pnlContenido.Controls.Add(
-                pnlNombre);
+                _pnlNombre);
 
             pnlContenido.Controls.Add(
                 lblDescripcion);
 
             pnlContenido.Controls.Add(
-                pnlDescripcion);
+                _pnlDescripcion);
 
             pnlContenido.Controls.Add(
                 lblVigencia);
 
             pnlContenido.Controls.Add(
-                pnlVigencia);
+                _pnlVigencia);
 
             pnlContenido.Controls.Add(
                 lblAyuda);
@@ -523,6 +603,119 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
+        // VALIDACIÓN
+        // =========================================================
+
+        private void LimpiarErroresValidacion()
+        {
+            _epValidacion.SetError(
+                _pnlNombre,
+                string.Empty);
+
+            _epValidacion.SetError(
+                _pnlDescripcion,
+                string.Empty);
+
+            _epValidacion.SetError(
+                _pnlVigencia,
+                string.Empty);
+        }
+
+        private bool ValidarInformacion(
+            out int vigenciaMeses)
+        {
+            LimpiarErroresValidacion();
+
+            vigenciaMeses =
+                0;
+
+            bool esValido =
+                true;
+
+            Control? primerControlInvalido =
+                null;
+
+            if (string.IsNullOrWhiteSpace(
+                    txtNombre.Text))
+            {
+                _epValidacion.SetError(
+                    _pnlNombre,
+                    "Capture el nombre del proceso.");
+
+                primerControlInvalido =
+                    txtNombre;
+
+                esValido =
+                    false;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    txtDescripcion.Text))
+            {
+                _epValidacion.SetError(
+                    _pnlDescripcion,
+                    "Capture la descripción del proceso.");
+
+                primerControlInvalido ??=
+                    txtDescripcion;
+
+                esValido =
+                    false;
+            }
+
+            string vigenciaTexto =
+                txtVigencia.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    vigenciaTexto))
+            {
+                _epValidacion.SetError(
+                    _pnlVigencia,
+                    "Capture la vigencia en meses.");
+
+                primerControlInvalido ??=
+                    txtVigencia;
+
+                esValido =
+                    false;
+            }
+            else if (!int.TryParse(
+                         vigenciaTexto,
+                         out vigenciaMeses) ||
+                     vigenciaMeses <= 0)
+            {
+                _epValidacion.SetError(
+                    _pnlVigencia,
+                    "La vigencia debe ser un número entero mayor que cero.");
+
+                primerControlInvalido ??=
+                    txtVigencia;
+
+                esValido =
+                    false;
+            }
+
+            if (!esValido)
+            {
+                primerControlInvalido?.Focus();
+
+                if (ReferenceEquals(
+                        primerControlInvalido,
+                        txtVigencia))
+                {
+                    txtVigencia.SelectAll();
+                }
+
+                AppDialog.ShowWarning(
+                    this,
+                    "Información incompleta",
+                    "Revise los campos marcados antes de guardar.");
+            }
+
+            return esValido;
+        }
+
+        // =========================================================
         // GUARDAR / ACTUALIZAR
         // =========================================================
 
@@ -530,83 +723,17 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            if (!ValidarInformacion(
+                    out int vigenciaMeses))
+            {
+                return;
+            }
+
             string nombre =
                 txtNombre.Text.Trim();
 
             string descripcion =
                 txtDescripcion.Text.Trim();
-
-            string vigenciaTexto =
-                txtVigencia.Text.Trim();
-
-            if (string.IsNullOrWhiteSpace(
-                nombre))
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato requerido",
-                    "El nombre del proceso no puede estar vacío.");
-
-                txtNombre.Focus();
-
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                descripcion))
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato requerido",
-                    "La descripción del proceso no puede estar vacía.");
-
-                txtDescripcion.Focus();
-
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                vigenciaTexto))
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato requerido",
-                    "La vigencia del proceso no puede estar vacía.");
-
-                txtVigencia.Focus();
-
-                return;
-            }
-
-            if (!int.TryParse(
-                vigenciaTexto,
-                out int vigenciaMeses))
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato incorrecto",
-                    "La vigencia debe ser un número entero válido.");
-
-                txtVigencia.Focus();
-
-                txtVigencia.SelectAll();
-
-                return;
-            }
-
-            if (vigenciaMeses <= 0)
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato incorrecto",
-                    "La vigencia debe ser mayor que cero.");
-
-                txtVigencia.Focus();
-
-                txtVigencia.SelectAll();
-
-                return;
-            }
 
             string nombreNormalizado =
                 nombre.ToUpperInvariant();
@@ -625,6 +752,10 @@ namespace Aseguranza.Ventanas
                     "Ya existe un proceso con el nombre \"" +
                     nombreNormalizado +
                     "\".");
+
+                _epValidacion.SetError(
+                    _pnlNombre,
+                    "Ya existe un proceso con este nombre.");
 
                 txtNombre.Focus();
                 txtNombre.SelectAll();

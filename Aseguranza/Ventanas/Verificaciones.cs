@@ -204,15 +204,21 @@ namespace Aseguranza.Ventanas
             txtNoReloj.Parent =
                 pnlNoReloj;
 
+            txtNoReloj.AutoSize =
+                false;
+
             txtNoReloj.Location =
                 new Point(
-                    10,
-                    9);
+                    12,
+                    8);
 
             txtNoReloj.Size =
                 new Size(
-                    140,
+                    pnlNoReloj.ClientSize.Width - 24,
                     24);
+
+            txtNoReloj.Margin =
+                Padding.Empty;
 
             txtNoReloj.BorderStyle =
                 BorderStyle.None;
@@ -268,15 +274,21 @@ namespace Aseguranza.Ventanas
             txtNombre.Parent =
                 pnlNombreBusqueda;
 
+            txtNombre.AutoSize =
+                false;
+
             txtNombre.Location =
                 new Point(
-                    10,
-                    9);
+                    12,
+                    8);
 
             txtNombre.Size =
                 new Size(
-                    270,
+                    pnlNombreBusqueda.ClientSize.Width - 24,
                     24);
+
+            txtNombre.Margin =
+                Padding.Empty;
 
             txtNombre.BorderStyle =
                 BorderStyle.None;

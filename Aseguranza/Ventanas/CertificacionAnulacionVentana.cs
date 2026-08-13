@@ -20,6 +20,16 @@ namespace Aseguranza.Ventanas
         private Panel? _pnlControlesDatosOcultos;
         private Panel? _pnlFechaInicio;
         private Panel? _pnlFechaFin;
+
+        private Panel _pnlTipo =
+            null!;
+
+        private Panel _pnlComentarioInput =
+            null!;
+
+        private readonly ErrorProvider _epValidacion =
+            new ErrorProvider();
+
         private Label? _lblFechaInicioValor;
         private Label? _lblFechaFinValor;
         private Button? _btnFechaInicio;
@@ -32,6 +42,12 @@ namespace Aseguranza.Ventanas
             string proceso)
         {
             InitializeComponent();
+
+            _epValidacion.ContainerControl =
+                this;
+
+            _epValidacion.BlinkStyle =
+                ErrorBlinkStyle.NeverBlink;
 
             this.idCertificacion = idCertificacion;
             this.noReloj = noReloj;
@@ -260,7 +276,7 @@ namespace Aseguranza.Ventanas
                 "Tipo de anulación *",
                 new Point(18, 76));
 
-            Panel pnlTipo =
+            _pnlTipo =
                 CrearPanelCampo(
                     18,
                     99,
@@ -269,13 +285,16 @@ namespace Aseguranza.Ventanas
 
             ConfigurarComboBox(
                 cbTipoAnulacion,
-                pnlTipo);
+                _pnlTipo);
+
+            ConfigurarIndicadorValidacion(
+                _pnlTipo);
 
             pnlDatos.Controls.Add(
                 lblTipo);
 
             pnlDatos.Controls.Add(
-                pnlTipo);
+                _pnlTipo);
 
             // Fecha inicio
             ConfigurarEtiquetaFormulario(
@@ -291,6 +310,9 @@ namespace Aseguranza.Ventanas
                     42);
 
             ConfigurarSelectorFechaInicio(
+                _pnlFechaInicio);
+
+            ConfigurarIndicadorValidacion(
                 _pnlFechaInicio);
 
             pnlDatos.Controls.Add(
@@ -313,6 +335,9 @@ namespace Aseguranza.Ventanas
                     42);
 
             ConfigurarSelectorFechaFin(
+                _pnlFechaFin);
+
+            ConfigurarIndicadorValidacion(
                 _pnlFechaFin);
 
             pnlDatos.Controls.Add(
@@ -351,7 +376,7 @@ namespace Aseguranza.Ventanas
                     BackColor = Color.Transparent
                 };
 
-            Panel pnlComentarioInput =
+            _pnlComentarioInput =
                 CrearPanelCampo(
                     18,
                     43,
@@ -360,13 +385,16 @@ namespace Aseguranza.Ventanas
 
             ConfigurarTextBoxMultilinea(
                 txtComentario,
-                pnlComentarioInput);
+                _pnlComentarioInput);
+
+            ConfigurarIndicadorValidacion(
+                _pnlComentarioInput);
 
             pnlComentario.Controls.Add(
                 lblTituloComentario);
 
             pnlComentario.Controls.Add(
-                pnlComentarioInput);
+                _pnlComentarioInput);
 
             pnlContenido.Controls.Add(
                 pnlComentario);
@@ -868,6 +896,47 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
+        // INDICADORES DE VALIDACIÓN
+        // =========================================================
+
+        private void ConfigurarIndicadorValidacion(
+            Control control)
+        {
+            _epValidacion.SetIconAlignment(
+                control,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                control,
+                2);
+        }
+
+        private void LimpiarErroresValidacion()
+        {
+            _epValidacion.SetError(
+                _pnlTipo,
+                string.Empty);
+
+            if (_pnlFechaInicio is not null)
+            {
+                _epValidacion.SetError(
+                    _pnlFechaInicio,
+                    string.Empty);
+            }
+
+            if (_pnlFechaFin is not null)
+            {
+                _epValidacion.SetError(
+                    _pnlFechaFin,
+                    string.Empty);
+            }
+
+            _epValidacion.SetError(
+                _pnlComentarioInput,
+                string.Empty);
+        }
+
+        // =========================================================
         // SELECTORES DE FECHA
         // =========================================================
 
@@ -1143,6 +1212,7 @@ namespace Aseguranza.Ventanas
                 ActualizarEstadoBotonEliminar();
                 ActualizarFechaVisualInicio();
                 ActualizarFechaVisualFin();
+                LimpiarErroresValidacion();
             }
             catch (Exception error)
             {
@@ -1161,6 +1231,21 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            if (cbTipoAnulacion.SelectedItem is not null)
+            {
+                _epValidacion.SetError(
+                    _pnlTipo,
+                    string.Empty);
+            }
+
+            if (cbTipoAnulacion.Text == "Permanente" &&
+                _pnlFechaFin is not null)
+            {
+                _epValidacion.SetError(
+                    _pnlFechaFin,
+                    string.Empty);
+            }
+
             ActualizarFechaFinSegunTipo();
             ActualizarFechaVisualFin();
             ActualizarResumenAnulacion();
@@ -1170,6 +1255,13 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            if (_pnlFechaInicio is not null)
+            {
+                _epValidacion.SetError(
+                    _pnlFechaInicio,
+                    string.Empty);
+            }
+
             ActualizarFechaVisualInicio();
             ActualizarFechaFinSegunTipo();
             ActualizarFechaVisualFin();
@@ -1180,6 +1272,15 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            if (_pnlFechaFin is not null &&
+                dtpFechaFin.Value.Date >=
+                dtpFechaInicio.Value.Date)
+            {
+                _epValidacion.SetError(
+                    _pnlFechaFin,
+                    string.Empty);
+            }
+
             ActualizarFechaVisualFin();
             ActualizarResumenAnulacion();
         }
@@ -1188,6 +1289,14 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            if (!string.IsNullOrWhiteSpace(
+                    txtComentario.Text))
+            {
+                _epValidacion.SetError(
+                    _pnlComentarioInput,
+                    string.Empty);
+            }
+
             ActualizarResumenAnulacion();
         }
 
@@ -1331,41 +1440,88 @@ namespace Aseguranza.Ventanas
 
         private bool ValidarInformacion()
         {
-            if (cbTipoAnulacion.SelectedItem == null)
+            LimpiarErroresValidacion();
+
+            bool esValido =
+                true;
+
+            Control? primerControlInvalido =
+                null;
+
+            if (cbTipoAnulacion.SelectedItem is null)
             {
-                AppDialog.ShowWarning(
-                    this,
-                    "Validación",
+                _epValidacion.SetError(
+                    _pnlTipo,
                     "Seleccione el tipo de anulación.");
 
-                return false;
+                primerControlInvalido =
+                    cbTipoAnulacion;
+
+                esValido =
+                    false;
             }
 
-            if (cbTipoAnulacion.Text != "Permanente" &&
+            if (dtpFechaInicio.Value.Date <
+                new DateTime(1753, 1, 1))
+            {
+                if (_pnlFechaInicio is not null)
+                {
+                    _epValidacion.SetError(
+                        _pnlFechaInicio,
+                        "Seleccione una fecha de inicio válida.");
+                }
+
+                primerControlInvalido ??=
+                    _btnFechaInicio;
+
+                esValido =
+                    false;
+            }
+
+            if (cbTipoAnulacion.SelectedItem is not null &&
+                cbTipoAnulacion.Text != "Permanente" &&
                 dtpFechaFin.Value.Date <
                 dtpFechaInicio.Value.Date)
             {
-                AppDialog.ShowWarning(
-                    this,
-                    "Validación",
-                    "La fecha fin no puede ser menor que la fecha inicio.");
+                if (_pnlFechaFin is not null)
+                {
+                    _epValidacion.SetError(
+                        _pnlFechaFin,
+                        "La fecha fin no puede ser menor que la fecha de inicio.");
+                }
 
-                return false;
+                primerControlInvalido ??=
+                    _btnFechaFin;
+
+                esValido =
+                    false;
             }
 
             if (string.IsNullOrWhiteSpace(
                     txtComentario.Text))
             {
-                AppDialog.ShowWarning(
-                    this,
-                    "Comentario requerido",
-                    "Debe escribir un comentario indicando por qué se anuló la certificación.");
+                _epValidacion.SetError(
+                    _pnlComentarioInput,
+                    "Escriba el motivo de la anulación.");
 
-                txtComentario.Focus();
-                return false;
+                primerControlInvalido ??=
+                    txtComentario;
+
+                esValido =
+                    false;
             }
 
-            return true;
+            if (!esValido)
+            {
+                primerControlInvalido?.Focus();
+
+                AppDialog.ShowWarning(
+                    this,
+                    "Información incompleta",
+                    "Hay información incompleta o inválida. Revise los campos marcados.");
+            }
+
+            return esValido;
         }
 
         // =========================================================

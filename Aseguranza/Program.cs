@@ -16,6 +16,11 @@ namespace Aseguranza
 
             ConfigurarRegistroGlobalDeErrores();
 
+            // En una publicación portable prepara las carpetas base
+            // sin crear todavía configuracion.txt.
+            ConfiguracionSistema
+                .AsegurarEstructuraPortableBasica();
+
             bool inicializarSqlite = Array.Exists(
                 args,
                 argumento => argumento.Equals(
@@ -27,6 +32,41 @@ namespace Aseguranza
                 InicializarBaseSqlite();
                 return;
             }
+
+            bool probarRegistroLog = Array.Exists(
+                args,
+                argumento => argumento.Equals(
+                    "--test-log",
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (probarRegistroLog)
+            {
+                ProbarRegistroLog();
+                return;
+            }
+
+            if (!Clases.ConfiguracionSistema
+                    .ExisteArchivoConfiguracion())
+            {
+                using Ventanas.ConfiguracionVentana configuracionInicial =
+                    new Ventanas.ConfiguracionVentana(
+                        modoConfiguracionInicial: true);
+
+                configuracionInicial.StartPosition =
+                    FormStartPosition.CenterScreen;
+
+                DialogResult resultadoConfiguracion =
+                    configuracionInicial.ShowDialog();
+
+                if (resultadoConfiguracion !=
+                    DialogResult.OK)
+                {
+                    return;
+                }
+            }
+
+            ConfiguracionSistema
+                .AsegurarEstructuraPortableConfigurada();
 
             Application.Run(
                 new MenuPrincipal());
@@ -75,11 +115,8 @@ namespace Aseguranza
             try
             {
                 string carpetaLogs =
-                    Path.Combine(
-                        Environment.GetFolderPath(
-                            Environment.SpecialFolder.LocalApplicationData),
-                        "Aseguranza",
-                        "Logs");
+                    ConfiguracionSistema
+                        .ObtenerRutaLogs();
 
                 Directory.CreateDirectory(
                     carpetaLogs);
@@ -141,6 +178,74 @@ namespace Aseguranza
             {
                 // Un fallo en el sistema de logs nunca debe
                 // provocar otro error en la aplicación.
+            }
+        }
+
+        // =========================================================
+        // PRUEBA MANUAL DEL SISTEMA DE LOGS
+        // =========================================================
+
+        private static void ProbarRegistroLog()
+        {
+            string carpetaLogs =
+                ConfiguracionSistema
+                    .ObtenerRutaLogs();
+
+            string rutaLog =
+                Path.Combine(
+                    carpetaLogs,
+                    "aplicacion.log");
+
+            try
+            {
+                Exception excepcionPrueba =
+                    new Exception(
+                        "Prueba del sistema de logs en modo " +
+                        (ConfiguracionSistema.EsModoPortable()
+                            ? "portable."
+                            : "normal."));
+
+                RegistrarErrorGlobal(
+                    "Prueba manual de log (--test-log)",
+                    excepcionPrueba);
+
+                if (!File.Exists(
+                        rutaLog))
+                {
+                    throw new IOException(
+                        "La prueba terminó, pero no se encontró el archivo aplicacion.log.");
+                }
+
+                MessageBox.Show(
+                    "La prueba del sistema de logs se realizó correctamente." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Modo: " +
+                    (ConfiguracionSistema.EsModoPortable()
+                        ? "Portable"
+                        : "Normal") +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    rutaLog,
+                    "Prueba de logs",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "No fue posible completar la prueba del sistema de logs." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    ex.Message +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Ruta esperada:" +
+                    Environment.NewLine +
+                    rutaLog,
+                    "Error en prueba de logs",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 

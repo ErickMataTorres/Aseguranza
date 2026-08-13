@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
@@ -34,33 +35,46 @@ namespace Aseguranza.UI
                     e.Graphics.SmoothingMode =
                         SmoothingMode.AntiAlias;
 
-                    Rectangle rectangle =
-                        new Rectangle(
-                            0,
-                            0,
-                            container.Width - 1,
-                            container.Height - 1);
-
-                    using GraphicsPath path =
-                        RoundedControlHelper
-                            .CreateRoundedPath(
-                                rectangle,
-                                radius);
+                    e.Graphics.PixelOffsetMode =
+                        PixelOffsetMode.HighQuality;
 
                     Color currentColor =
                         input.Focused
                             ? activeBorder
                             : normalBorder;
 
-                    float width =
+                    float borderWidth =
                         input.Focused
                             ? 1.8F
-                            : 1F;
+                            : 1.25F;
+
+                    // Dibujamos el borde un píxel hacia adentro.
+                    // Antes se pintaba exactamente sobre el límite del Panel
+                    // y GDI+ recortaba parte de los lados superior/izquierdo,
+                    // especialmente cuando el control no tenía el foco.
+                    Rectangle rectangle =
+                        new Rectangle(
+                            1,
+                            1,
+                            Math.Max(
+                                1,
+                                container.ClientSize.Width - 3),
+                            Math.Max(
+                                1,
+                                container.ClientSize.Height - 3));
+
+                    using GraphicsPath path =
+                        RoundedControlHelper
+                            .CreateRoundedPath(
+                                rectangle,
+                                Math.Max(
+                                    1,
+                                    radius - 1));
 
                     using Pen pen =
                         new Pen(
                             currentColor,
-                            width);
+                            borderWidth);
 
                     e.Graphics.DrawPath(
                         pen,
@@ -84,6 +98,26 @@ namespace Aseguranza.UI
                 {
                     input.Focus();
                 };
+
+            container.Resize +=
+                (_, _) =>
+                {
+                    RoundedControlHelper.ApplyRoundedRegion(
+                        container,
+                        radius);
+
+                    container.Invalidate();
+                };
+
+            input.EnabledChanged +=
+                (_, _) =>
+                {
+                    container.Invalidate();
+                };
+
+            // Fuerza un primer repintado completo cuando el estilo
+            // acaba de aplicarse, sin esperar a que el usuario haga foco.
+            container.Invalidate();
         }
     }
 }

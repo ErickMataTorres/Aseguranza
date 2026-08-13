@@ -15,6 +15,17 @@ namespace Aseguranza.Ventanas
 
         private bool _estiloAplicado;
 
+
+        private readonly ErrorProvider _epValidacion =
+            new ErrorProvider();
+
+        private Panel _pnlPlanta =
+            null!;
+
+        private Panel _pnlNombre =
+            null!;
+
+
         // =========================================================
         // CONSTRUCTOR
         // =========================================================
@@ -23,6 +34,12 @@ namespace Aseguranza.Ventanas
             Clases.Linea? linea)
         {
             InitializeComponent();
+
+            _epValidacion.ContainerControl =
+                this;
+
+            _epValidacion.BlinkStyle =
+                ErrorBlinkStyle.NeverBlink;
 
             lineaActual =
                 linea;
@@ -167,7 +184,7 @@ namespace Aseguranza.Ventanas
             // =====================================================
 
             lblPlanta.Text =
-                "Planta";
+                "Planta *";
 
             lblPlanta.AutoSize =
                 true;
@@ -189,7 +206,7 @@ namespace Aseguranza.Ventanas
             // CONTENEDOR COMBOBOX
             // =====================================================
 
-            Panel pnlPlanta =
+            _pnlPlanta =
                 new Panel
                 {
                     Name =
@@ -225,7 +242,7 @@ namespace Aseguranza.Ventanas
 
             cbPlantas.Size =
                 new Size(
-                    pnlPlanta.ClientSize.Width - 16,
+                    _pnlPlanta.ClientSize.Width - 16,
                     28);
 
             cbPlantas.Anchor =
@@ -234,18 +251,39 @@ namespace Aseguranza.Ventanas
                 AnchorStyles.Right;
 
             ComboBoxStyler.ApplyOutlinedComboBox(
-                pnlPlanta,
+                _pnlPlanta,
                 cbPlantas);
 
-            pnlPlanta.Controls.Add(
+
+            cbPlantas.SelectedIndexChanged +=
+                (_, _) =>
+                {
+                    if (cbPlantas.SelectedIndex >= 0 &&
+                        cbPlantas.SelectedValue is not null)
+                    {
+                        _epValidacion.SetError(
+                            _pnlPlanta,
+                            string.Empty);
+                    }
+                };
+
+            _pnlPlanta.Controls.Add(
                 cbPlantas);
+
+            _epValidacion.SetIconAlignment(
+                _pnlPlanta,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                _pnlPlanta,
+                0);
 
             // =====================================================
             // LABEL NOMBRE
             // =====================================================
 
             lblNombre.Text =
-                "Nombre de la línea";
+                "Nombre de la línea *";
 
             lblNombre.AutoSize =
                 true;
@@ -267,7 +305,7 @@ namespace Aseguranza.Ventanas
             // CONTENEDOR NOMBRE
             // =====================================================
 
-            Panel pnlNombre =
+            _pnlNombre =
                 new Panel
                 {
                     Name =
@@ -303,7 +341,7 @@ namespace Aseguranza.Ventanas
 
             txtNombre.Size =
                 new Size(
-                    pnlNombre.ClientSize.Width - 24,
+                    _pnlNombre.ClientSize.Width - 24,
                     25);
 
             txtNombre.Anchor =
@@ -327,11 +365,32 @@ namespace Aseguranza.Ventanas
                 "Ej. ENSAMBLE 1";
 
             InputStyler.ApplyOutlinedInput(
-                pnlNombre,
+                _pnlNombre,
                 txtNombre);
 
-            pnlNombre.Controls.Add(
+
+            txtNombre.TextChanged +=
+                (_, _) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(
+                            txtNombre.Text))
+                    {
+                        _epValidacion.SetError(
+                            _pnlNombre,
+                            string.Empty);
+                    }
+                };
+
+            _pnlNombre.Controls.Add(
                 txtNombre);
+
+            _epValidacion.SetIconAlignment(
+                _pnlNombre,
+                ErrorIconAlignment.MiddleRight);
+
+            _epValidacion.SetIconPadding(
+                _pnlNombre,
+                0);
 
             // =====================================================
             // AYUDA
@@ -407,13 +466,13 @@ namespace Aseguranza.Ventanas
                 lblPlanta);
 
             pnlContenido.Controls.Add(
-                pnlPlanta);
+                _pnlPlanta);
 
             pnlContenido.Controls.Add(
                 lblNombre);
 
             pnlContenido.Controls.Add(
-                pnlNombre);
+                _pnlNombre);
 
             pnlContenido.Controls.Add(
                 lblAyuda);
@@ -434,6 +493,72 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
+        // VALIDACIÓN
+        // =========================================================
+
+        private void LimpiarErroresValidacion()
+        {
+            _epValidacion.SetError(
+                _pnlPlanta,
+                string.Empty);
+
+            _epValidacion.SetError(
+                _pnlNombre,
+                string.Empty);
+        }
+
+        private bool ValidarInformacion()
+        {
+            LimpiarErroresValidacion();
+
+            bool esValido =
+                true;
+
+            Control? primerControlInvalido =
+                null;
+
+            if (cbPlantas.SelectedIndex < 0 ||
+                cbPlantas.SelectedValue is null)
+            {
+                _epValidacion.SetError(
+                    _pnlPlanta,
+                    "Seleccione una planta.");
+
+                primerControlInvalido =
+                    cbPlantas;
+
+                esValido =
+                    false;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    txtNombre.Text))
+            {
+                _epValidacion.SetError(
+                    _pnlNombre,
+                    "Capture el nombre de la línea.");
+
+                primerControlInvalido ??=
+                    txtNombre;
+
+                esValido =
+                    false;
+            }
+
+            if (!esValido)
+            {
+                primerControlInvalido?.Focus();
+
+                AppDialog.ShowWarning(
+                    this,
+                    "Información incompleta",
+                    "Hay información incompleta. Revise los campos marcados.");
+            }
+
+            return esValido;
+        }
+
+        // =========================================================
         // GUARDAR / ACTUALIZAR
         // =========================================================
 
@@ -441,45 +566,13 @@ namespace Aseguranza.Ventanas
             object sender,
             EventArgs e)
         {
+            if (!ValidarInformacion())
+            {
+                return;
+            }
+
             string nombre =
                 txtNombre.Text.Trim();
-
-            if (cbPlantas.SelectedIndex < 0)
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato requerido",
-                    "Seleccione una planta.");
-
-                cbPlantas.Focus();
-
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                nombre))
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato requerido",
-                    "El nombre de la línea no puede estar vacío.");
-
-                txtNombre.Focus();
-
-                return;
-            }
-
-            if (cbPlantas.SelectedValue is null)
-            {
-                AppDialog.ShowWarning(
-                    this,
-                    "Dato requerido",
-                    "No fue posible obtener la planta seleccionada.");
-
-                cbPlantas.Focus();
-
-                return;
-            }
 
             int idPlanta =
                 Convert.ToInt32(
@@ -508,6 +601,10 @@ namespace Aseguranza.Ventanas
                     "\" en la planta \"" +
                     nombrePlanta +
                     "\".");
+
+                _epValidacion.SetError(
+                    _pnlNombre,
+                    "Ya existe esta línea en la planta seleccionada.");
 
                 txtNombre.Focus();
                 txtNombre.SelectAll();

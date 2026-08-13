@@ -7,6 +7,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
 
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <ApplicationIcon>Resources\Aseguranza.ico</ApplicationIcon>
+
     <!--
       WebView2 currently exposes a WPF assembly to WinForms projects,
       which can produce MSB3277 for WindowsBase even when WPF is not used.
@@ -49,6 +54,30 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.23" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\LogoContecComprimida.png">
+      <LogicalName>Aseguranza.Resources.LogoContecComprimida.png</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Resources\Aseguranza.ico" />
+    <None Include="Resources\AseguranzaIcon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      portable.flag is not copied during normal Debug/Release execution.
+      It is copied only when the application is published.
+      Its presence makes ConfiguracionSistema keep configuration, SQLite,
+      files and logs next to the portable application.
+    -->
+    <None Update="portable.flag">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
