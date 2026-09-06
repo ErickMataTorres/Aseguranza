@@ -10,7 +10,8 @@ namespace Aseguranza.Data.SQLite
     {
         public DataTable Consultar(string textoBuscar)
         {
-            DataTable tabla = new DataTable();
+            DataTable tabla =
+                CrearTablaConsultaGeneral();
 
             using SqliteConnection conexion =
                 ConexionSqlite.Crear();
@@ -43,14 +44,40 @@ namespace Aseguranza.Data.SQLite
             using SqliteDataReader lector =
                 comando.ExecuteReader();
 
-            tabla.Load(lector);
+            while (lector.Read())
+            {
+                DataRow fila =
+                    tabla.NewRow();
+
+                fila["Id"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(0));
+
+                fila["Nombre"] =
+                    lector.IsDBNull(1)
+                        ? string.Empty
+                        : lector.GetString(1);
+
+                fila["IdPlanta"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(2));
+
+                fila["NombrePlanta"] =
+                    lector.IsDBNull(3)
+                        ? string.Empty
+                        : lector.GetString(3);
+
+                tabla.Rows.Add(
+                    fila);
+            }
 
             return tabla;
         }
 
         public DataTable ConsultarPorPlanta(int idPlanta)
         {
-            DataTable tabla = new DataTable();
+            DataTable tabla =
+                CrearTablaConsultaPorPlanta();
 
             using SqliteConnection conexion =
                 ConexionSqlite.Crear();
@@ -76,7 +103,63 @@ namespace Aseguranza.Data.SQLite
             using SqliteDataReader lector =
                 comando.ExecuteReader();
 
-            tabla.Load(lector);
+            while (lector.Read())
+            {
+                DataRow fila =
+                    tabla.NewRow();
+
+                fila["Id"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(0));
+
+                fila["Nombre"] =
+                    lector.IsDBNull(1)
+                        ? string.Empty
+                        : lector.GetString(1);
+
+                tabla.Rows.Add(
+                    fila);
+            }
+
+            return tabla;
+        }
+
+        private static DataTable CrearTablaConsultaGeneral()
+        {
+            DataTable tabla =
+                new DataTable();
+
+            tabla.Columns.Add(
+                "Id",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "Nombre",
+                typeof(string));
+
+            tabla.Columns.Add(
+                "IdPlanta",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "NombrePlanta",
+                typeof(string));
+
+            return tabla;
+        }
+
+        private static DataTable CrearTablaConsultaPorPlanta()
+        {
+            DataTable tabla =
+                new DataTable();
+
+            tabla.Columns.Add(
+                "Id",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "Nombre",
+                typeof(string));
 
             return tabla;
         }

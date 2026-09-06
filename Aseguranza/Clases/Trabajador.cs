@@ -57,6 +57,14 @@ namespace Aseguranza.Clases
                     textoBuscar ?? string.Empty);
         }
 
+        public static DataTable
+            ConsultarTrabajadoresParaImportacionHdc()
+        {
+            return RepositorioFactory
+                .CrearTrabajadorRepository()
+                .ConsultarParaImportacionHdc();
+        }
+
         public static Mensaje BorrarTrabajador(
             int id)
         {

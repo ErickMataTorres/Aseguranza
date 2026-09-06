@@ -1275,6 +1275,8 @@ namespace Aseguranza.Ventanas
             if (!dgvCertificaciones.Columns.Contains("DiasRestantes"))
                 return "";
 
+            const int maxProcesosCredencial = 10;
+
             HashSet<string> procesosMostrados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (DataGridViewRow row in dgvCertificaciones.Rows)
@@ -1289,6 +1291,9 @@ namespace Aseguranza.Ventanas
 
                 if (!procesosMostrados.Add(proceso))
                     continue;
+
+                if (procesosMostrados.Count > maxProcesosCredencial)
+                    break;
 
                 object? diasObj =
                     row.Cells["DiasRestantes"]?.Value;
@@ -1403,7 +1408,7 @@ namespace Aseguranza.Ventanas
             StringBuilder sb = new StringBuilder();
 
             int numero = 1;
-            int maxFilas = 8;
+            int maxFilas = 10;
 
             foreach (DataGridViewRow row in dgvCertificaciones.Rows)
             {

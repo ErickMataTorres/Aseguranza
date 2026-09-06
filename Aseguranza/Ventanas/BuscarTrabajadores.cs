@@ -245,7 +245,7 @@ namespace Aseguranza.Ventanas
                 AppFonts.Light(11F);
 
             txtBuscar.PlaceholderText =
-                "Escribe nombre, número de reloj, localidad, turno, planta o línea...";
+                "Escribe nombre, número de reloj, turno, planta o línea...";
 
             InputStyler.ApplyOutlinedInput(
                 pnlBuscar,
@@ -334,6 +334,14 @@ namespace Aseguranza.Ventanas
 
             DataGridViewStyler.ApplyCatalogStyle(
                 dgvTrabajadores);
+
+            /*
+             * Las columnas se crean explícitamente como texto.
+             * Esto evita que WinForms infiera tipos incorrectos
+             * y garantiza que NombreLinea pueda mostrar
+             * "SIN ASIGNAR" sin problemas.
+             */
+            PrepararColumnasTrabajadores();
 
             // =====================================================
             // PANEL TABLA
@@ -486,6 +494,137 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
+        // ESTRUCTURA DE COLUMNAS DEL DATAGRIDVIEW
+        // =========================================================
+
+        private void PrepararColumnasTrabajadores()
+        {
+            dgvTrabajadores.AutoGenerateColumns =
+                false;
+
+            dgvTrabajadores.Columns.Clear();
+
+            AgregarColumnaTexto(
+                "Id",
+                "Id",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NoReloj",
+                "NO. RELOJ",
+                15,
+                true);
+
+            AgregarColumnaTexto(
+                "Nombre",
+                "NOMBRE",
+                40,
+                true);
+
+            AgregarColumnaTexto(
+                "RutaFoto",
+                "RutaFoto",
+                0,
+                false);
+
+            /*
+             * Localidad se conserva temporalmente en el modelo
+             * por compatibilidad histórica, pero ya no se muestra
+             * como parte de la asignación operativa.
+             */
+            AgregarColumnaTexto(
+                "IdLocalidad",
+                "IdLocalidad",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NombreLocalidad",
+                "NombreLocalidad",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "IdTurno",
+                "IdTurno",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NombreTurno",
+                "TURNO",
+                12,
+                true);
+
+            AgregarColumnaTexto(
+                "IdPlanta",
+                "IdPlanta",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NombrePlanta",
+                "PLANTA",
+                15,
+                true);
+
+            AgregarColumnaTexto(
+                "IdLinea",
+                "IdLinea",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NombreLinea",
+                "LÍNEA",
+                18,
+                true);
+        }
+
+        private void AgregarColumnaTexto(
+            string nombre,
+            string encabezado,
+            float peso,
+            bool visible)
+        {
+            DataGridViewTextBoxColumn columna =
+                new DataGridViewTextBoxColumn
+                {
+                    Name =
+                        nombre,
+
+                    DataPropertyName =
+                        nombre,
+
+                    HeaderText =
+                        encabezado,
+
+                    Visible =
+                        visible,
+
+                    ReadOnly =
+                        true,
+
+                    AutoSizeMode =
+                        visible
+                            ? DataGridViewAutoSizeColumnMode.Fill
+                            : DataGridViewAutoSizeColumnMode.NotSet,
+
+                    FillWeight =
+                        visible
+                            ? peso
+                            : 100F,
+
+                    SortMode =
+                        DataGridViewColumnSortMode.Automatic
+                };
+
+            dgvTrabajadores.Columns.Add(
+                columna);
+        }
+
+        // =========================================================
         // CARGAR TRABAJADORES
         // =========================================================
 
@@ -560,32 +699,27 @@ namespace Aseguranza.Ventanas
             ConfigurarColumna(
                 "NoReloj",
                 "NO. RELOJ",
-                14);
+                15);
 
             ConfigurarColumna(
                 "Nombre",
                 "NOMBRE",
-                34);
-
-            ConfigurarColumna(
-                "NombreLocalidad",
-                "LOCALIDAD",
-                13);
+                40);
 
             ConfigurarColumna(
                 "NombreTurno",
                 "TURNO",
-                10);
+                12);
 
             ConfigurarColumna(
                 "NombrePlanta",
                 "PLANTA",
-                12);
+                15);
 
             ConfigurarColumna(
                 "NombreLinea",
                 "LÍNEA",
-                17);
+                18);
         }
 
         private void OcultarColumna(

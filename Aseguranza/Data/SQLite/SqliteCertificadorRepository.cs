@@ -1,4 +1,4 @@
-using Aseguranza.Clases;
+﻿using Aseguranza.Clases;
 using Aseguranza.Data.Interfaces;
 using Microsoft.Data.Sqlite;
 using System;
@@ -30,19 +30,22 @@ namespace Aseguranza.Data.SQLite
                     T.RutaFoto,
                     T.IdTurno,
                     Tu.Nombre AS NombreTurno,
-                    Li.IdPlanta,
+                    T.IdPlanta,
                     P.Nombre AS NombrePlanta,
                     T.IdLinea,
-                    Li.Nombre AS NombreLinea
+                    COALESCE(
+                        Li.Nombre,
+                        'SIN ASIGNAR'
+                    ) AS NombreLinea
                 FROM Certificador AS C
                 INNER JOIN Trabajador AS T
                     ON T.Id = C.IdTrabajador
                 INNER JOIN Turno AS Tu
                     ON Tu.Id = T.IdTurno
-                INNER JOIN Linea AS Li
-                    ON Li.Id = T.IdLinea
                 INNER JOIN Planta AS P
-                    ON P.Id = Li.IdPlanta
+                    ON P.Id = T.IdPlanta
+                LEFT JOIN Linea AS Li
+                    ON Li.Id = T.IdLinea
                 WHERE T.NoReloj
                           LIKE @TextoBuscar COLLATE NOCASE
                    OR T.Nombre
@@ -51,8 +54,10 @@ namespace Aseguranza.Data.SQLite
                           LIKE @TextoBuscar COLLATE NOCASE
                    OR P.Nombre
                           LIKE @TextoBuscar COLLATE NOCASE
-                   OR Li.Nombre
-                          LIKE @TextoBuscar COLLATE NOCASE
+                   OR COALESCE(
+                          Li.Nombre,
+                          'SIN ASIGNAR'
+                      ) LIKE @TextoBuscar COLLATE NOCASE
                 ORDER BY T.Nombre;
                 """;
 
@@ -63,9 +68,137 @@ namespace Aseguranza.Data.SQLite
             using SqliteDataReader lector =
                 comando.ExecuteReader();
 
-            tabla.Load(lector);
+            /*
+             * No usamos DataTable.Load(lector).
+             *
+             * Con Microsoft.Data.Sqlite, Load puede inferir metadatos
+             * de columna que después provocan que WinForms trate
+             * NombreLinea como un tipo distinto de string.
+             *
+             * Definimos el esquema explícitamente y cargamos
+             * las filas manualmente.
+             */
+            PrepararTablaConsulta(
+                tabla);
+
+            while (lector.Read())
+            {
+                DataRow fila =
+                    tabla.NewRow();
+
+                fila["Id"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(0));
+
+                fila["IdTrabajador"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(1));
+
+                fila["NoReloj"] =
+                    lector.IsDBNull(2)
+                        ? string.Empty
+                        : lector.GetString(2);
+
+                fila["NombreTrabajador"] =
+                    lector.IsDBNull(3)
+                        ? string.Empty
+                        : lector.GetString(3);
+
+                fila["RutaFoto"] =
+                    lector.IsDBNull(4)
+                        ? DBNull.Value
+                        : lector.GetString(4);
+
+                fila["IdTurno"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(5));
+
+                fila["NombreTurno"] =
+                    lector.IsDBNull(6)
+                        ? string.Empty
+                        : lector.GetString(6);
+
+                fila["IdPlanta"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(7));
+
+                fila["NombrePlanta"] =
+                    lector.IsDBNull(8)
+                        ? string.Empty
+                        : lector.GetString(8);
+
+                fila["IdLinea"] =
+                    lector.IsDBNull(9)
+                        ? DBNull.Value
+                        : Convert.ToInt32(
+                            lector.GetInt64(9));
+
+                fila["NombreLinea"] =
+                    lector.IsDBNull(10)
+                        ? "SIN ASIGNAR"
+                        : lector.GetString(10);
+
+                tabla.Rows.Add(
+                    fila);
+            }
 
             return tabla;
+        }
+
+        private static void PrepararTablaConsulta(
+            DataTable tabla)
+        {
+            tabla.Columns.Add(
+                "Id",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "IdTrabajador",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "NoReloj",
+                typeof(string));
+
+            tabla.Columns.Add(
+                "NombreTrabajador",
+                typeof(string));
+
+            DataColumn columnaRutaFoto =
+                tabla.Columns.Add(
+                    "RutaFoto",
+                    typeof(string));
+
+            columnaRutaFoto.AllowDBNull =
+                true;
+
+            tabla.Columns.Add(
+                "IdTurno",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "NombreTurno",
+                typeof(string));
+
+            tabla.Columns.Add(
+                "IdPlanta",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "NombrePlanta",
+                typeof(string));
+
+            DataColumn columnaIdLinea =
+                tabla.Columns.Add(
+                    "IdLinea",
+                    typeof(int));
+
+            columnaIdLinea.AllowDBNull =
+                true;
+
+            tabla.Columns.Add(
+                "NombreLinea",
+                typeof(string));
         }
 
         public Mensaje Guardar(

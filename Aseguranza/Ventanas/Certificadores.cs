@@ -340,16 +340,14 @@ namespace Aseguranza.Ventanas
             // LOCALIDAD
             // =====================================================
 
-            ConfigurarEtiquetaCampo(
-                lblLocalidad,
-                "Localidad:",
-                18,
-                180);
+            // Localidad se conserva temporalmente en el Designer y
+            // en el modelo por compatibilidad histórica, pero ya no
+            // forma parte de la asignación operativa del trabajador.
+            lblLocalidad.Visible =
+                false;
 
-            ConfigurarEtiquetaValor(
-                lblMostrarLocalidad,
-                110,
-                180);
+            lblMostrarLocalidad.Visible =
+                false;
 
             // =====================================================
             // TURNO
@@ -358,12 +356,12 @@ namespace Aseguranza.Ventanas
             ConfigurarEtiquetaCampo(
                 lblTurno,
                 "Turno:",
-                230,
+                18,
                 180);
 
             ConfigurarEtiquetaValor(
                 lblMostrarTurno,
-                282,
+                70,
                 180);
 
             // =====================================================
@@ -373,12 +371,12 @@ namespace Aseguranza.Ventanas
             ConfigurarEtiquetaCampo(
                 lblPlanta,
                 "Planta:",
-                390,
+                270,
                 180);
 
             ConfigurarEtiquetaValor(
                 lblMostrarPlanta,
-                445,
+                325,
                 180);
 
             // =====================================================
@@ -388,12 +386,12 @@ namespace Aseguranza.Ventanas
             ConfigurarEtiquetaCampo(
                 lblLinea,
                 "Línea:",
-                550,
+                520,
                 180);
 
             ConfigurarEtiquetaValor(
                 lblMostrarLinea,
-                598,
+                568,
                 180);
 
             // =====================================================
@@ -426,12 +424,6 @@ namespace Aseguranza.Ventanas
 
             pnlTrabajador.Controls.Add(
                 lblMostrarNombre);
-
-            pnlTrabajador.Controls.Add(
-                lblLocalidad);
-
-            pnlTrabajador.Controls.Add(
-                lblMostrarLocalidad);
 
             pnlTrabajador.Controls.Add(
                 lblTurno);
@@ -769,6 +761,15 @@ namespace Aseguranza.Ventanas
             DataGridViewStyler.ApplyCatalogStyle(
                 dgvCertificadores);
 
+            /*
+             * Las columnas se crean explícitamente como texto.
+             *
+             * Esto evita que WinForms infiera un tipo incorrecto
+             * para NombreLinea cuando SQLite devuelve
+             * "SIN ASIGNAR".
+             */
+            PrepararColumnasCertificadores();
+
             // =====================================================
             // PANEL TABLA
             // =====================================================
@@ -973,6 +974,126 @@ namespace Aseguranza.Ventanas
                 AppFonts.Regular(
                     12F,
                     FontStyle.Bold);
+        }
+
+        // =========================================================
+        // ESTRUCTURA DE COLUMNAS DEL DATAGRIDVIEW
+        // =========================================================
+
+        private void PrepararColumnasCertificadores()
+        {
+            dgvCertificadores.AutoGenerateColumns =
+                false;
+
+            dgvCertificadores.Columns.Clear();
+
+            AgregarColumnaTexto(
+                "Id",
+                "Id",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "IdTrabajador",
+                "IdTrabajador",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NoReloj",
+                "NO. RELOJ",
+                15,
+                true);
+
+            AgregarColumnaTexto(
+                "NombreTrabajador",
+                "NOMBRE",
+                35,
+                true);
+
+            AgregarColumnaTexto(
+                "RutaFoto",
+                "RutaFoto",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "IdTurno",
+                "IdTurno",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NombreTurno",
+                "TURNO",
+                15,
+                true);
+
+            AgregarColumnaTexto(
+                "IdPlanta",
+                "IdPlanta",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NombrePlanta",
+                "PLANTA",
+                15,
+                true);
+
+            AgregarColumnaTexto(
+                "IdLinea",
+                "IdLinea",
+                0,
+                false);
+
+            AgregarColumnaTexto(
+                "NombreLinea",
+                "LÍNEA",
+                20,
+                true);
+        }
+
+        private void AgregarColumnaTexto(
+            string nombre,
+            string encabezado,
+            float peso,
+            bool visible)
+        {
+            DataGridViewTextBoxColumn columna =
+                new DataGridViewTextBoxColumn
+                {
+                    Name =
+                        nombre,
+
+                    DataPropertyName =
+                        nombre,
+
+                    HeaderText =
+                        encabezado,
+
+                    Visible =
+                        visible,
+
+                    ReadOnly =
+                        true,
+
+                    AutoSizeMode =
+                        visible
+                            ? DataGridViewAutoSizeColumnMode.Fill
+                            : DataGridViewAutoSizeColumnMode.NotSet,
+
+                    FillWeight =
+                        visible
+                            ? peso
+                            : 100F,
+
+                    SortMode =
+                        DataGridViewColumnSortMode.Automatic
+                };
+
+            dgvCertificadores.Columns.Add(
+                columna);
         }
 
         // =========================================================
@@ -1192,8 +1313,10 @@ namespace Aseguranza.Ventanas
                 "—";
 
             lblMostrarLinea.Text =
-                trabajador.NombreLinea ??
-                "—";
+                string.IsNullOrWhiteSpace(
+                    trabajador.NombreLinea)
+                    ? "SIN ASIGNAR"
+                    : trabajador.NombreLinea;
 
             MostrarFotografia(
                 trabajador.RutaFoto);

@@ -445,7 +445,7 @@ namespace Aseguranza.Ventanas
                     10.5F);
 
             txtBuscar.PlaceholderText =
-                "No. Reloj, nombre, localidad, turno, planta o línea...";
+                "No. Reloj, nombre, turno, planta o línea...";
 
             InputStyler.ApplyOutlinedInput(
                 pnlBuscar,
@@ -1115,6 +1115,165 @@ namespace Aseguranza.Ventanas
                 .ColumnHeadersDefaultCellStyle
                 .Alignment =
                     DataGridViewContentAlignment.MiddleCenter;
+
+            /*
+             * Definimos las columnas explícitamente como texto.
+             * Esto evita inferencias incorrectas de tipo desde SQLite
+             * y permite mostrar "SIN ASIGNAR" sin errores.
+             */
+            PrepararColumnasTrabajadores();
+        }
+
+        // =========================================================
+        // ESTRUCTURA DE COLUMNAS DEL DATAGRIDVIEW
+        // =========================================================
+
+        private void PrepararColumnasTrabajadores()
+        {
+            dgvTrabajadores.AutoGenerateColumns =
+                false;
+
+            dgvTrabajadores.Columns.Clear();
+
+            AgregarColumnaTexto(
+                "Id",
+                "Id",
+                0,
+                false,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "NoReloj",
+                "NO. RELOJ",
+                70,
+                true,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "Nombre",
+                "TRABAJADOR",
+                260,
+                true,
+                DataGridViewContentAlignment.MiddleLeft);
+
+            AgregarColumnaTexto(
+                "RutaFoto",
+                "RutaFoto",
+                0,
+                false,
+                DataGridViewContentAlignment.MiddleLeft);
+
+            AgregarColumnaTexto(
+                "IdLocalidad",
+                "IdLocalidad",
+                0,
+                false,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "NombreLocalidad",
+                "NombreLocalidad",
+                0,
+                false,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "IdTurno",
+                "IdTurno",
+                0,
+                false,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "NombreTurno",
+                "TURNO",
+                80,
+                true,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "IdPlanta",
+                "IdPlanta",
+                0,
+                false,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "NombrePlanta",
+                "PLANTA",
+                90,
+                true,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "IdLinea",
+                "IdLinea",
+                0,
+                false,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "NombreLinea",
+                "LÍNEA",
+                110,
+                true,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "EstadoCertificacion",
+                "ESTADO",
+                110,
+                true,
+                DataGridViewContentAlignment.MiddleCenter);
+        }
+
+        private void AgregarColumnaTexto(
+            string nombre,
+            string encabezado,
+            float peso,
+            bool visible,
+            DataGridViewContentAlignment alineacion)
+        {
+            DataGridViewTextBoxColumn columna =
+                new DataGridViewTextBoxColumn
+                {
+                    Name =
+                        nombre,
+
+                    DataPropertyName =
+                        nombre,
+
+                    HeaderText =
+                        encabezado,
+
+                    Visible =
+                        visible,
+
+                    ReadOnly =
+                        true,
+
+                    AutoSizeMode =
+                        visible
+                            ? DataGridViewAutoSizeColumnMode.Fill
+                            : DataGridViewAutoSizeColumnMode.NotSet,
+
+                    FillWeight =
+                        visible
+                            ? peso
+                            : 100F,
+
+                    SortMode =
+                        DataGridViewColumnSortMode.Automatic
+                };
+
+            columna.DefaultCellStyle.Alignment =
+                alineacion;
+
+            columna.HeaderCell.Style.Alignment =
+                alineacion;
+
+            dgvTrabajadores.Columns.Add(
+                columna);
         }
 
         // =========================================================
@@ -1193,6 +1352,7 @@ namespace Aseguranza.Ventanas
                 "Id",
                 "RutaFoto",
                 "IdLocalidad",
+                "NombreLocalidad",
                 "IdTurno",
                 "IdPlanta",
                 "IdLinea"
@@ -1229,37 +1389,31 @@ namespace Aseguranza.Ventanas
             ConfigurarColumna(
                 "Nombre",
                 "TRABAJADOR",
-                220,
+                260,
                 DataGridViewContentAlignment.MiddleLeft);
-
-            ConfigurarColumna(
-                "NombreLocalidad",
-                "LOCALIDAD",
-                90,
-                DataGridViewContentAlignment.MiddleCenter);
 
             ConfigurarColumna(
                 "NombreTurno",
                 "TURNO",
-                70,
+                80,
                 DataGridViewContentAlignment.MiddleCenter);
 
             ConfigurarColumna(
                 "NombrePlanta",
                 "PLANTA",
-                80,
+                90,
                 DataGridViewContentAlignment.MiddleCenter);
 
             ConfigurarColumna(
                 "NombreLinea",
                 "LÍNEA",
-                90,
+                110,
                 DataGridViewContentAlignment.MiddleCenter);
 
             ConfigurarColumna(
                 "EstadoCertificacion",
                 "ESTADO",
-                100,
+                110,
                 DataGridViewContentAlignment.MiddleCenter);
         }
 
@@ -2679,7 +2833,7 @@ namespace Aseguranza.Ventanas
 
             ttAyuda.SetToolTip(
                 txtBuscar,
-                "Buscar por No. Reloj, nombre, localidad, turno, planta o línea.");
+                "Buscar por No. Reloj, nombre, turno, planta o línea.");
 
             ttAyuda.SetToolTip(
                 btnBuscar,

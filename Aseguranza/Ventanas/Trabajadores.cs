@@ -16,6 +16,8 @@ namespace Aseguranza.Ventanas
         private Label? _lblRegistros;
         private Label? _lblAvisoLimite;
 
+        private Button? _btnImportarHdc;
+
         private bool _estiloAplicado;
 
         // =========================================================
@@ -253,7 +255,7 @@ namespace Aseguranza.Ventanas
                 AppFonts.Light(11F);
 
             txtBuscar.PlaceholderText =
-                "Escribe nombre, número de reloj, localidad, turno, planta o línea...";
+                "Escribe nombre, número de reloj, turno, planta o línea...";
 
             InputStyler.ApplyOutlinedInput(
                 pnlBuscar,
@@ -332,6 +334,15 @@ namespace Aseguranza.Ventanas
 
             DataGridViewStyler.ApplyCatalogStyle(
                 dgvTrabajadores);
+
+            /*
+             * Las columnas se crean explícitamente como columnas de texto.
+             *
+             * Esto es importante ahora que NombreLinea puede contener
+             * "SIN ASIGNAR". De esta forma WinForms nunca intenta tratar
+             * ese valor como una imagen.
+             */
+            PrepararColumnasTrabajadores();
 
             // =====================================================
             // CONTENEDOR TABLA
@@ -430,6 +441,19 @@ namespace Aseguranza.Ventanas
                 AppColors.Danger,
                 AppIcons.Delete);
 
+            _btnImportarHdc =
+                new Button();
+
+            ButtonStyler.Apply(
+                _btnImportarHdc,
+                "Importar HDC",
+                AppColors.Secondary,
+                icon: null,
+                width: 170);
+
+            _btnImportarHdc.Click +=
+                btnImportarHdc_Click;
+
             ButtonStyler.Apply(
                 btnRegresar,
                 "Regresar",
@@ -454,6 +478,11 @@ namespace Aseguranza.Ventanas
                     320,
                     yBotones);
 
+            _btnImportarHdc.Location =
+                new Point(
+                    470,
+                    yBotones);
+
             btnRegresar.Location =
                 new Point(
                     pnlContenido.ClientSize.Width -
@@ -470,6 +499,10 @@ namespace Aseguranza.Ventanas
                 AnchorStyles.Left;
 
             btnBorrar.Anchor =
+                AnchorStyles.Bottom |
+                AnchorStyles.Left;
+
+            _btnImportarHdc.Anchor =
                 AnchorStyles.Bottom |
                 AnchorStyles.Left;
 
@@ -509,6 +542,9 @@ namespace Aseguranza.Ventanas
                 btnBorrar);
 
             pnlContenido.Controls.Add(
+                _btnImportarHdc);
+
+            pnlContenido.Controls.Add(
                 btnRegresar);
 
             pnlContenido.BringToFront();
@@ -518,6 +554,109 @@ namespace Aseguranza.Ventanas
             ResumeLayout(false);
 
             PerformLayout();
+        }
+
+        // =========================================================
+        // ESTRUCTURA DE COLUMNAS DEL DATAGRIDVIEW
+        // =========================================================
+
+        private void PrepararColumnasTrabajadores()
+        {
+            dgvTrabajadores.AutoGenerateColumns =
+                false;
+
+            dgvTrabajadores.Columns.Clear();
+
+            AgregarColumnaTexto(
+                "Id",
+                "Id",
+                visible: false);
+
+            AgregarColumnaTexto(
+                "NoReloj",
+                "NO. RELOJ",
+                visible: true);
+
+            AgregarColumnaTexto(
+                "Nombre",
+                "NOMBRE",
+                visible: true);
+
+            AgregarColumnaTexto(
+                "RutaFoto",
+                "RutaFoto",
+                visible: false);
+
+            AgregarColumnaTexto(
+                "IdLocalidad",
+                "IdLocalidad",
+                visible: false);
+
+            AgregarColumnaTexto(
+                "NombreLocalidad",
+                "NombreLocalidad",
+                visible: false);
+
+            AgregarColumnaTexto(
+                "IdTurno",
+                "IdTurno",
+                visible: false);
+
+            AgregarColumnaTexto(
+                "NombreTurno",
+                "TURNO",
+                visible: true);
+
+            AgregarColumnaTexto(
+                "IdPlanta",
+                "IdPlanta",
+                visible: false);
+
+            AgregarColumnaTexto(
+                "NombrePlanta",
+                "PLANTA",
+                visible: true);
+
+            AgregarColumnaTexto(
+                "IdLinea",
+                "IdLinea",
+                visible: false);
+
+            AgregarColumnaTexto(
+                "NombreLinea",
+                "LÍNEA",
+                visible: true);
+        }
+
+        private void AgregarColumnaTexto(
+            string nombre,
+            string encabezado,
+            bool visible)
+        {
+            DataGridViewTextBoxColumn columna =
+                new DataGridViewTextBoxColumn
+                {
+                    Name =
+                        nombre,
+
+                    DataPropertyName =
+                        nombre,
+
+                    HeaderText =
+                        encabezado,
+
+                    Visible =
+                        visible,
+
+                    ReadOnly =
+                        true,
+
+                    SortMode =
+                        DataGridViewColumnSortMode.Automatic
+                };
+
+            dgvTrabajadores.Columns.Add(
+                columna);
         }
 
         // =========================================================
@@ -595,32 +734,30 @@ namespace Aseguranza.Ventanas
             ConfigurarColumna(
                 "NoReloj",
                 "NO. RELOJ",
-                14);
+                15);
 
             ConfigurarColumna(
                 "Nombre",
                 "NOMBRE",
-                34);
+                38);
 
-            ConfigurarColumna(
-                "NombreLocalidad",
-                "LOCALIDAD",
-                13);
+            OcultarColumna(
+                "NombreLocalidad");
 
             ConfigurarColumna(
                 "NombreTurno",
                 "TURNO",
-                10);
+                13);
 
             ConfigurarColumna(
                 "NombrePlanta",
                 "PLANTA",
-                12);
+                15);
 
             ConfigurarColumna(
                 "NombreLinea",
                 "LÍNEA",
-                17);
+                19);
         }
 
         private void OcultarColumna(
@@ -994,6 +1131,21 @@ namespace Aseguranza.Ventanas
                 respuesta.Nombre);
 
             CargarTrabajadores();
+        }
+
+        // =========================================================
+        // IMPORTAR HDC
+        // =========================================================
+
+        private void btnImportarHdc_Click(
+            object? sender,
+            EventArgs e)
+        {
+            using ImportarHdcVentana ventana =
+                new ImportarHdcVentana();
+
+            ventana.ShowDialog(
+                this);
         }
 
         // =========================================================

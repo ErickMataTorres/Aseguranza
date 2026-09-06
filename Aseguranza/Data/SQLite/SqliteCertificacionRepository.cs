@@ -39,7 +39,10 @@ namespace Aseguranza.Data.SQLite
                     L.Nombre AS NombreLocalidad,
                     Tu.Nombre AS NombreTurno,
                     Pta.Nombre AS NombrePlanta,
-                    Li.Nombre AS NombreLinea,
+                    COALESCE(
+                        Li.Nombre,
+                        'SIN ASIGNAR'
+                    ) AS NombreLinea,
 
                     C.Id AS IdCertificacion,
                     Pr.Id AS IdProceso,
@@ -64,17 +67,28 @@ namespace Aseguranza.Data.SQLite
 
                 FROM Trabajador AS T
 
-                INNER JOIN Localidad AS L
+                /*
+                 * Localidad se conserva por compatibilidad histórica,
+                 * pero ya no es obligatoria.
+                 */
+                LEFT JOIN Localidad AS L
                     ON L.Id = T.IdLocalidad
 
                 INNER JOIN Turno AS Tu
                     ON Tu.Id = T.IdTurno
 
-                INNER JOIN Linea AS Li
-                    ON Li.Id = T.IdLinea
-
+                /*
+                 * La planta ahora pertenece directamente al trabajador.
+                 */
                 INNER JOIN Planta AS Pta
-                    ON Pta.Id = Li.IdPlanta
+                    ON Pta.Id = T.IdPlanta
+
+                /*
+                 * Línea es opcional. Un trabajador sin línea debe seguir
+                 * devolviendo una fila para poder generar su credencial.
+                 */
+                LEFT JOIN Linea AS Li
+                    ON Li.Id = T.IdLinea
 
                 LEFT JOIN Certificacion AS C
                     ON C.IdTrabajador = T.Id

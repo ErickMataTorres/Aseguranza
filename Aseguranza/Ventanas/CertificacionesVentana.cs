@@ -169,53 +169,47 @@ namespace Aseguranza.Ventanas
                 new Point(286, 49),
                 new Size(560, 24));
 
-            ConfigurarEtiquetaCampo(
-                lblLocalidad,
-                "Localidad",
-                new Point(18, 91));
-
-            ConfigurarEtiquetaValor(
-                lblMostrarLocalidad,
-                new Point(95, 89),
-                new Size(120, 24));
+            // Localidad se conserva temporalmente en el Designer y
+            // en el modelo por compatibilidad histórica, pero ya no
+            // forma parte de la asignación operativa del trabajador.
+            lblLocalidad.Visible = false;
+            lblMostrarLocalidad.Visible = false;
 
             ConfigurarEtiquetaCampo(
                 lblTurno,
                 "Turno",
-                new Point(230, 91));
+                new Point(18, 91));
 
             ConfigurarEtiquetaValor(
                 lblMostrarTurno,
-                new Point(280, 89),
-                new Size(75, 24));
+                new Point(68, 89),
+                new Size(150, 24));
 
             ConfigurarEtiquetaCampo(
                 lblPlanta,
                 "Planta",
-                new Point(380, 91));
+                new Point(245, 91));
 
             ConfigurarEtiquetaValor(
                 lblMostrarPlanta,
-                new Point(430, 89),
-                new Size(110, 24));
+                new Point(295, 89),
+                new Size(180, 24));
 
             ConfigurarEtiquetaCampo(
                 lblLinea,
                 "Línea",
-                new Point(570, 91));
+                new Point(510, 91));
 
             ConfigurarEtiquetaValor(
                 lblMostrarLinea,
-                new Point(615, 89),
-                new Size(220, 24));
+                new Point(555, 89),
+                new Size(280, 24));
 
             // Reubicar etiquetas existentes dentro de la sección.
             pnlTrabajador.Controls.Add(lblNoReloj);
             pnlTrabajador.Controls.Add(lblMostrarNoReloj);
             pnlTrabajador.Controls.Add(lblNombre);
             pnlTrabajador.Controls.Add(lblMostrarNombre);
-            pnlTrabajador.Controls.Add(lblLocalidad);
-            pnlTrabajador.Controls.Add(lblMostrarLocalidad);
             pnlTrabajador.Controls.Add(lblTurno);
             pnlTrabajador.Controls.Add(lblMostrarTurno);
             pnlTrabajador.Controls.Add(lblPlanta);
@@ -847,10 +841,13 @@ namespace Aseguranza.Ventanas
         {
             lblMostrarNoReloj.Text = trabajadorActual.NoReloj;
             lblMostrarNombre.Text = trabajadorActual.Nombre;
-            lblMostrarLocalidad.Text = trabajadorActual.NombreLocalidad;
             lblMostrarTurno.Text = trabajadorActual.NombreTurno;
             lblMostrarPlanta.Text = trabajadorActual.NombrePlanta;
-            lblMostrarLinea.Text = trabajadorActual.NombreLinea;
+            lblMostrarLinea.Text =
+                string.IsNullOrWhiteSpace(
+                    trabajadorActual.NombreLinea)
+                    ? "SIN ASIGNAR"
+                    : trabajadorActual.NombreLinea;
 
             // Cargar imagen de forma segura y sin bloquear archivo
             if (pictureBox1.Image != null)

@@ -30,7 +30,8 @@ namespace Aseguranza.Data.SqlServer
             comando.Parameters.Add(
                 "@NoReloj",
                 SqlDbType.VarChar,
-                10).Value = noReloj.Trim();
+                10).Value =
+                    noReloj.Trim();
 
             conexion.Open();
 
@@ -42,33 +43,45 @@ namespace Aseguranza.Data.SqlServer
                 return null;
             }
 
-            /*
-             * El procedimiento puede devolver una fila de mensaje
-             * cuando el número de reloj no existe.
-             */
-            if (!TieneColumna(lector, "NoReloj"))
+            if (!TieneColumna(
+                lector,
+                "NoReloj"))
             {
                 return null;
             }
 
             return new Trabajador
             {
-                Id = LeerEntero(lector, "Id"),
-                NoReloj = LeerTexto(lector, "NoReloj"),
-                Nombre = LeerTexto(lector, "Nombre"),
-                RutaFoto = LeerTexto(lector, "RutaFoto"),
+                Id =
+                    LeerEntero(
+                        lector,
+                        "Id"),
+
+                NoReloj =
+                    LeerTexto(
+                        lector,
+                        "NoReloj"),
+
+                Nombre =
+                    LeerTexto(
+                        lector,
+                        "Nombre"),
+
+                RutaFoto =
+                    LeerTexto(
+                        lector,
+                        "RutaFoto"),
 
                 IdLocalidad =
-                    LeerEntero(lector, "IdLocalidad"),
+                    0,
 
                 NombreLocalidad =
-                    LeerPrimerTextoDisponible(
-                        lector,
-                        "NombreLocalidad",
-                        "Localidad"),
+                    null,
 
                 IdTurno =
-                    LeerEntero(lector, "IdTurno"),
+                    LeerEntero(
+                        lector,
+                        "IdTurno"),
 
                 NombreTurno =
                     LeerPrimerTextoDisponible(
@@ -77,7 +90,9 @@ namespace Aseguranza.Data.SqlServer
                         "Turno"),
 
                 IdPlanta =
-                    LeerEntero(lector, "IdPlanta"),
+                    LeerEntero(
+                        lector,
+                        "IdPlanta"),
 
                 NombrePlanta =
                     LeerPrimerTextoDisponible(
@@ -86,20 +101,24 @@ namespace Aseguranza.Data.SqlServer
                         "Planta"),
 
                 IdLinea =
-                    LeerEntero(lector, "IdLinea"),
+                    LeerEntero(
+                        lector,
+                        "IdLinea"),
 
                 NombreLinea =
                     LeerPrimerTextoDisponible(
                         lector,
                         "NombreLinea",
                         "Linea")
+                    ?? "SIN ASIGNAR"
             };
         }
 
         public DataTable Consultar(
             string textoBuscar)
         {
-            DataTable tabla = new DataTable();
+            DataTable tabla =
+                new DataTable();
 
             using SqlConnection conexion =
                 Conexion.Conectar();
@@ -118,9 +137,54 @@ namespace Aseguranza.Data.SqlServer
                     textoBuscar ?? string.Empty;
 
             using SqlDataAdapter adaptador =
+                new SqlDataAdapter(
+                    comando);
+
+            conexion.Open();
+
+            adaptador.Fill(
+                tabla);
+
+            return tabla;
+        }
+
+        public DataTable ConsultarParaImportacionHdc()
+        {
+            DataTable tabla = new DataTable();
+
+            using SqlConnection conexion =
+                Conexion.Conectar();
+
+            using SqlCommand comando =
+                conexion.CreateCommand();
+
+            // Lectura masiva, sin límite y sin modificar datos.
+            comando.CommandText = """
+                SELECT
+                    T.Id,
+                    T.NoReloj,
+                    T.Nombre,
+                    T.IdTurno,
+                    Tu.Nombre AS NombreTurno,
+                    T.IdPlanta,
+                    P.Nombre AS NombrePlanta,
+                    T.IdLinea,
+                    COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea
+                FROM dbo.Trabajador AS T
+                INNER JOIN dbo.Turno AS Tu
+                    ON Tu.Id = T.IdTurno
+                INNER JOIN dbo.Planta AS P
+                    ON P.Id = T.IdPlanta
+                LEFT JOIN dbo.Linea AS Li
+                    ON Li.Id = T.IdLinea
+                ORDER BY T.NoReloj;
+                """;
+
+            using SqlDataAdapter adaptador =
                 new SqlDataAdapter(comando);
 
             conexion.Open();
+
             adaptador.Fill(tabla);
 
             return tabla;
@@ -130,7 +194,8 @@ namespace Aseguranza.Data.SqlServer
             string mostrarPor,
             string textoBuscar)
         {
-            DataTable tabla = new DataTable();
+            DataTable tabla =
+                new DataTable();
 
             using SqlConnection conexion =
                 Conexion.Conectar();
@@ -155,10 +220,13 @@ namespace Aseguranza.Data.SqlServer
                     textoBuscar ?? string.Empty;
 
             using SqlDataAdapter adaptador =
-                new SqlDataAdapter(comando);
+                new SqlDataAdapter(
+                    comando);
 
             conexion.Open();
-            adaptador.Fill(tabla);
+
+            adaptador.Fill(
+                tabla);
 
             return tabla;
         }
@@ -167,7 +235,8 @@ namespace Aseguranza.Data.SqlServer
             Trabajador trabajador)
         {
             Mensaje? validacion =
-                Validar(trabajador);
+                Validar(
+                    trabajador);
 
             if (validacion is not null)
             {
@@ -195,12 +264,13 @@ namespace Aseguranza.Data.SqlServer
                     "@NoReloj",
                     SqlDbType.VarChar,
                     10).Value =
-                        trabajador.NoReloj!.Trim();
+                        trabajador.NoReloj!
+                            .Trim();
 
                 comando.Parameters.Add(
                     "@Nombre",
                     SqlDbType.VarChar,
-                    100).Value =
+                    200).Value =
                         trabajador.Nombre!
                             .Trim()
                             .ToUpperInvariant();
@@ -208,13 +278,11 @@ namespace Aseguranza.Data.SqlServer
                 comando.Parameters.Add(
                     "@RutaFoto",
                     SqlDbType.VarChar,
-                    200).Value =
-                        trabajador.RutaFoto!.Trim();
-
-                comando.Parameters.Add(
-                    "@IdLocalidad",
-                    SqlDbType.Int).Value =
-                        trabajador.IdLocalidad;
+                    300).Value =
+                        string.IsNullOrWhiteSpace(
+                            trabajador.RutaFoto)
+                            ? DBNull.Value
+                            : trabajador.RutaFoto.Trim();
 
                 comando.Parameters.Add(
                     "@IdTurno",
@@ -222,20 +290,29 @@ namespace Aseguranza.Data.SqlServer
                         trabajador.IdTurno;
 
                 comando.Parameters.Add(
+                    "@IdPlanta",
+                    SqlDbType.Int).Value =
+                        trabajador.IdPlanta;
+
+                comando.Parameters.Add(
                     "@IdLinea",
                     SqlDbType.Int).Value =
-                        trabajador.IdLinea;
+                        trabajador.IdLinea > 0
+                            ? trabajador.IdLinea
+                            : DBNull.Value;
 
                 conexion.Open();
 
                 using SqlDataReader lector =
                     comando.ExecuteReader();
 
-                return LeerMensaje(lector);
+                return LeerMensaje(
+                    lector);
             }
             catch (Exception ex)
             {
-                return CrearMensajeError(ex);
+                return CrearMensajeError(
+                    ex);
             }
         }
 
@@ -265,18 +342,21 @@ namespace Aseguranza.Data.SqlServer
 
                 comando.Parameters.Add(
                     "@Id",
-                    SqlDbType.Int).Value = id;
+                    SqlDbType.Int).Value =
+                        id;
 
                 conexion.Open();
 
                 using SqlDataReader lector =
                     comando.ExecuteReader();
 
-                return LeerMensaje(lector);
+                return LeerMensaje(
+                    lector);
             }
             catch (Exception ex)
             {
-                return CrearMensajeError(ex);
+                return CrearMensajeError(
+                    ex);
             }
         }
 
@@ -315,27 +395,6 @@ namespace Aseguranza.Data.SqlServer
                 };
             }
 
-            if (string.IsNullOrWhiteSpace(
-                trabajador.RutaFoto))
-            {
-                return new Mensaje
-                {
-                    Id = 0,
-                    Nombre =
-                        "La fotografía del trabajador es obligatoria."
-                };
-            }
-
-            if (trabajador.IdLocalidad <= 0)
-            {
-                return new Mensaje
-                {
-                    Id = 0,
-                    Nombre =
-                        "Debe seleccionar una localidad válida."
-                };
-            }
-
             if (trabajador.IdTurno <= 0)
             {
                 return new Mensaje
@@ -346,13 +405,13 @@ namespace Aseguranza.Data.SqlServer
                 };
             }
 
-            if (trabajador.IdLinea <= 0)
+            if (trabajador.IdPlanta <= 0)
             {
                 return new Mensaje
                 {
                     Id = 0,
                     Nombre =
-                        "Debe seleccionar una línea válida."
+                        "Debe seleccionar una planta válida."
                 };
             }
 
@@ -374,8 +433,16 @@ namespace Aseguranza.Data.SqlServer
 
             return new Mensaje
             {
-                Id = LeerEntero(lector, "Id"),
-                Nombre = LeerTexto(lector, "Nombre") ?? string.Empty
+                Id =
+                    LeerEntero(
+                        lector,
+                        "Id"),
+
+                Nombre =
+                    LeerTexto(
+                        lector,
+                        "Nombre")
+                    ?? string.Empty
             };
         }
 
@@ -383,7 +450,9 @@ namespace Aseguranza.Data.SqlServer
             SqlDataReader lector,
             string columna)
         {
-            if (!TieneColumna(lector, columna) ||
+            if (!TieneColumna(
+                    lector,
+                    columna) ||
                 lector[columna] is DBNull)
             {
                 return 0;
@@ -397,7 +466,9 @@ namespace Aseguranza.Data.SqlServer
             SqlDataReader lector,
             string columna)
         {
-            if (!TieneColumna(lector, columna) ||
+            if (!TieneColumna(
+                    lector,
+                    columna) ||
                 lector[columna] is DBNull)
             {
                 return null;
@@ -414,7 +485,9 @@ namespace Aseguranza.Data.SqlServer
         {
             foreach (string columna in columnas)
             {
-                if (TieneColumna(lector, columna))
+                if (TieneColumna(
+                    lector,
+                    columna))
                 {
                     return LeerTexto(
                         lector,

@@ -1,4 +1,4 @@
-using Aseguranza.Clases;
+﻿using Aseguranza.Clases;
 using System.Data;
 
 namespace Aseguranza.Data.Interfaces
@@ -14,6 +14,8 @@ namespace Aseguranza.Data.Interfaces
         DataTable ConsultarEstadoCertificacion(
             string mostrarPor,
             string textoBuscar);
+
+        DataTable ConsultarParaImportacionHdc();
 
         Mensaje Guardar(
             Trabajador trabajador);

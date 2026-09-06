@@ -1,4 +1,4 @@
-using Aseguranza.Clases;
+﻿using Aseguranza.Clases;
 using Aseguranza.Data.Interfaces;
 using Microsoft.Data.Sqlite;
 using System;
@@ -31,23 +31,22 @@ namespace Aseguranza.Data.SQLite
                     T.NoReloj,
                     T.Nombre,
                     T.RutaFoto,
-                    T.IdLocalidad,
-                    L.Nombre AS NombreLocalidad,
                     T.IdTurno,
                     Tu.Nombre AS NombreTurno,
-                    Li.IdPlanta,
+                    T.IdPlanta,
                     P.Nombre AS NombrePlanta,
                     T.IdLinea,
-                    Li.Nombre AS NombreLinea
+                    COALESCE(
+                        Li.Nombre,
+                        'SIN ASIGNAR'
+                    ) AS NombreLinea
                 FROM Trabajador AS T
-                INNER JOIN Localidad AS L
-                    ON L.Id = T.IdLocalidad
                 INNER JOIN Turno AS Tu
                     ON Tu.Id = T.IdTurno
-                INNER JOIN Linea AS Li
-                    ON Li.Id = T.IdLinea
                 INNER JOIN Planta AS P
-                    ON P.Id = Li.IdPlanta
+                    ON P.Id = T.IdPlanta
+                LEFT JOIN Linea AS Li
+                    ON Li.Id = T.IdLinea
                 WHERE T.NoReloj = @NoReloj
                 LIMIT 1;
                 """;
@@ -86,29 +85,28 @@ namespace Aseguranza.Data.SQLite
                     T.NoReloj,
                     T.Nombre,
                     T.RutaFoto,
-                    T.IdLocalidad,
-                    L.Nombre AS NombreLocalidad,
                     T.IdTurno,
                     Tu.Nombre AS NombreTurno,
-                    Li.IdPlanta,
+                    T.IdPlanta,
                     P.Nombre AS NombrePlanta,
                     T.IdLinea,
-                    Li.Nombre AS NombreLinea
+                    COALESCE(
+                        Li.Nombre,
+                        'SIN ASIGNAR'
+                    ) AS NombreLinea
                 FROM Trabajador AS T
-                INNER JOIN Localidad AS L
-                    ON L.Id = T.IdLocalidad
                 INNER JOIN Turno AS Tu
                     ON Tu.Id = T.IdTurno
-                INNER JOIN Linea AS Li
-                    ON Li.Id = T.IdLinea
                 INNER JOIN Planta AS P
-                    ON P.Id = Li.IdPlanta
+                    ON P.Id = T.IdPlanta
+                LEFT JOIN Linea AS Li
+                    ON Li.Id = T.IdLinea
                 WHERE T.NoReloj LIKE @TextoBuscar COLLATE NOCASE
                    OR T.Nombre LIKE @TextoBuscar COLLATE NOCASE
-                   OR L.Nombre LIKE @TextoBuscar COLLATE NOCASE
                    OR Tu.Nombre LIKE @TextoBuscar COLLATE NOCASE
                    OR P.Nombre LIKE @TextoBuscar COLLATE NOCASE
-                   OR Li.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                   OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
+                          LIKE @TextoBuscar COLLATE NOCASE
                 ORDER BY T.Nombre
                 LIMIT 100;
                 """;
@@ -120,7 +118,101 @@ namespace Aseguranza.Data.SQLite
             using SqliteDataReader lector =
                 comando.ExecuteReader();
 
-            tabla.Load(lector);
+            PrepararTablaTrabajadores(
+                tabla);
+
+            while (lector.Read())
+            {
+                AgregarFilaTrabajador(
+                    tabla,
+                    lector);
+            }
+
+            return tabla;
+        }
+
+        public DataTable ConsultarParaImportacionHdc()
+        {
+            DataTable tabla =
+                CrearTablaParaImportacionHdc();
+
+            using SqliteConnection conexion =
+                ConexionSqlite.Crear();
+
+            conexion.Open();
+
+            using SqliteCommand comando =
+                conexion.CreateCommand();
+
+            comando.CommandText = """
+                SELECT
+                    T.Id,
+                    T.NoReloj,
+                    T.Nombre,
+                    T.IdTurno,
+                    Tu.Nombre AS NombreTurno,
+                    T.IdPlanta,
+                    P.Nombre AS NombrePlanta,
+                    T.IdLinea,
+                    COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea
+                FROM Trabajador AS T
+                INNER JOIN Turno AS Tu
+                    ON Tu.Id = T.IdTurno
+                INNER JOIN Planta AS P
+                    ON P.Id = T.IdPlanta
+                LEFT JOIN Linea AS Li
+                    ON Li.Id = T.IdLinea
+                ORDER BY T.NoReloj;
+                """;
+
+            using SqliteDataReader lector =
+                comando.ExecuteReader();
+
+            while (lector.Read())
+            {
+                DataRow fila = tabla.NewRow();
+
+                fila["Id"] =
+                    Convert.ToInt32(lector.GetInt64(0));
+
+                fila["NoReloj"] =
+                    lector.IsDBNull(1)
+                        ? string.Empty
+                        : lector.GetString(1);
+
+                fila["Nombre"] =
+                    lector.IsDBNull(2)
+                        ? string.Empty
+                        : lector.GetString(2);
+
+                fila["IdTurno"] =
+                    Convert.ToInt32(lector.GetInt64(3));
+
+                fila["NombreTurno"] =
+                    lector.IsDBNull(4)
+                        ? string.Empty
+                        : lector.GetString(4);
+
+                fila["IdPlanta"] =
+                    Convert.ToInt32(lector.GetInt64(5));
+
+                fila["NombrePlanta"] =
+                    lector.IsDBNull(6)
+                        ? string.Empty
+                        : lector.GetString(6);
+
+                fila["IdLinea"] =
+                    lector.IsDBNull(7)
+                        ? DBNull.Value
+                        : Convert.ToInt32(lector.GetInt64(7));
+
+                fila["NombreLinea"] =
+                    lector.IsDBNull(8)
+                        ? "SIN ASIGNAR"
+                        : lector.GetString(8);
+
+                tabla.Rows.Add(fila);
+            }
 
             return tabla;
         }
@@ -147,14 +239,15 @@ namespace Aseguranza.Data.SQLite
                         T.NoReloj,
                         T.Nombre,
                         T.RutaFoto,
-                        T.IdLocalidad,
-                        L.Nombre AS NombreLocalidad,
                         T.IdTurno,
                         Tu.Nombre AS NombreTurno,
-                        Li.IdPlanta,
+                        T.IdPlanta,
                         P.Nombre AS NombrePlanta,
                         T.IdLinea,
-                        Li.Nombre AS NombreLinea,
+                        COALESCE(
+                            Li.Nombre,
+                            'SIN ASIGNAR'
+                        ) AS NombreLinea,
 
                         CASE
                             WHEN COUNT(C.Id) = 0
@@ -188,14 +281,12 @@ namespace Aseguranza.Data.SQLite
                         END AS EstadoCertificacion
 
                     FROM Trabajador AS T
-                    INNER JOIN Localidad AS L
-                        ON L.Id = T.IdLocalidad
                     INNER JOIN Turno AS Tu
                         ON Tu.Id = T.IdTurno
-                    INNER JOIN Linea AS Li
-                        ON Li.Id = T.IdLinea
                     INNER JOIN Planta AS P
-                        ON P.Id = Li.IdPlanta
+                        ON P.Id = T.IdPlanta
+                    LEFT JOIN Linea AS Li
+                        ON Li.Id = T.IdLinea
 
                     LEFT JOIN Certificacion AS C
                         ON C.IdTrabajador = T.Id
@@ -218,13 +309,11 @@ namespace Aseguranza.Data.SQLite
                               LIKE @TextoBuscar COLLATE NOCASE
                        OR T.Nombre
                               LIKE @TextoBuscar COLLATE NOCASE
-                       OR L.Nombre
-                              LIKE @TextoBuscar COLLATE NOCASE
                        OR Tu.Nombre
                               LIKE @TextoBuscar COLLATE NOCASE
                        OR P.Nombre
                               LIKE @TextoBuscar COLLATE NOCASE
-                       OR Li.Nombre
+                       OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
                               LIKE @TextoBuscar COLLATE NOCASE
 
                     GROUP BY
@@ -232,11 +321,9 @@ namespace Aseguranza.Data.SQLite
                         T.NoReloj,
                         T.Nombre,
                         T.RutaFoto,
-                        T.IdLocalidad,
-                        L.Nombre,
                         T.IdTurno,
                         Tu.Nombre,
-                        Li.IdPlanta,
+                        T.IdPlanta,
                         P.Nombre,
                         T.IdLinea,
                         Li.Nombre
@@ -261,7 +348,70 @@ namespace Aseguranza.Data.SQLite
             using SqliteDataReader lector =
                 comando.ExecuteReader();
 
-            tabla.Load(lector);
+            PrepararTablaEstadoCertificacion(
+                tabla);
+
+            while (lector.Read())
+            {
+                DataRow fila =
+                    tabla.NewRow();
+
+                fila["Id"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(0));
+
+                fila["NoReloj"] =
+                    lector.IsDBNull(1)
+                        ? string.Empty
+                        : lector.GetString(1);
+
+                fila["Nombre"] =
+                    lector.IsDBNull(2)
+                        ? string.Empty
+                        : lector.GetString(2);
+
+                fila["RutaFoto"] =
+                    lector.IsDBNull(3)
+                        ? DBNull.Value
+                        : lector.GetString(3);
+
+                fila["IdTurno"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(4));
+
+                fila["NombreTurno"] =
+                    lector.IsDBNull(5)
+                        ? string.Empty
+                        : lector.GetString(5);
+
+                fila["IdPlanta"] =
+                    Convert.ToInt32(
+                        lector.GetInt64(6));
+
+                fila["NombrePlanta"] =
+                    lector.IsDBNull(7)
+                        ? string.Empty
+                        : lector.GetString(7);
+
+                fila["IdLinea"] =
+                    lector.IsDBNull(8)
+                        ? DBNull.Value
+                        : Convert.ToInt32(
+                            lector.GetInt64(8));
+
+                fila["NombreLinea"] =
+                    lector.IsDBNull(9)
+                        ? "SIN ASIGNAR"
+                        : lector.GetString(9);
+
+                fila["EstadoCertificacion"] =
+                    lector.IsDBNull(10)
+                        ? "Sin certificar"
+                        : lector.GetString(10);
+
+                tabla.Rows.Add(
+                    fila);
+            }
 
             return tabla;
         }
@@ -287,19 +437,17 @@ namespace Aseguranza.Data.SQLite
                 using SqliteTransaction transaccion =
                     conexion.BeginTransaction();
 
-                if (!ExistenCatalogosRelacionados(
-                    conexion,
-                    transaccion,
-                    trabajador))
+                Mensaje? validacionCatalogos =
+                    ValidarCatalogosRelacionados(
+                        conexion,
+                        transaccion,
+                        trabajador);
+
+                if (validacionCatalogos is not null)
                 {
                     transaccion.Rollback();
 
-                    return new Mensaje
-                    {
-                        Id = 0,
-                        Nombre =
-                            "La localidad, el turno o la línea seleccionada no existe."
-                    };
+                    return validacionCatalogos;
                 }
 
                 if (ExisteNumeroRelojDuplicado(
@@ -376,10 +524,16 @@ namespace Aseguranza.Data.SQLite
 
                 conexion.Open();
 
-                if (TieneRegistrosRelacionados(
+                using SqliteTransaction transaccion =
+                    conexion.BeginTransaction();
+
+                if (TieneRegistrosRelacionadosActivos(
                     conexion,
+                    transaccion,
                     id))
                 {
+                    transaccion.Rollback();
+
                     return new Mensaje
                     {
                         Id = 2,
@@ -389,8 +543,16 @@ namespace Aseguranza.Data.SQLite
                     };
                 }
 
+                EliminarExpedientesInactivos(
+                    conexion,
+                    transaccion,
+                    id);
+
                 using SqliteCommand comando =
                     conexion.CreateCommand();
+
+                comando.Transaction =
+                    transaccion;
 
                 comando.CommandText = """
                     DELETE FROM Trabajador
@@ -406,6 +568,8 @@ namespace Aseguranza.Data.SQLite
 
                 if (filasAfectadas == 0)
                 {
+                    transaccion.Rollback();
+
                     return new Mensaje
                     {
                         Id = 0,
@@ -414,11 +578,24 @@ namespace Aseguranza.Data.SQLite
                     };
                 }
 
+                transaccion.Commit();
+
                 return new Mensaje
                 {
                     Id = 1,
                     Nombre =
                         "Se ha borrado correctamente"
+                };
+            }
+            catch (SqliteException ex)
+                when (ex.SqliteErrorCode == 19)
+            {
+                return new Mensaje
+                {
+                    Id = 2,
+                    Nombre =
+                        "No se puede borrar porque todavía existen " +
+                        "registros relacionados con este trabajador."
                 };
             }
             catch (Exception ex)
@@ -427,47 +604,200 @@ namespace Aseguranza.Data.SQLite
             }
         }
 
+        private static DataTable CrearTablaParaImportacionHdc()
+        {
+            DataTable tabla = new DataTable();
+
+            tabla.Columns.Add("Id", typeof(int));
+            tabla.Columns.Add("NoReloj", typeof(string));
+            tabla.Columns.Add("Nombre", typeof(string));
+            tabla.Columns.Add("IdTurno", typeof(int));
+            tabla.Columns.Add("NombreTurno", typeof(string));
+            tabla.Columns.Add("IdPlanta", typeof(int));
+            tabla.Columns.Add("NombrePlanta", typeof(string));
+
+            DataColumn columnaIdLinea =
+                tabla.Columns.Add("IdLinea", typeof(int));
+
+            columnaIdLinea.AllowDBNull = true;
+
+            tabla.Columns.Add("NombreLinea", typeof(string));
+
+            return tabla;
+        }
+
+        private static void PrepararTablaTrabajadores(
+            DataTable tabla)
+        {
+            tabla.Columns.Add(
+                "Id",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "NoReloj",
+                typeof(string));
+
+            tabla.Columns.Add(
+                "Nombre",
+                typeof(string));
+
+            DataColumn columnaRutaFoto =
+                tabla.Columns.Add(
+                    "RutaFoto",
+                    typeof(string));
+
+            columnaRutaFoto.AllowDBNull =
+                true;
+
+            tabla.Columns.Add(
+                "IdTurno",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "NombreTurno",
+                typeof(string));
+
+            tabla.Columns.Add(
+                "IdPlanta",
+                typeof(int));
+
+            tabla.Columns.Add(
+                "NombrePlanta",
+                typeof(string));
+
+            DataColumn columnaIdLinea =
+                tabla.Columns.Add(
+                    "IdLinea",
+                    typeof(int));
+
+            columnaIdLinea.AllowDBNull =
+                true;
+
+            tabla.Columns.Add(
+                "NombreLinea",
+                typeof(string));
+        }
+
+        private static void PrepararTablaEstadoCertificacion(
+            DataTable tabla)
+        {
+            PrepararTablaTrabajadores(
+                tabla);
+
+            tabla.Columns.Add(
+                "EstadoCertificacion",
+                typeof(string));
+        }
+
+        private static void AgregarFilaTrabajador(
+            DataTable tabla,
+            SqliteDataReader lector)
+        {
+            DataRow fila =
+                tabla.NewRow();
+
+            fila["Id"] =
+                Convert.ToInt32(
+                    lector.GetInt64(0));
+
+            fila["NoReloj"] =
+                lector.IsDBNull(1)
+                    ? string.Empty
+                    : lector.GetString(1);
+
+            fila["Nombre"] =
+                lector.IsDBNull(2)
+                    ? string.Empty
+                    : lector.GetString(2);
+
+            fila["RutaFoto"] =
+                lector.IsDBNull(3)
+                    ? DBNull.Value
+                    : lector.GetString(3);
+
+            fila["IdTurno"] =
+                Convert.ToInt32(
+                    lector.GetInt64(4));
+
+            fila["NombreTurno"] =
+                lector.IsDBNull(5)
+                    ? string.Empty
+                    : lector.GetString(5);
+
+            fila["IdPlanta"] =
+                Convert.ToInt32(
+                    lector.GetInt64(6));
+
+            fila["NombrePlanta"] =
+                lector.IsDBNull(7)
+                    ? string.Empty
+                    : lector.GetString(7);
+
+            fila["IdLinea"] =
+                lector.IsDBNull(8)
+                    ? DBNull.Value
+                    : Convert.ToInt32(
+                        lector.GetInt64(8));
+
+            fila["NombreLinea"] =
+                lector.IsDBNull(9)
+                    ? "SIN ASIGNAR"
+                    : lector.GetString(9);
+
+            tabla.Rows.Add(
+                fila);
+        }
+
         private static Trabajador MapearTrabajador(
             SqliteDataReader lector)
         {
             return new Trabajador
             {
-                Id = Convert.ToInt32(lector["Id"]),
+                Id =
+                    Convert.ToInt32(
+                        lector["Id"]),
 
                 NoReloj =
-                    Convert.ToString(lector["NoReloj"]),
+                    Convert.ToString(
+                        lector["NoReloj"]),
 
                 Nombre =
-                    Convert.ToString(lector["Nombre"]),
+                    Convert.ToString(
+                        lector["Nombre"]),
 
                 RutaFoto =
                     lector["RutaFoto"] is DBNull
                         ? null
-                        : Convert.ToString(lector["RutaFoto"]),
+                        : Convert.ToString(
+                            lector["RutaFoto"]),
 
                 IdLocalidad =
-                    Convert.ToInt32(lector["IdLocalidad"]),
+                    0,
 
                 NombreLocalidad =
-                    Convert.ToString(
-                        lector["NombreLocalidad"]),
+                    null,
 
                 IdTurno =
-                    Convert.ToInt32(lector["IdTurno"]),
+                    Convert.ToInt32(
+                        lector["IdTurno"]),
 
                 NombreTurno =
                     Convert.ToString(
                         lector["NombreTurno"]),
 
                 IdPlanta =
-                    Convert.ToInt32(lector["IdPlanta"]),
+                    Convert.ToInt32(
+                        lector["IdPlanta"]),
 
                 NombrePlanta =
                     Convert.ToString(
                         lector["NombrePlanta"]),
 
                 IdLinea =
-                    Convert.ToInt32(lector["IdLinea"]),
+                    lector["IdLinea"] is DBNull
+                        ? 0
+                        : Convert.ToInt32(
+                            lector["IdLinea"]),
 
                 NombreLinea =
                     Convert.ToString(
@@ -488,7 +818,8 @@ namespace Aseguranza.Data.SQLite
             using SqliteCommand comando =
                 conexion.CreateCommand();
 
-            comando.Transaction = transaccion;
+            comando.Transaction =
+                transaccion;
 
             comando.CommandText = """
                 SELECT COUNT(*)
@@ -512,7 +843,8 @@ namespace Aseguranza.Data.SQLite
             using SqliteCommand comando =
                 conexion.CreateCommand();
 
-            comando.Transaction = transaccion;
+            comando.Transaction =
+                transaccion;
 
             comando.CommandText = """
                 SELECT COUNT(*)
@@ -533,48 +865,97 @@ namespace Aseguranza.Data.SQLite
                 comando.ExecuteScalar()) > 0;
         }
 
-        private static bool ExistenCatalogosRelacionados(
+        private static Mensaje? ValidarCatalogosRelacionados(
             SqliteConnection conexion,
             SqliteTransaction transaccion,
             Trabajador trabajador)
         {
+            if (!ExisteId(
+                conexion,
+                transaccion,
+                "Turno",
+                trabajador.IdTurno))
+            {
+                return new Mensaje
+                {
+                    Id = 0,
+                    Nombre =
+                        "El turno seleccionado no existe."
+                };
+            }
+
+            if (!ExisteId(
+                conexion,
+                transaccion,
+                "Planta",
+                trabajador.IdPlanta))
+            {
+                return new Mensaje
+                {
+                    Id = 0,
+                    Nombre =
+                        "La planta seleccionada no existe."
+                };
+            }
+
+            if (trabajador.IdLinea <= 0)
+            {
+                return null;
+            }
+
             using SqliteCommand comando =
                 conexion.CreateCommand();
 
-            comando.Transaction = transaccion;
+            comando.Transaction =
+                transaccion;
 
             comando.CommandText = """
-                SELECT
-                    (
-                        SELECT COUNT(*)
-                        FROM Localidad
-                        WHERE Id = @IdLocalidad
-                    )
-                    *
-                    (
-                        SELECT COUNT(*)
-                        FROM Turno
-                        WHERE Id = @IdTurno
-                    )
-                    *
-                    (
-                        SELECT COUNT(*)
-                        FROM Linea
-                        WHERE Id = @IdLinea
-                    );
+                SELECT COUNT(*)
+                FROM Linea
+                WHERE Id = @IdLinea
+                  AND IdPlanta = @IdPlanta;
                 """;
-
-            comando.Parameters.AddWithValue(
-                "@IdLocalidad",
-                trabajador.IdLocalidad);
-
-            comando.Parameters.AddWithValue(
-                "@IdTurno",
-                trabajador.IdTurno);
 
             comando.Parameters.AddWithValue(
                 "@IdLinea",
                 trabajador.IdLinea);
+
+            comando.Parameters.AddWithValue(
+                "@IdPlanta",
+                trabajador.IdPlanta);
+
+            if (Convert.ToInt64(
+                comando.ExecuteScalar()) == 0)
+            {
+                return new Mensaje
+                {
+                    Id = 0,
+                    Nombre =
+                        "La línea seleccionada no pertenece a la planta."
+                };
+            }
+
+            return null;
+        }
+
+        private static bool ExisteId(
+            SqliteConnection conexion,
+            SqliteTransaction transaccion,
+            string tabla,
+            int id)
+        {
+            using SqliteCommand comando =
+                conexion.CreateCommand();
+
+            comando.Transaction =
+                transaccion;
+
+            comando.CommandText =
+                $"SELECT COUNT(*) FROM {tabla} WHERE Id = @Id;";
+
+            comando.Parameters.AddWithValue(
+                "@Id",
+                id);
 
             return Convert.ToInt64(
                 comando.ExecuteScalar()) > 0;
@@ -588,7 +969,8 @@ namespace Aseguranza.Data.SQLite
             using SqliteCommand comando =
                 conexion.CreateCommand();
 
-            comando.Transaction = transaccion;
+            comando.Transaction =
+                transaccion;
 
             comando.CommandText = """
                 INSERT INTO Trabajador
@@ -596,8 +978,8 @@ namespace Aseguranza.Data.SQLite
                     NoReloj,
                     Nombre,
                     RutaFoto,
-                    IdLocalidad,
                     IdTurno,
+                    IdPlanta,
                     IdLinea
                 )
                 VALUES
@@ -605,8 +987,8 @@ namespace Aseguranza.Data.SQLite
                     @NoReloj,
                     @Nombre,
                     @RutaFoto,
-                    @IdLocalidad,
                     @IdTurno,
+                    @IdPlanta,
                     @IdLinea
                 );
                 """;
@@ -626,7 +1008,8 @@ namespace Aseguranza.Data.SQLite
             using SqliteCommand comando =
                 conexion.CreateCommand();
 
-            comando.Transaction = transaccion;
+            comando.Transaction =
+                transaccion;
 
             comando.CommandText = """
                 UPDATE Trabajador
@@ -634,8 +1017,8 @@ namespace Aseguranza.Data.SQLite
                     NoReloj = @NoReloj,
                     Nombre = @Nombre,
                     RutaFoto = @RutaFoto,
-                    IdLocalidad = @IdLocalidad,
                     IdTurno = @IdTurno,
+                    IdPlanta = @IdPlanta,
                     IdLinea = @IdLinea
                 WHERE Id = @Id;
                 """;
@@ -667,27 +1050,36 @@ namespace Aseguranza.Data.SQLite
 
             comando.Parameters.AddWithValue(
                 "@RutaFoto",
-                trabajador.RutaFoto!.Trim());
-
-            comando.Parameters.AddWithValue(
-                "@IdLocalidad",
-                trabajador.IdLocalidad);
+                string.IsNullOrWhiteSpace(
+                    trabajador.RutaFoto)
+                    ? DBNull.Value
+                    : trabajador.RutaFoto.Trim());
 
             comando.Parameters.AddWithValue(
                 "@IdTurno",
                 trabajador.IdTurno);
 
             comando.Parameters.AddWithValue(
+                "@IdPlanta",
+                trabajador.IdPlanta);
+
+            comando.Parameters.AddWithValue(
                 "@IdLinea",
-                trabajador.IdLinea);
+                trabajador.IdLinea > 0
+                    ? trabajador.IdLinea
+                    : DBNull.Value);
         }
 
-        private static bool TieneRegistrosRelacionados(
+        private static bool TieneRegistrosRelacionadosActivos(
             SqliteConnection conexion,
+            SqliteTransaction transaccion,
             int idTrabajador)
         {
             using SqliteCommand comando =
                 conexion.CreateCommand();
+
+            comando.Transaction =
+                transaccion;
 
             comando.CommandText = """
                 SELECT
@@ -717,6 +1109,30 @@ namespace Aseguranza.Data.SQLite
 
             return Convert.ToInt64(
                 comando.ExecuteScalar()) > 0;
+        }
+
+        private static void EliminarExpedientesInactivos(
+            SqliteConnection conexion,
+            SqliteTransaction transaccion,
+            int idTrabajador)
+        {
+            using SqliteCommand comando =
+                conexion.CreateCommand();
+
+            comando.Transaction =
+                transaccion;
+
+            comando.CommandText = """
+                DELETE FROM ExpedienteTrabajador
+                WHERE IdTrabajador = @IdTrabajador
+                  AND Activo = 0;
+                """;
+
+            comando.Parameters.AddWithValue(
+                "@IdTrabajador",
+                idTrabajador);
+
+            comando.ExecuteNonQuery();
         }
 
         private static Mensaje? Validar(
@@ -754,26 +1170,23 @@ namespace Aseguranza.Data.SQLite
                 };
             }
 
-            if (string.IsNullOrWhiteSpace(
-                trabajador.RutaFoto))
+            if (trabajador.IdTurno <= 0)
             {
                 return new Mensaje
                 {
                     Id = 0,
                     Nombre =
-                        "La fotografía del trabajador es obligatoria."
+                        "Debe seleccionar un turno válido."
                 };
             }
 
-            if (trabajador.IdLocalidad <= 0 ||
-                trabajador.IdTurno <= 0 ||
-                trabajador.IdLinea <= 0)
+            if (trabajador.IdPlanta <= 0)
             {
                 return new Mensaje
                 {
                     Id = 0,
                     Nombre =
-                        "Debe seleccionar localidad, turno y línea."
+                        "Debe seleccionar una planta válida."
                 };
             }
 

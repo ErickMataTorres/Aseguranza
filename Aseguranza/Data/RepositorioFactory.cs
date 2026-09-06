@@ -1,4 +1,4 @@
-using Aseguranza.Clases;
+﻿using Aseguranza.Clases;
 using Aseguranza.Data.Interfaces;
 using Aseguranza.Data.SQLite;
 using Aseguranza.Data.SqlServer;
@@ -63,7 +63,7 @@ namespace Aseguranza.Data
         }
 
         public static ILineaRepository
-    CrearLineaRepository()
+            CrearLineaRepository()
         {
             ProveedorBaseDatos proveedor =
                 ConfiguracionSistema.ObtenerProveedorBaseDatos();
@@ -81,7 +81,7 @@ namespace Aseguranza.Data
         }
 
         public static IProcesoRepository
-    CrearProcesoRepository()
+            CrearProcesoRepository()
         {
             ProveedorBaseDatos proveedor =
                 ConfiguracionSistema.ObtenerProveedorBaseDatos();
@@ -99,7 +99,7 @@ namespace Aseguranza.Data
         }
 
         public static ITrabajadorRepository
-    CrearTrabajadorRepository()
+            CrearTrabajadorRepository()
         {
             ProveedorBaseDatos proveedor =
                 ConfiguracionSistema
@@ -110,11 +110,6 @@ namespace Aseguranza.Data
                 ProveedorBaseDatos.SqlServer =>
                     new SqlServerTrabajadorRepository(),
 
-                /*
-                 * SQLite se habilitará en el siguiente bloque.
-                 * Mientras tanto evitamos usar accidentalmente
-                 * el módulo Trabajador en modo SQLite.
-                 */
                 ProveedorBaseDatos.SQLite =>
                     new SqliteTrabajadorRepository(),
 
@@ -122,8 +117,46 @@ namespace Aseguranza.Data
             };
         }
 
+        public static IHdcEquivalenciaRepository
+            CrearHdcEquivalenciaRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema
+                    .ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerHdcEquivalenciaRepository(),
+
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteHdcEquivalenciaRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
+        public static IHdcImportacionRepository
+            CrearHdcImportacionRepository()
+        {
+            ProveedorBaseDatos proveedor =
+                ConfiguracionSistema
+                    .ObtenerProveedorBaseDatos();
+
+            return proveedor switch
+            {
+                ProveedorBaseDatos.SQLite =>
+                    new SqliteHdcImportacionRepository(),
+
+                ProveedorBaseDatos.SqlServer =>
+                    new SqlServerHdcImportacionRepository(),
+
+                _ => throw CrearErrorProveedor(proveedor)
+            };
+        }
+
         public static ICertificadorRepository
-    CrearCertificadorRepository()
+            CrearCertificadorRepository()
         {
             ProveedorBaseDatos proveedor =
                 ConfiguracionSistema
@@ -142,7 +175,7 @@ namespace Aseguranza.Data
         }
 
         public static ICertificacionRepository
-    CrearCertificacionRepository()
+            CrearCertificacionRepository()
         {
             ProveedorBaseDatos proveedor =
                 ConfiguracionSistema
@@ -160,9 +193,8 @@ namespace Aseguranza.Data
             };
         }
 
-
         public static ICertificacionAnulacionRepository
-    CrearCertificacionAnulacionRepository()
+            CrearCertificacionAnulacionRepository()
         {
             ProveedorBaseDatos proveedor =
                 ConfiguracionSistema
@@ -181,7 +213,7 @@ namespace Aseguranza.Data
         }
 
         public static IExpedienteTrabajadorRepository
-    CrearExpedienteTrabajadorRepository()
+            CrearExpedienteTrabajadorRepository()
         {
             ProveedorBaseDatos proveedor =
                 ConfiguracionSistema

@@ -3,6 +3,7 @@ using AForge.Video.DirectShow;
 using Aseguranza.UI;
 using System;
 using System.ComponentModel;
+using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -30,6 +31,13 @@ namespace Aseguranza.Ventanas
         private bool capturaDesdeCamara;
 
         private string? rutaFotoSeleccionada;
+
+        /*
+         * Indica que el usuario quitó explícitamente la fotografía
+         * existente y que, al guardar correctamente, RutaFoto debe
+         * quedar NULL y el archivo físico anterior debe eliminarse.
+         */
+        private bool eliminarFotoPendiente;
 
         private FilterInfoCollection? dispositivosVideo;
 
@@ -324,46 +332,20 @@ namespace Aseguranza.Ventanas
                 pnlNombre);
 
             // =====================================================
-            // LOCALIDAD
-            // =====================================================
-
-            ConfigurarLabelCampo(
-                lblLocalidad,
-                "Localidad *",
-                18,
-                140);
-
-            Panel pnlLocalidad =
-                CrearPanelCampo(
-                    18,
-                    162,
-                    250);
-
-            ConfigurarComboBox(
-                cbLocalidad,
-                pnlLocalidad);
-
-            pnlDatos.Controls.Add(
-                lblLocalidad);
-
-            pnlDatos.Controls.Add(
-                pnlLocalidad);
-
-            // =====================================================
             // TURNO
             // =====================================================
 
             ConfigurarLabelCampo(
                 lblTurno,
                 "Turno *",
-                286,
+                18,
                 140);
 
             Panel pnlTurno =
                 CrearPanelCampo(
-                    286,
+                    18,
                     162,
-                    256);
+                    250);
 
             ConfigurarComboBox(
                 cbTurno,
@@ -382,14 +364,14 @@ namespace Aseguranza.Ventanas
             ConfigurarLabelCampo(
                 lblPlanta,
                 "Planta *",
-                18,
-                212);
+                286,
+                140);
 
             Panel pnlPlanta =
                 CrearPanelCampo(
-                    18,
-                    234,
-                    250);
+                    286,
+                    162,
+                    256);
 
             ConfigurarComboBox(
                 cbPlanta,
@@ -407,15 +389,15 @@ namespace Aseguranza.Ventanas
 
             ConfigurarLabelCampo(
                 lblLinea,
-                "Línea *",
-                286,
+                "Línea",
+                18,
                 212);
 
             Panel pnlLinea =
                 CrearPanelCampo(
-                    286,
+                    18,
                     234,
-                    256);
+                    524);
 
             ConfigurarComboBox(
                 cbLinea,
@@ -468,8 +450,8 @@ namespace Aseguranza.Ventanas
         48),
 
                     Text =
-    "La línea disponible depende de la planta seleccionada. " +
-    "Al modificar, el número de reloj permanece bloqueado.",
+    "La línea es opcional y depende de la planta seleccionada. " +
+    "Puede dejarse como SIN ASIGNAR. La fotografía también es opcional.",
 
                     ForeColor =
                         AppColors.TextSecondary,
@@ -521,7 +503,7 @@ namespace Aseguranza.Ventanas
                             15),
 
                     Text =
-                        "Fotografía del trabajador *",
+                        "Fotografía del trabajador",
 
                     ForeColor =
                         AppColors.TextPrimary,
@@ -1013,19 +995,11 @@ namespace Aseguranza.Ventanas
             // sobre la etiqueta del campo para evitar que el icono quede
             // recortado u oculto detrás de la flecha.
             ConfigurarIndicadorValidacion(
-                lblLocalidad);
-
-            ConfigurarIndicadorValidacion(
                 lblTurno);
 
             ConfigurarIndicadorValidacion(
                 lblPlanta);
 
-            ConfigurarIndicadorValidacion(
-                lblLinea);
-
-            ConfigurarIndicadorValidacion(
-                pictureBox1);
         }
 
         private void ConfigurarIndicadorValidacion(
@@ -1071,10 +1045,28 @@ namespace Aseguranza.Ventanas
             cbLinea.Enabled =
                 false;
 
-            var lineas =
+            DataTable lineas =
                 Clases.Linea
                     .ConsultarLineasPorPlanta(
                         idPlanta);
+
+            /*
+             * Línea ya no es obligatoria.
+             * Agregamos una opción visual SIN ASIGNAR con Id = 0.
+             * En los repositorios ese 0 se guarda como NULL.
+             */
+            DataRow filaSinAsignar =
+                lineas.NewRow();
+
+            filaSinAsignar["Id"] =
+                0;
+
+            filaSinAsignar["Nombre"] =
+                "SIN ASIGNAR";
+
+            lineas.Rows.InsertAt(
+                filaSinAsignar,
+                0);
 
             cbLinea.DataSource =
                 lineas;
@@ -1092,11 +1084,18 @@ namespace Aseguranza.Ventanas
             {
                 cbLinea.SelectedValue =
                     idLineaSeleccionar;
+
+                if (ObtenerIdCombo(cbLinea) !=
+                    idLineaSeleccionar)
+                {
+                    cbLinea.SelectedValue =
+                        0;
+                }
             }
             else
             {
-                cbLinea.SelectedIndex =
-                    -1;
+                cbLinea.SelectedValue =
+                    0;
             }
         }
 
@@ -1286,8 +1285,6 @@ namespace Aseguranza.Ventanas
                     !string.IsNullOrWhiteSpace(
                         txtNombre.Text) ||
 
-                    cbLocalidad.SelectedIndex != -1 ||
-
                     cbTurno.SelectedIndex != -1 ||
 
                     cbPlanta.SelectedIndex != -1 ||
@@ -1339,13 +1336,6 @@ namespace Aseguranza.Ventanas
             }
 
             if (ObtenerIdCombo(
-                    cbLocalidad) !=
-                trabajadorActual.IdLocalidad)
-            {
-                return true;
-            }
-
-            if (ObtenerIdCombo(
                     cbTurno) !=
                 trabajadorActual.IdTurno)
             {
@@ -1367,6 +1357,11 @@ namespace Aseguranza.Ventanas
             }
 
             if (capturaDesdeCamara)
+            {
+                return true;
+            }
+
+            if (eliminarFotoPendiente)
             {
                 return true;
             }
@@ -1403,10 +1398,6 @@ namespace Aseguranza.Ventanas
                 string.Empty);
 
             epValidacion.SetError(
-                lblLocalidad,
-                string.Empty);
-
-            epValidacion.SetError(
                 lblTurno,
                 string.Empty);
 
@@ -1418,9 +1409,6 @@ namespace Aseguranza.Ventanas
                 lblLinea,
                 string.Empty);
 
-            epValidacion.SetError(
-                pictureBox1,
-                string.Empty);
         }
 
         private bool ValidarInformacion()
@@ -1452,17 +1440,6 @@ namespace Aseguranza.Ventanas
                     false;
             }
 
-            if (cbLocalidad.SelectedIndex == -1 ||
-                cbLocalidad.SelectedValue is null)
-            {
-                epValidacion.SetError(
-                    lblLocalidad,
-                    "Seleccione la localidad.");
-
-                esValido =
-                    false;
-            }
-
             if (cbTurno.SelectedIndex == -1 ||
                 cbTurno.SelectedValue is null)
             {
@@ -1480,27 +1457,6 @@ namespace Aseguranza.Ventanas
                 epValidacion.SetError(
                     lblPlanta,
                     "Seleccione la planta.");
-
-                esValido =
-                    false;
-            }
-
-            if (cbLinea.SelectedIndex == -1 ||
-                cbLinea.SelectedValue is null)
-            {
-                epValidacion.SetError(
-                    lblLinea,
-                    "Seleccione la línea.");
-
-                esValido =
-                    false;
-            }
-
-            if (pictureBox1.Image is null)
-            {
-                epValidacion.SetError(
-                    pictureBox1,
-                    "Capture o seleccione una fotografía.");
 
                 esValido =
                     false;
@@ -1556,10 +1512,6 @@ namespace Aseguranza.Ventanas
                 "Capture el nombre completo del trabajador.");
 
             ttAyuda.SetToolTip(
-                cbLocalidad,
-                "Seleccione la localidad del trabajador.");
-
-            ttAyuda.SetToolTip(
                 cbTurno,
                 "Seleccione el turno del trabajador.");
 
@@ -1569,7 +1521,7 @@ namespace Aseguranza.Ventanas
 
             ttAyuda.SetToolTip(
                 cbLinea,
-                "Seleccione la línea del trabajador.");
+                "Seleccione la línea del trabajador o deje SIN ASIGNAR.");
 
             ttAyuda.SetToolTip(
                 cbCamaras,
@@ -1647,14 +1599,15 @@ namespace Aseguranza.Ventanas
             rutaFotoSeleccionada =
                 null;
 
+            eliminarFotoPendiente =
+                trabajadorActual is not null &&
+                !string.IsNullOrWhiteSpace(
+                    trabajadorActual.RutaFoto);
+
             ActualizarEstadoFoto(
                 "SIN_FOTO");
 
             ActualizarBotonesCamara();
-
-            epValidacion.SetError(
-                pictureBox1,
-                "Capture o seleccione una fotografía.");
 
             MostrarEstado(
                 "Fotografía quitada. Capture o seleccione una nueva.",
@@ -1876,6 +1829,9 @@ namespace Aseguranza.Ventanas
             cargandoDatos =
                 true;
 
+            eliminarFotoPendiente =
+                false;
+
             txtNoReloj.Text =
                 trabajadorActual.NoReloj;
 
@@ -1884,9 +1840,6 @@ namespace Aseguranza.Ventanas
 
             txtNombre.Text =
                 trabajadorActual.Nombre;
-
-            cbLocalidad.SelectedValue =
-                trabajadorActual.IdLocalidad;
 
             cbTurno.SelectedValue =
                 trabajadorActual.IdTurno;
@@ -1927,17 +1880,6 @@ namespace Aseguranza.Ventanas
 
         private void CargarComboBox()
         {
-            cbLocalidad.DataSource =
-                Clases.Localidad
-                    .ConsultarLocalidades(
-                        string.Empty);
-
-            cbLocalidad.ValueMember =
-                "Id";
-
-            cbLocalidad.DisplayMember =
-                "Nombre";
-
             cbTurno.DataSource =
                 Clases.Turno
                     .ConsultarTurnos(
@@ -1966,9 +1908,6 @@ namespace Aseguranza.Ventanas
             }
             else
             {
-                cbLocalidad.SelectedIndex =
-                    -1;
-
                 cbTurno.SelectedIndex =
                     -1;
 
@@ -2147,6 +2086,15 @@ namespace Aseguranza.Ventanas
                     trabajadorActual ??
                     new Clases.Trabajador();
 
+                /*
+                 * trabajador y trabajadorActual apuntan al mismo objeto
+                 * cuando estamos modificando. Guardamos la ruta anterior
+                 * antes de cambiar RutaFoto para poder eliminar el archivo
+                 * físico únicamente después de confirmar el guardado.
+                 */
+                string? rutaFotoAnterior =
+                    trabajadorActual?.RutaFoto;
+
                 trabajador.NoReloj =
                     txtNoReloj.Text.Trim();
 
@@ -2196,6 +2144,16 @@ namespace Aseguranza.Ventanas
                     trabajador.RutaFoto =
                         rutaDestino;
                 }
+                else if (eliminarFotoPendiente)
+                {
+                    /*
+                     * El usuario pulsó "Quitar foto".
+                     * El repositorio guardará NULL tanto en SQL Server
+                     * como en SQLite.
+                     */
+                    trabajador.RutaFoto =
+                        null;
+                }
                 else if (trabajadorActual is not null)
                 {
                     trabajador.RutaFoto =
@@ -2203,21 +2161,13 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    AppDialog.ShowWarning(
-                        this,
-                        "Foto requerida",
-                        "Debe capturar o seleccionar una fotografía.");
-
-                    return;
+                    trabajador.RutaFoto =
+                        null;
                 }
 
                 // ===============================================
                 // DATOS
                 // ===============================================
-
-                trabajador.IdLocalidad =
-                    ObtenerIdCombo(
-                        cbLocalidad);
 
                 trabajador.IdTurno =
                     ObtenerIdCombo(
@@ -2227,6 +2177,8 @@ namespace Aseguranza.Ventanas
                     ObtenerIdCombo(
                         cbPlanta);
 
+                // IdLinea = 0 representa SIN ASIGNAR.
+                // El repositorio lo convierte a NULL en base de datos.
                 trabajador.IdLinea =
                     ObtenerIdCombo(
                         cbLinea);
@@ -2237,10 +2189,55 @@ namespace Aseguranza.Ventanas
                 if (respuesta.Id == 1 ||
                     respuesta.Id == 3)
                 {
-                    AppDialog.ShowInfo(
-                        this,
-                        "Resultado",
-                        respuesta.Nombre);
+                    string? advertenciaFoto =
+                        null;
+
+                    /*
+                     * Primero se confirma el guardado en la base.
+                     * Solo después eliminamos el archivo físico anterior.
+                     * Así no se pierde la fotografía si la operación de
+                     * base de datos falla.
+                     */
+                    if (eliminarFotoPendiente &&
+                        !string.IsNullOrWhiteSpace(
+                            rutaFotoAnterior) &&
+                        File.Exists(
+                            rutaFotoAnterior))
+                    {
+                        try
+                        {
+                            File.Delete(
+                                rutaFotoAnterior);
+                        }
+                        catch (Exception exFoto)
+                        {
+                            advertenciaFoto =
+                                "Los datos se guardaron correctamente y la fotografía " +
+                                "fue retirada del registro, pero no se pudo eliminar " +
+                                "el archivo físico anterior.\n\n" +
+                                "Detalle: " +
+                                exFoto.Message;
+                        }
+                    }
+
+                    eliminarFotoPendiente =
+                        false;
+
+                    if (string.IsNullOrWhiteSpace(
+                        advertenciaFoto))
+                    {
+                        AppDialog.ShowInfo(
+                            this,
+                            "Resultado",
+                            respuesta.Nombre);
+                    }
+                    else
+                    {
+                        AppDialog.ShowWarning(
+                            this,
+                            "Guardado con advertencia",
+                            advertenciaFoto);
+                    }
 
                     NoRelojGuardado =
                         txtNoReloj.Text.Trim();
@@ -2338,6 +2335,9 @@ namespace Aseguranza.Ventanas
                     ofd.FileName;
 
                 capturaDesdeCamara =
+                    false;
+
+                eliminarFotoPendiente =
                     false;
 
                 if (fotoCapturada is not null)
@@ -2610,6 +2610,9 @@ namespace Aseguranza.Ventanas
 
             rutaFotoSeleccionada =
                 null;
+
+            eliminarFotoPendiente =
+                false;
 
             DetenerCamara(
                 limpiarImagen: false);
