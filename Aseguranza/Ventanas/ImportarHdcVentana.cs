@@ -52,6 +52,9 @@ namespace Aseguranza.Ventanas
         private readonly Label lblSinLinea =
             CrearLabelResumen();
 
+        private readonly Label lblIgnorados =
+            CrearLabelResumen();
+
         private readonly Label lblRevisar =
             CrearLabelResumen();
 
@@ -119,6 +122,11 @@ namespace Aseguranza.Ventanas
                 lblSinLinea,
                 "Sin equivalencia de línea",
                 "Mostrar solo registros sin equivalencia de línea");
+
+            ConfigurarFiltroResumen(
+                lblIgnorados,
+                "Ignorar",
+                "Mostrar solo registros ignorados");
 
             ConfigurarFiltroResumen(
                 lblRevisar,
@@ -586,6 +594,13 @@ namespace Aseguranza.Ventanas
                 "Sin línea",
                 ref x,
                 105);
+
+            AgregarResumen(
+                pnlResumen,
+                lblIgnorados,
+                "Ignorados",
+                ref x,
+                110);
 
             AgregarResumen(
                 pnlResumen,
@@ -1501,6 +1516,7 @@ namespace Aseguranza.Ventanas
                 lblSinPlanta.Text = "0";
                 lblSinTurno.Text = "0";
                 lblSinLinea.Text = "0";
+                lblIgnorados.Text = "0";
                 lblRevisar.Text = "0";
                 return;
             }
@@ -1531,6 +1547,10 @@ namespace Aseguranza.Ventanas
 
             lblSinLinea.Text =
                 resultado.SinEquivalenciaLinea
+                    .ToString("N0");
+
+            lblIgnorados.Text =
+                resultado.Ignorados
                     .ToString("N0");
 
             lblRevisar.Text =
