@@ -1200,10 +1200,9 @@ namespace Aseguranza.Ventanas
             int sinCambios =
                 resultadoActual.SinCambios;
 
-            int preparados =
+            int cambiosPendientes =
                 nuevos +
-                actualizados +
-                sinCambios;
+                actualizados;
 
             int pendientes =
                 resultadoActual.SinEquivalenciaPlanta +
@@ -1212,12 +1211,12 @@ namespace Aseguranza.Ventanas
                 resultadoActual.RegistrosRevisar +
                 resultadoActual.RegistrosDuplicados;
 
-            if (preparados <= 0)
+            if (cambiosPendientes <= 0)
             {
                 AppDialog.ShowInfo(
                     this,
-                    "Sin registros preparados",
-                    "No hay registros listos para importar.");
+                    "Sin cambios para importar",
+                    "No hay trabajadores nuevos ni actualizaciones pendientes.");
 
                 return;
             }
@@ -1431,13 +1430,12 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            int preparados =
+            int cambiosPendientes =
                 resultadoActual.Nuevos +
-                resultadoActual.Actualizados +
-                resultadoActual.SinCambios;
+                resultadoActual.Actualizados;
 
             btnImportar.Enabled =
-                preparados > 0;
+                cambiosPendientes > 0;
         }
 
         private void MostrarResultado(

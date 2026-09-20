@@ -3002,8 +3002,26 @@ namespace Aseguranza.Ventanas
                 .ToUpperInvariant()
                 ?? "MAPEAR";
 
-            cboPlantaSistema.Enabled =
+            bool requierePlanta =
                 accion == "MAPEAR";
+
+            cboPlantaSistema.Enabled =
+                requierePlanta;
+
+            if (!requierePlanta)
+            {
+                cboPlantaSistema.SelectedIndex =
+                    -1;
+
+                return;
+            }
+
+            if (cboPlantaSistema.SelectedIndex < 0 &&
+                cboPlantaSistema.Items.Count > 0)
+            {
+                cboPlantaSistema.SelectedIndex =
+                    0;
+            }
         }
 
 
