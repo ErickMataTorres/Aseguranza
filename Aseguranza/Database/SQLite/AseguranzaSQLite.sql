@@ -220,7 +220,17 @@ CREATE TABLE IF NOT EXISTS "EquivalenciaPlantaHdc"
 (
     "Id" INTEGER PRIMARY KEY AUTOINCREMENT,
     "CodigoLocalidadHdc" TEXT NOT NULL,
-    "IdPlanta" INTEGER NOT NULL,
+    "Accion" TEXT NOT NULL
+        DEFAULT 'MAPEAR'
+        CHECK(
+            "Accion" IN
+            (
+                'MAPEAR',
+                'IGNORAR',
+                'PENDIENTE'
+            )
+        ),
+    "IdPlanta" INTEGER NULL,
     "Activo" INTEGER NOT NULL
         DEFAULT 1
         CHECK("Activo" IN (0, 1)),
@@ -228,6 +238,24 @@ CREATE TABLE IF NOT EXISTS "EquivalenciaPlantaHdc"
 
     CONSTRAINT "UQ_EquivalenciaPlantaHdc_Codigo"
         UNIQUE("CodigoLocalidadHdc"),
+
+    CONSTRAINT "CK_EquivalenciaPlantaHdc_Accion"
+        CHECK
+        (
+            (
+                "Accion" = 'MAPEAR'
+                AND "IdPlanta" IS NOT NULL
+            )
+            OR
+            (
+                "Accion" IN
+                (
+                    'IGNORAR',
+                    'PENDIENTE'
+                )
+                AND "IdPlanta" IS NULL
+            )
+        ),
 
     CONSTRAINT "FK_EquivalenciaPlantaHdc_Planta"
         FOREIGN KEY("IdPlanta")

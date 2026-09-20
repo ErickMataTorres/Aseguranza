@@ -89,6 +89,51 @@ namespace Aseguranza.Clases
                     continue;
                 }
 
+                string accionPlanta =
+                    LeerTexto(
+                        planta,
+                        "Accion")
+                    .Trim()
+                    .ToUpperInvariant();
+
+                if (accionPlanta == "IGNORAR")
+                {
+                    registro.Estado = "Ignorar";
+                    registro.PlantaSistema = "IGNORAR";
+                    AgregarObservacion(
+                        registro,
+                        "La localidad HDC está marcada como IGNORAR.");
+                    continue;
+                }
+
+                if (accionPlanta == "PENDIENTE")
+                {
+                    registro.Estado = "Sin equivalencia de planta";
+                    registro.PlantaSistema = "PENDIENTE";
+                    AgregarObservacion(
+                        registro,
+                        "La localidad HDC fue revisada, pero su planta sigue marcada como PENDIENTE.");
+                    continue;
+                }
+
+                if (accionPlanta != "MAPEAR")
+                {
+                    registro.Estado = "Revisar";
+                    AgregarObservacion(
+                        registro,
+                        "La acción configurada para la planta no es válida.");
+                    continue;
+                }
+
+                if (planta["IdPlanta"] == DBNull.Value)
+                {
+                    registro.Estado = "Revisar";
+                    AgregarObservacion(
+                        registro,
+                        "La equivalencia MAPEAR de planta no tiene una planta del sistema.");
+                    continue;
+                }
+
                 registro.IdPlantaSistema =
                     Convert.ToInt32(planta["IdPlanta"]);
 

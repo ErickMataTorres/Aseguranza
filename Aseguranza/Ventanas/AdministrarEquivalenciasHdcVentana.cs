@@ -17,6 +17,9 @@ namespace Aseguranza.Ventanas
         private readonly ComboBox cboLocalidadHdc =
             CrearCombo();
 
+        private readonly ComboBox cboAccionPlanta =
+            CrearCombo();
+
         private readonly ComboBox cboPlantaSistema =
             CrearCombo();
 
@@ -107,6 +110,8 @@ namespace Aseguranza.Ventanas
             CargarCatalogos();
 
             CargarEquivalencias();
+
+            CargarEquivalenciaPlantaSeleccionada();
         }
 
         private void ConfigurarVentana()
@@ -292,18 +297,53 @@ namespace Aseguranza.Ventanas
 
             cboLocalidadHdc.Size =
                 new Size(
-                    220,
+                    200,
                     32);
+
+            cboLocalidadHdc.SelectedIndexChanged +=
+                (_, _) =>
+                    CargarEquivalenciaPlantaSeleccionada();
+
+            Label lblAccion =
+                CrearEtiqueta(
+                    "Acción",
+                    235,
+                    62);
+
+            cboAccionPlanta.Location =
+                new Point(
+                    235,
+                    85);
+
+            cboAccionPlanta.Size =
+                new Size(
+                    155,
+                    32);
+
+            cboAccionPlanta.Items.AddRange(
+                new object[]
+                {
+                    "MAPEAR",
+                    "IGNORAR",
+                    "PENDIENTE"
+                });
+
+            cboAccionPlanta.SelectedIndex =
+                0;
+
+            cboAccionPlanta.SelectedIndexChanged +=
+                (_, _) =>
+                    ActualizarEstadoPlantaSistema();
 
             Label lblDestino =
                 CrearEtiqueta(
                     "Planta del sistema",
-                    260,
+                    405,
                     62);
 
             cboPlantaSistema.Location =
                 new Point(
-                    260,
+                    405,
                     85);
 
             cboPlantaSistema.Size =
@@ -324,7 +364,7 @@ namespace Aseguranza.Ventanas
 
             btnGuardar.Location =
                 new Point(
-                    535,
+                    680,
                     81);
 
             btnGuardar.Click +=
@@ -355,6 +395,12 @@ namespace Aseguranza.Ventanas
 
             tab.Controls.Add(
                 cboLocalidadHdc);
+
+            tab.Controls.Add(
+                lblAccion);
+
+            tab.Controls.Add(
+                cboAccionPlanta);
 
             tab.Controls.Add(
                 lblDestino);
@@ -1346,7 +1392,7 @@ namespace Aseguranza.Ventanas
                 HdcEquivalencia
                     .ConsultarPlantas();
 
-            var mapaEquivalencias =
+            Dictionary<string, DataRow> mapaEquivalencias =
                 equivalencias.Rows
                     .Cast<DataRow>()
                     .Where(
@@ -1364,10 +1410,7 @@ namespace Aseguranza.Ventanas
                         grupo =>
                             grupo.Key,
                         grupo =>
-                            Convert.ToString(
-                                grupo.First()["NombrePlanta"])
-                            ?.Trim()
-                            ?? string.Empty,
+                            grupo.First(),
                         StringComparer.OrdinalIgnoreCase);
 
             DataTable tabla =
@@ -1400,7 +1443,24 @@ namespace Aseguranza.Ventanas
                 bool configurada =
                     mapaEquivalencias.TryGetValue(
                         clave,
-                        out string? nombrePlanta);
+                        out DataRow? equivalenciaPlanta);
+
+                string accionPlanta =
+                    configurada &&
+                    equivalenciaPlanta is not null
+                        ? LeerTextoDiagnostico(
+                            equivalenciaPlanta,
+                            "Accion")
+                            .ToUpperInvariant()
+                        : string.Empty;
+
+                string nombrePlanta =
+                    configurada &&
+                    equivalenciaPlanta is not null
+                        ? LeerTextoDiagnostico(
+                            equivalenciaPlanta,
+                            "NombrePlanta")
+                        : string.Empty;
 
                 DataRow fila =
                     tabla.NewRow();
@@ -1438,14 +1498,36 @@ namespace Aseguranza.Ventanas
                                 item.DepartamentoHdc));
 
                 fila["Equivalencia"] =
-                    configurada
-                        ? nombrePlanta ?? string.Empty
-                        : string.Empty;
+                    accionPlanta switch
+                    {
+                        "MAPEAR" =>
+                            nombrePlanta,
+
+                        "IGNORAR" =>
+                            "IGNORAR",
+
+                        "PENDIENTE" =>
+                            "PENDIENTE",
+
+                        _ =>
+                            string.Empty
+                    };
 
                 fila["EstadoEquivalencia"] =
-                    configurada
-                        ? "Configurada"
-                        : "Pendiente";
+                    accionPlanta switch
+                    {
+                        "MAPEAR" =>
+                            "Mapeada",
+
+                        "IGNORAR" =>
+                            "Ignorada",
+
+                        "PENDIENTE" =>
+                            "Pendiente",
+
+                        _ =>
+                            "Pendiente"
+                    };
 
                 tabla.Rows.Add(
                     fila);
@@ -2749,17 +2831,66 @@ namespace Aseguranza.Ventanas
             string origen =
                 Convert.ToString(
                     cboLocalidadHdc.SelectedItem)
+                ?.Trim()
                 ?? string.Empty;
+
+            string accion =
+                Convert.ToString(
+                    cboAccionPlanta.SelectedItem)
+                ?.Trim()
+                .ToUpperInvariant()
+                ?? "MAPEAR";
 
             int idPlanta =
                 ObtenerValorEntero(
                     cboPlantaSistema);
 
+            int? idPlantaGuardar =
+                accion == "MAPEAR"
+                    ? idPlanta
+                    : null;
+
+            if (accion == "IGNORAR")
+            {
+                int registrosAfectados =
+                    resultado.Registros.Count(
+                        item =>
+                            string.Equals(
+                                item.LocalidadHdc?.Trim(),
+                                origen,
+                                StringComparison.OrdinalIgnoreCase));
+
+                bool confirmar =
+                    AppDialog.Confirm(
+                        this,
+                        "Ignorar localidad HDC",
+                        "La localidad " +
+                        origen +
+                        " quedará marcada como IGNORAR." +
+                        Environment.NewLine +
+                        Environment.NewLine +
+                        "Registros del HDC afectados: " +
+                        registrosAfectados.ToString("N0") +
+                        Environment.NewLine +
+                        Environment.NewLine +
+                        "Estos registros no se importarán mientras la localidad continúe marcada como IGNORAR." +
+                        Environment.NewLine +
+                        Environment.NewLine +
+                        "¿Desea continuar?",
+                        "Ignorar");
+
+                if (!confirmar)
+                {
+                    return;
+                }
+            }
+
             Mensaje respuesta =
                 HdcEquivalencia
                     .GuardarPlanta(
                         origen,
-                        idPlanta);
+                        accion,
+                        idPlantaGuardar);
 
             MostrarResultado(
                 respuesta);
@@ -2768,9 +2899,113 @@ namespace Aseguranza.Ventanas
             {
                 CargarEquivalencias();
 
+                CargarEquivalenciaPlantaSeleccionada();
+
                 LocalidadLineaCambio();
             }
         }
+
+        private void CargarEquivalenciaPlantaSeleccionada()
+        {
+            if (cboLocalidadHdc.SelectedItem is null)
+            {
+                return;
+            }
+
+            string localidad =
+                Convert.ToString(
+                    cboLocalidadHdc.SelectedItem)
+                ?.Trim()
+                ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(
+                    localidad))
+            {
+                return;
+            }
+
+            DataTable equivalencias =
+                HdcEquivalencia
+                    .ConsultarPlantas();
+
+            DataRow? equivalencia =
+                equivalencias.Rows
+                    .Cast<DataRow>()
+                    .FirstOrDefault(
+                        fila =>
+                            string.Equals(
+                                Convert.ToString(
+                                    fila["CodigoLocalidadHdc"])
+                                    ?.Trim(),
+                                localidad,
+                                StringComparison.OrdinalIgnoreCase));
+
+            string accion =
+                equivalencia is null
+                    ? "MAPEAR"
+                    : LeerTextoDiagnostico(
+                        equivalencia,
+                        "Accion")
+                        .ToUpperInvariant();
+
+            int indiceAccion =
+                cboAccionPlanta.Items
+                    .Cast<object>()
+                    .Select(
+                        (item, indice) =>
+                            new
+                            {
+                                Valor =
+                                    Convert.ToString(
+                                        item)
+                                    ?.Trim()
+                                    .ToUpperInvariant()
+                                    ?? string.Empty,
+
+                                Indice =
+                                    indice
+                            })
+                    .Where(
+                        item =>
+                            item.Valor ==
+                            accion)
+                    .Select(
+                        item =>
+                            item.Indice)
+                    .DefaultIfEmpty(
+                        0)
+                    .First();
+
+            cboAccionPlanta.SelectedIndex =
+                indiceAccion;
+
+            if (accion == "MAPEAR" &&
+                equivalencia is not null &&
+                equivalencia.Table.Columns.Contains(
+                    "IdPlanta") &&
+                equivalencia["IdPlanta"] != DBNull.Value)
+            {
+                cboPlantaSistema.SelectedValue =
+                    Convert.ToInt32(
+                        equivalencia["IdPlanta"]);
+            }
+
+            ActualizarEstadoPlantaSistema();
+        }
+
+        private void ActualizarEstadoPlantaSistema()
+        {
+            string accion =
+                Convert.ToString(
+                    cboAccionPlanta.SelectedItem)
+                ?.Trim()
+                .ToUpperInvariant()
+                ?? "MAPEAR";
+
+            cboPlantaSistema.Enabled =
+                accion == "MAPEAR";
+        }
+
 
         private void GuardarTurno()
         {
@@ -2874,7 +3109,16 @@ namespace Aseguranza.Ventanas
                                     fila["CodigoLocalidadHdc"])
                                     ?.Trim(),
                                 localidad,
-                                StringComparison.OrdinalIgnoreCase));
+                                StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(
+                                LeerTextoDiagnostico(
+                                    fila,
+                                    "Accion"),
+                                "MAPEAR",
+                                StringComparison.OrdinalIgnoreCase) &&
+                            fila.Table.Columns.Contains(
+                                "IdPlanta") &&
+                            fila["IdPlanta"] != DBNull.Value);
 
             if (!tienePlanta)
             {
@@ -3079,6 +3323,7 @@ namespace Aseguranza.Ventanas
             string localidad =
                 Convert.ToString(
                     cboLocalidadLineaHdc.SelectedItem)
+                ?.Trim()
                 ?? string.Empty;
 
             string[] lineasHdc =
@@ -3086,12 +3331,13 @@ namespace Aseguranza.Ventanas
                     .Where(
                         item =>
                             string.Equals(
-                                item.LocalidadHdc,
+                                item.LocalidadHdc?.Trim(),
                                 localidad,
                                 StringComparison.OrdinalIgnoreCase))
                     .Select(
                         item =>
-                            item.LineaHdc)
+                            item.LineaHdc?.Trim()
+                            ?? string.Empty)
                     .Where(
                         valor =>
                             !string.IsNullOrWhiteSpace(
@@ -3100,7 +3346,8 @@ namespace Aseguranza.Ventanas
                         StringComparer.OrdinalIgnoreCase)
                     .OrderBy(
                         valor =>
-                            valor)
+                            valor,
+                        StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
             cboLineaHdc.DataSource =
@@ -3128,7 +3375,8 @@ namespace Aseguranza.Ventanas
                         fila =>
                             string.Equals(
                                 Convert.ToString(
-                                    fila["CodigoLocalidadHdc"]),
+                                    fila["CodigoLocalidadHdc"])
+                                    ?.Trim(),
                                 localidad,
                                 StringComparison.OrdinalIgnoreCase));
 
@@ -3146,14 +3394,63 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
+            string accionPlanta =
+                LeerTextoDiagnostico(
+                    equivalencia,
+                    "Accion")
+                    .ToUpperInvariant();
+
+            if (accionPlanta == "IGNORAR")
+            {
+                lblPlantaLinea.Text =
+                    "Localidad marcada como IGNORAR. No requiere equivalencias de línea.";
+
+                cboLineaSistema.DataSource =
+                    null;
+
+                cboLineaSistema.Enabled =
+                    false;
+
+                return;
+            }
+
+            if (accionPlanta == "PENDIENTE")
+            {
+                lblPlantaLinea.Text =
+                    "Planta del sistema: PENDIENTE. Defina primero la planta o marque IGNORAR.";
+
+                cboLineaSistema.DataSource =
+                    null;
+
+                cboLineaSistema.Enabled =
+                    false;
+
+                return;
+            }
+
+            if (accionPlanta != "MAPEAR" ||
+                equivalencia["IdPlanta"] == DBNull.Value)
+            {
+                lblPlantaLinea.Text =
+                    "La equivalencia de planta requiere revisión.";
+
+                cboLineaSistema.DataSource =
+                    null;
+
+                cboLineaSistema.Enabled =
+                    false;
+
+                return;
+            }
+
             int idPlanta =
                 Convert.ToInt32(
                     equivalencia["IdPlanta"]);
 
             string nombrePlanta =
-                Convert.ToString(
-                    equivalencia["NombrePlanta"])
-                ?? string.Empty;
+                LeerTextoDiagnostico(
+                    equivalencia,
+                    "NombrePlanta");
 
             lblPlantaLinea.Text =
                 "Planta del sistema: " +
@@ -3174,6 +3471,7 @@ namespace Aseguranza.Ventanas
 
             ActualizarEstadoLineaSistema();
         }
+
 
         private void ActualizarEstadoLineaSistema()
         {

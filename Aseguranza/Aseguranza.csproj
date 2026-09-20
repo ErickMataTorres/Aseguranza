@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Database\AseguranzaBD.sql">
+    <Content Include="Database\SQLServer\AseguranzaBD.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 

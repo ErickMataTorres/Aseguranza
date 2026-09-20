@@ -29,12 +29,14 @@ namespace Aseguranza.Clases
 
         public static Mensaje GuardarPlanta(
             string codigoLocalidadHdc,
-            int idPlanta)
+            string accion,
+            int? idPlanta)
         {
             return RepositorioFactory
                 .CrearHdcEquivalenciaRepository()
                 .GuardarPlanta(
                     codigoLocalidadHdc,
+                    accion,
                     idPlanta);
         }
 

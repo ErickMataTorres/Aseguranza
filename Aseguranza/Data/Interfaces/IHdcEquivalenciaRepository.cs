@@ -14,7 +14,8 @@ namespace Aseguranza.Data.Interfaces
 
         Mensaje GuardarPlanta(
             string codigoLocalidadHdc,
-            int idPlanta);
+            string accion,
+            int? idPlanta);
 
         Mensaje GuardarTurno(
             string valorTurnoHdc,

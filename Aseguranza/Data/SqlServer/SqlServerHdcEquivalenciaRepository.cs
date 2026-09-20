@@ -17,12 +17,13 @@ namespace Aseguranza.Data.SqlServer
                 SELECT
                     E.Id,
                     E.CodigoLocalidadHdc,
+                    E.Accion,
                     E.IdPlanta,
                     P.Nombre AS NombrePlanta,
                     E.Activo,
                     E.Comentario
                 FROM dbo.EquivalenciaPlantaHdc AS E
-                INNER JOIN dbo.Planta AS P
+                LEFT JOIN dbo.Planta AS P
                     ON P.Id = E.IdPlanta
                 WHERE E.Activo = 1
                 ORDER BY E.CodigoLocalidadHdc;
@@ -77,18 +78,39 @@ namespace Aseguranza.Data.SqlServer
 
         public Mensaje GuardarPlanta(
             string codigoLocalidadHdc,
-            int idPlanta)
+            string accion,
+            int? idPlanta)
         {
             codigoLocalidadHdc =
                 (codigoLocalidadHdc ?? string.Empty)
                     .Trim();
 
+            accion =
+                (accion ?? string.Empty)
+                    .Trim()
+                    .ToUpperInvariant();
+
             if (string.IsNullOrWhiteSpace(
-                    codigoLocalidadHdc) ||
-                idPlanta <= 0)
+                    codigoLocalidadHdc))
             {
                 return Error(
-                    "Seleccione una localidad HDC y una planta válida.");
+                    "Seleccione una localidad HDC.");
+            }
+
+            if (accion != "MAPEAR" &&
+                accion != "IGNORAR" &&
+                accion != "PENDIENTE")
+            {
+                return Error(
+                    "La acción seleccionada para la planta no es válida.");
+            }
+
+            if (accion == "MAPEAR" &&
+                (!idPlanta.HasValue ||
+                 idPlanta.Value <= 0))
+            {
+                return Error(
+                    "Seleccione la planta del sistema que corresponde.");
             }
 
             try
@@ -102,14 +124,17 @@ namespace Aseguranza.Data.SqlServer
                     conexion.CreateCommand();
 
                 comando.CommandText = """
-                    IF NOT EXISTS
-                    (
-                        SELECT 1
-                        FROM dbo.Planta
-                        WHERE Id = @IdPlanta
-                    )
+                    IF @Accion = 'MAPEAR'
                     BEGIN
-                        THROW 50001, 'La planta seleccionada no existe.', 1;
+                        IF NOT EXISTS
+                        (
+                            SELECT 1
+                            FROM dbo.Planta
+                            WHERE Id = @IdPlanta
+                        )
+                        BEGIN
+                            THROW 50001, 'La planta seleccionada no existe.', 1;
+                        END;
                     END;
 
                     IF EXISTS
@@ -121,7 +146,13 @@ namespace Aseguranza.Data.SqlServer
                     BEGIN
                         UPDATE dbo.EquivalenciaPlantaHdc
                         SET
-                            IdPlanta = @IdPlanta,
+                            Accion = @Accion,
+                            IdPlanta =
+                                CASE
+                                    WHEN @Accion = 'MAPEAR'
+                                        THEN @IdPlanta
+                                    ELSE NULL
+                                END,
                             Activo = 1
                         WHERE CodigoLocalidadHdc = @CodigoLocalidadHdc;
                     END
@@ -130,13 +161,19 @@ namespace Aseguranza.Data.SqlServer
                         INSERT INTO dbo.EquivalenciaPlantaHdc
                         (
                             CodigoLocalidadHdc,
+                            Accion,
                             IdPlanta,
                             Activo
                         )
                         VALUES
                         (
                             @CodigoLocalidadHdc,
-                            @IdPlanta,
+                            @Accion,
+                            CASE
+                                WHEN @Accion = 'MAPEAR'
+                                    THEN @IdPlanta
+                                ELSE NULL
+                            END,
                             1
                         );
                     END;
@@ -149,14 +186,35 @@ namespace Aseguranza.Data.SqlServer
                         codigoLocalidadHdc.ToUpperInvariant();
 
                 comando.Parameters.Add(
+                    "@Accion",
+                    SqlDbType.VarChar,
+                    20).Value =
+                        accion;
+
+                comando.Parameters.Add(
                     "@IdPlanta",
                     SqlDbType.Int).Value =
-                        idPlanta;
+                        idPlanta.HasValue
+                            ? idPlanta.Value
+                            : DBNull.Value;
 
                 comando.ExecuteNonQuery();
 
+                string mensaje =
+                    accion switch
+                    {
+                        "MAPEAR" =>
+                            "Equivalencia de planta guardada correctamente.",
+
+                        "IGNORAR" =>
+                            "La localidad HDC quedó marcada como IGNORAR.",
+
+                        _ =>
+                            "La localidad HDC quedó marcada como PENDIENTE."
+                    };
+
                 return Ok(
-                    "Equivalencia de planta guardada correctamente.");
+                    mensaje);
             }
             catch (Exception ex)
             {
@@ -318,6 +376,7 @@ namespace Aseguranza.Data.SqlServer
                         @IdPlantaEquivalente = IdPlanta
                     FROM dbo.EquivalenciaPlantaHdc
                     WHERE CodigoLocalidadHdc = @CodigoLocalidadHdc
+                      AND Accion = 'MAPEAR'
                       AND Activo = 1;
 
                     IF @IdPlantaEquivalente IS NULL
