@@ -1,6 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace Aseguranza.Clases
@@ -23,35 +22,46 @@ namespace Aseguranza.Clases
                     rutaScript);
             }
 
-            string script = File.ReadAllText(rutaScript);
+            string script =
+                File.ReadAllText(rutaScript);
+
+            if (string.IsNullOrWhiteSpace(script))
+            {
+                throw new InvalidOperationException(
+                    "El script de inicialización SQLite está vacío.");
+            }
 
             using SqliteConnection conexion =
                 ConexionSqlite.Crear();
 
             conexion.Open();
 
-            using SqliteTransaction transaccion =
-                conexion.BeginTransaction();
+            /*
+             * IMPORTANTE:
+             *
+             * AseguranzaSQLite.sql administra su propia transacción mediante
+             * BEGIN TRANSACTION / COMMIT.
+             *
+             * No se crea una transacción adicional desde C#, porque eso
+             * provocaría:
+             *
+             *     cannot start a transaction within a transaction
+             *
+             * Tampoco se divide el script por ';'. Un CREATE TRIGGER puede
+             * contener varios ';' dentro de BEGIN ... END, por lo que dividir
+             * por punto y coma rompe sentencias SQL válidas.
+             *
+             * Microsoft.Data.Sqlite ejecuta el lote completo enviado en
+             * CommandText, conservando correctamente las sentencias y triggers
+             * definidos en el script.
+             */
+            using SqliteCommand comando =
+                conexion.CreateCommand();
 
-            try
-            {
-                foreach (string instruccion in SepararInstrucciones(script))
-                {
-                    using SqliteCommand comando =
-                        conexion.CreateCommand();
+            comando.CommandText =
+                script;
 
-                    comando.Transaction = transaccion;
-                    comando.CommandText = instruccion;
-                    comando.ExecuteNonQuery();
-                }
-
-                transaccion.Commit();
-            }
-            catch
-            {
-                transaccion.Rollback();
-                throw;
-            }
+            comando.ExecuteNonQuery();
         }
 
         public static bool EstaInicializada()
@@ -73,34 +83,18 @@ namespace Aseguranza.Clases
                 conexion.CreateCommand();
 
             comando.CommandText =
-                "SELECT COUNT(*) " +
-                "FROM sqlite_master " +
-                "WHERE type = 'table' " +
-                "AND name = 'SchemaVersion';";
+                """
+                SELECT COUNT(*)
+                FROM sqlite_master
+                WHERE type = 'table'
+                  AND name = 'SchemaVersion';
+                """;
 
             long resultado =
-                Convert.ToInt64(comando.ExecuteScalar());
+                Convert.ToInt64(
+                    comando.ExecuteScalar());
 
             return resultado > 0;
-        }
-
-        private static IEnumerable<string> SepararInstrucciones(
-            string script)
-        {
-            string[] fragmentos =
-                script.Split(
-                    ';',
-                    StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string fragmento in fragmentos)
-            {
-                string instruccion = fragmento.Trim();
-
-                if (!string.IsNullOrWhiteSpace(instruccion))
-                {
-                    yield return instruccion;
-                }
-            }
         }
     }
 }
