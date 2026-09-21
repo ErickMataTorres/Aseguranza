@@ -482,6 +482,237 @@ namespace Aseguranza.Data.SqlServer
             }
         }
 
+        public Mensaje EliminarPlanta(
+            string codigoLocalidadHdc)
+        {
+            codigoLocalidadHdc =
+                (codigoLocalidadHdc ?? string.Empty)
+                    .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    codigoLocalidadHdc))
+            {
+                return Error(
+                    "Seleccione una equivalencia de planta válida.");
+            }
+
+            try
+            {
+                using SqlConnection conexion =
+                    Conexion.Conectar();
+
+                conexion.Open();
+
+                using SqlTransaction transaccion =
+                    conexion.BeginTransaction();
+
+                try
+                {
+                    int lineasEliminadas;
+
+                    using (SqlCommand comandoLineas =
+                           conexion.CreateCommand())
+                    {
+                        comandoLineas.Transaction =
+                            transaccion;
+
+                        comandoLineas.CommandText = """
+                            DELETE FROM dbo.EquivalenciaLineaHdc
+                            WHERE CodigoLocalidadHdc = @CodigoLocalidadHdc;
+                            """;
+
+                        comandoLineas.Parameters.Add(
+                            "@CodigoLocalidadHdc",
+                            SqlDbType.VarChar,
+                            50).Value =
+                                codigoLocalidadHdc.ToUpperInvariant();
+
+                        lineasEliminadas =
+                            comandoLineas.ExecuteNonQuery();
+                    }
+
+                    int plantasEliminadas;
+
+                    using (SqlCommand comandoPlanta =
+                           conexion.CreateCommand())
+                    {
+                        comandoPlanta.Transaction =
+                            transaccion;
+
+                        comandoPlanta.CommandText = """
+                            DELETE FROM dbo.EquivalenciaPlantaHdc
+                            WHERE CodigoLocalidadHdc = @CodigoLocalidadHdc;
+                            """;
+
+                        comandoPlanta.Parameters.Add(
+                            "@CodigoLocalidadHdc",
+                            SqlDbType.VarChar,
+                            50).Value =
+                                codigoLocalidadHdc.ToUpperInvariant();
+
+                        plantasEliminadas =
+                            comandoPlanta.ExecuteNonQuery();
+                    }
+
+                    if (plantasEliminadas <= 0)
+                    {
+                        transaccion.Rollback();
+
+                        return Error(
+                            "La equivalencia de planta seleccionada ya no existe.");
+                    }
+
+                    transaccion.Commit();
+
+                    string detalleLineas =
+                        lineasEliminadas > 0
+                            ? " También se eliminaron " +
+                              lineasEliminadas.ToString("N0") +
+                              " equivalencias de línea asociadas."
+                            : string.Empty;
+
+                    return Ok(
+                        "Equivalencia de planta eliminada correctamente." +
+                        detalleLineas);
+                }
+                catch
+                {
+                    transaccion.Rollback();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                return Error(
+                    "No se pudo eliminar la equivalencia de planta. " +
+                    ex.Message);
+            }
+        }
+
+        public Mensaje EliminarTurno(
+            string valorTurnoHdc)
+        {
+            valorTurnoHdc =
+                (valorTurnoHdc ?? string.Empty)
+                    .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    valorTurnoHdc))
+            {
+                return Error(
+                    "Seleccione una equivalencia de turno válida.");
+            }
+
+            try
+            {
+                using SqlConnection conexion =
+                    Conexion.Conectar();
+
+                conexion.Open();
+
+                using SqlCommand comando =
+                    conexion.CreateCommand();
+
+                comando.CommandText = """
+                    DELETE FROM dbo.EquivalenciaTurnoHdc
+                    WHERE ValorTurnoHdc = @ValorTurnoHdc;
+                    """;
+
+                comando.Parameters.Add(
+                    "@ValorTurnoHdc",
+                    SqlDbType.VarChar,
+                    50).Value =
+                        valorTurnoHdc.ToUpperInvariant();
+
+                int filas =
+                    comando.ExecuteNonQuery();
+
+                if (filas <= 0)
+                {
+                    return Error(
+                        "La equivalencia de turno seleccionada ya no existe.");
+                }
+
+                return Ok(
+                    "Equivalencia de turno eliminada correctamente.");
+            }
+            catch (Exception ex)
+            {
+                return Error(
+                    "No se pudo eliminar la equivalencia de turno. " +
+                    ex.Message);
+            }
+        }
+
+        public Mensaje EliminarLinea(
+            string codigoLocalidadHdc,
+            string valorLineaHdc)
+        {
+            codigoLocalidadHdc =
+                (codigoLocalidadHdc ?? string.Empty)
+                    .Trim();
+
+            valorLineaHdc =
+                (valorLineaHdc ?? string.Empty)
+                    .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    codigoLocalidadHdc) ||
+                string.IsNullOrWhiteSpace(
+                    valorLineaHdc))
+            {
+                return Error(
+                    "Seleccione una equivalencia de línea válida.");
+            }
+
+            try
+            {
+                using SqlConnection conexion =
+                    Conexion.Conectar();
+
+                conexion.Open();
+
+                using SqlCommand comando =
+                    conexion.CreateCommand();
+
+                comando.CommandText = """
+                    DELETE FROM dbo.EquivalenciaLineaHdc
+                    WHERE CodigoLocalidadHdc = @CodigoLocalidadHdc
+                      AND ValorLineaHdc = @ValorLineaHdc;
+                    """;
+
+                comando.Parameters.Add(
+                    "@CodigoLocalidadHdc",
+                    SqlDbType.VarChar,
+                    50).Value =
+                        codigoLocalidadHdc.ToUpperInvariant();
+
+                comando.Parameters.Add(
+                    "@ValorLineaHdc",
+                    SqlDbType.VarChar,
+                    100).Value =
+                        valorLineaHdc.ToUpperInvariant();
+
+                int filas =
+                    comando.ExecuteNonQuery();
+
+                if (filas <= 0)
+                {
+                    return Error(
+                        "La equivalencia de línea seleccionada ya no existe.");
+                }
+
+                return Ok(
+                    "Equivalencia de línea eliminada correctamente.");
+            }
+            catch (Exception ex)
+            {
+                return Error(
+                    "No se pudo eliminar la equivalencia de línea. " +
+                    ex.Message);
+            }
+        }
+
         public HashSet<string>
             ConsultarNumerosReloj()
         {

@@ -224,6 +224,41 @@ namespace Aseguranza.UI
                 _lblMessage);
 
             // =====================================================
+            // AJUSTE DINÁMICO DEL MENSAJE
+            // =====================================================
+
+            Size messageSize =
+                TextRenderer.MeasureText(
+                    _lblMessage.Text,
+                    _lblMessage.Font,
+                    new Size(
+                        _lblMessage.Width,
+                        2000),
+                    TextFormatFlags.WordBreak |
+                    TextFormatFlags.TextBoxControl |
+                    TextFormatFlags.NoPadding);
+
+            int messageHeight =
+                Math.Max(
+                    105,
+                    messageSize.Height + 16);
+
+            _lblMessage.Height =
+                messageHeight;
+
+            int buttonsTop =
+                _lblMessage.Top +
+                _lblMessage.Height +
+                42;
+
+            ClientSize =
+                new Size(
+                    650,
+                    Math.Max(
+                        370,
+                        buttonsTop + 75));
+
+            // =====================================================
             // BOTÓN PRINCIPAL
             // =====================================================
 
@@ -255,12 +290,12 @@ namespace Aseguranza.UI
                 _btnSecondary.Location =
                     new Point(
                         192,
-                        295);
+                        buttonsTop);
 
                 _btnPrimary.Location =
                     new Point(
                         336,
-                        295);
+                        buttonsTop);
 
                 AcceptButton =
                     _btnPrimary;
@@ -284,7 +319,7 @@ namespace Aseguranza.UI
                 _btnPrimary.Location =
                     new Point(
                         261,
-                        295);
+                        buttonsTop);
 
                 AcceptButton =
                     _btnPrimary;

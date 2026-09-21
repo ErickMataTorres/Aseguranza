@@ -140,6 +140,20 @@ namespace Aseguranza.Data.SQLite
                                 idTrabajador,
                                 registro);
                         }
+                        else if (EstadoEs(
+                                     registro,
+                                     "Sin cambios") &&
+                                 !TrabajadorCoincideConHdc(
+                                     conexion,
+                                     transaccion,
+                                     idTrabajador,
+                                     registro))
+                        {
+                            throw CrearErrorFila(
+                                registro,
+                                "El trabajador cambió después del análisis y ya no coincide " +
+                                "con el HDC. Vuelva a analizar antes de importar.");
+                        }
                     }
 
                     GuardarPerfilHdc(
@@ -558,6 +572,73 @@ namespace Aseguranza.Data.SQLite
                     registro,
                     "No fue posible actualizar exactamente un trabajador.");
             }
+        }
+
+        private static bool TrabajadorCoincideConHdc(
+            SqliteConnection conexion,
+            SqliteTransaction transaccion,
+            int idTrabajador,
+            RegistroHdc registro)
+        {
+            using SqliteCommand comando =
+                conexion.CreateCommand();
+
+            comando.Transaction =
+                transaccion;
+
+            comando.CommandText = """
+                SELECT
+                    Nombre,
+                    IdTurno,
+                    IdPlanta,
+                    IdLinea
+                FROM Trabajador
+                WHERE Id = @IdTrabajador
+                LIMIT 1;
+                """;
+
+            comando.Parameters.AddWithValue(
+                "@IdTrabajador",
+                idTrabajador);
+
+            using SqliteDataReader lector =
+                comando.ExecuteReader();
+
+            if (!lector.Read())
+            {
+                return false;
+            }
+
+            string nombreActual =
+                lector.IsDBNull(0)
+                    ? string.Empty
+                    : lector.GetString(0).Trim();
+
+            int idTurnoActual =
+                lector.GetInt32(1);
+
+            int idPlantaActual =
+                lector.GetInt32(2);
+
+            int idLineaActual =
+                lector.IsDBNull(3)
+                    ? 0
+                    : lector.GetInt32(3);
+
+            bool lineaCoincide =
+                EsAccionLinea(
+                    registro,
+                    "SIN_ASIGNAR") ||
+                idLineaActual == registro.IdLineaSistema;
+
+            return
+                string.Equals(
+                    nombreActual,
+                    registro.Nombre.Trim(),
+                    StringComparison.OrdinalIgnoreCase) &&
+                idTurnoActual == registro.IdTurnoSistema &&
+                idPlantaActual == registro.IdPlantaSistema &&
+                lineaCoincide;
         }
 
         private static void AgregarParametrosAsignacion(

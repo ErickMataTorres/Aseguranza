@@ -66,6 +66,35 @@ namespace Aseguranza.Clases
                     idLinea);
         }
 
+        public static Mensaje EliminarPlanta(
+            string codigoLocalidadHdc)
+        {
+            return RepositorioFactory
+                .CrearHdcEquivalenciaRepository()
+                .EliminarPlanta(
+                    codigoLocalidadHdc);
+        }
+
+        public static Mensaje EliminarTurno(
+            string valorTurnoHdc)
+        {
+            return RepositorioFactory
+                .CrearHdcEquivalenciaRepository()
+                .EliminarTurno(
+                    valorTurnoHdc);
+        }
+
+        public static Mensaje EliminarLinea(
+            string codigoLocalidadHdc,
+            string valorLineaHdc)
+        {
+            return RepositorioFactory
+                .CrearHdcEquivalenciaRepository()
+                .EliminarLinea(
+                    codigoLocalidadHdc,
+                    valorLineaHdc);
+        }
+
         public static HashSet<string>
             ConsultarNumerosReloj()
         {

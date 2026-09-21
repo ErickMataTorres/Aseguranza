@@ -53,6 +53,15 @@ namespace Aseguranza.Ventanas
         private readonly DataGridView dgvLineas =
             CrearGrid();
 
+        private readonly Button btnEliminarPlanta =
+            new Button();
+
+        private readonly Button btnEliminarTurno =
+            new Button();
+
+        private readonly Button btnEliminarLinea =
+            new Button();
+
         private readonly DataGridView dgvDiagnosticoLocalidades =
             CrearGrid();
 
@@ -371,6 +380,38 @@ namespace Aseguranza.Ventanas
                 (_, _) =>
                     GuardarPlanta();
 
+            ButtonStyler.Apply(
+                btnEliminarPlanta,
+                "Eliminar equivalencia",
+                AppColors.Danger,
+                icon: null,
+                width: 175,
+                height: 38);
+
+            btnGuardar.Location =
+                new Point(
+                    665,
+                    81);
+
+            btnEliminarPlanta.Location =
+                new Point(
+                    860,
+                    81);
+
+            btnEliminarPlanta.Enabled =
+                false;
+
+            btnEliminarPlanta.Click +=
+                (_, _) =>
+                    EliminarPlantaSeleccionada();
+
+            dgvPlantas.SelectionChanged +=
+                (_, _) =>
+                {
+                    btnEliminarPlanta.Enabled =
+                        dgvPlantas.CurrentRow is not null;
+                };
+
             dgvPlantas.Location =
                 new Point(
                     20,
@@ -410,6 +451,9 @@ namespace Aseguranza.Ventanas
 
             tab.Controls.Add(
                 btnGuardar);
+
+            tab.Controls.Add(
+                btnEliminarPlanta);
 
             tab.Controls.Add(
                 dgvPlantas);
@@ -476,6 +520,33 @@ namespace Aseguranza.Ventanas
                 (_, _) =>
                     GuardarTurno();
 
+            ButtonStyler.Apply(
+                btnEliminarTurno,
+                "Eliminar equivalencia",
+                AppColors.Danger,
+                icon: null,
+                width: 180,
+                height: 38);
+
+            btnEliminarTurno.Location =
+                new Point(
+                    740,
+                    81);
+
+            btnEliminarTurno.Enabled =
+                false;
+
+            btnEliminarTurno.Click +=
+                (_, _) =>
+                    EliminarTurnoSeleccionado();
+
+            dgvTurnos.SelectionChanged +=
+                (_, _) =>
+                {
+                    btnEliminarTurno.Enabled =
+                        dgvTurnos.CurrentRow is not null;
+                };
+
             dgvTurnos.Location =
                 new Point(
                     20,
@@ -509,6 +580,9 @@ namespace Aseguranza.Ventanas
 
             tab.Controls.Add(
                 btnGuardar);
+
+            tab.Controls.Add(
+                btnEliminarTurno);
 
             tab.Controls.Add(
                 dgvTurnos);
@@ -661,6 +735,33 @@ namespace Aseguranza.Ventanas
                 (_, _) =>
                     MarcarLineasPendientesSinAsignar();
 
+            ButtonStyler.Apply(
+                btnEliminarLinea,
+                "Eliminar equivalencia",
+                AppColors.Danger,
+                icon: null,
+                width: 180,
+                height: 34);
+
+            btnEliminarLinea.Location =
+                new Point(
+                    520,
+                    122);
+
+            btnEliminarLinea.Enabled =
+                false;
+
+            btnEliminarLinea.Click +=
+                (_, _) =>
+                    EliminarLineaSeleccionada();
+
+            dgvLineas.SelectionChanged +=
+                (_, _) =>
+                {
+                    btnEliminarLinea.Enabled =
+                        dgvLineas.CurrentRow is not null;
+                };
+
             dgvLineas.Location =
                 new Point(
                     20,
@@ -712,6 +813,9 @@ namespace Aseguranza.Ventanas
 
             tab.Controls.Add(
                 btnMarcarPendientes);
+
+            tab.Controls.Add(
+                btnEliminarLinea);
 
             tab.Controls.Add(
                 dgvLineas);
@@ -2979,6 +3083,9 @@ namespace Aseguranza.Ventanas
             cboAccionPlanta.SelectedIndex =
                 indiceAccion;
 
+            cboPlantaSistema.SelectedIndex =
+                -1;
+
             if (accion == "MAPEAR" &&
                 equivalencia is not null &&
                 equivalencia.Table.Columns.Contains(
@@ -3002,28 +3109,313 @@ namespace Aseguranza.Ventanas
                 .ToUpperInvariant()
                 ?? "MAPEAR";
 
-            bool requierePlanta =
+            cboPlantaSistema.Enabled =
                 accion == "MAPEAR";
 
-            cboPlantaSistema.Enabled =
-                requierePlanta;
-
-            if (!requierePlanta)
+            if (accion != "MAPEAR")
             {
                 cboPlantaSistema.SelectedIndex =
                     -1;
+            }
+        }
+
+
+        private void EliminarPlantaSeleccionada()
+        {
+            if (dgvPlantas.CurrentRow is null)
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Seleccione una equivalencia",
+                    "Seleccione primero la equivalencia de planta que desea eliminar.");
 
                 return;
             }
 
-            if (cboPlantaSistema.SelectedIndex < 0 &&
-                cboPlantaSistema.Items.Count > 0)
+            string localidad =
+                Convert.ToString(
+                    dgvPlantas.CurrentRow
+                        .Cells["CodigoLocalidadHdc"]
+                        .Value)
+                ?.Trim()
+                ?? string.Empty;
+
+            string accion =
+                Convert.ToString(
+                    dgvPlantas.CurrentRow
+                        .Cells["Accion"]
+                        .Value)
+                ?.Trim()
+                ?? string.Empty;
+
+            string planta =
+                dgvPlantas.Columns.Contains(
+                    "NombrePlanta")
+                    ? Convert.ToString(
+                        dgvPlantas.CurrentRow
+                            .Cells["NombrePlanta"]
+                            .Value)
+                        ?.Trim()
+                        ?? string.Empty
+                    : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(
+                    localidad))
             {
-                cboPlantaSistema.SelectedIndex =
-                    0;
+                return;
+            }
+
+            string descripcion =
+                string.Equals(
+                    accion,
+                    "MAPEAR",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(
+                    planta)
+                    ? localidad +
+                      " → " +
+                      planta
+                    : localidad +
+                      " → " +
+                      accion;
+
+            bool confirmar =
+                AppDialog.Confirm(
+                    this,
+                    "Eliminar equivalencia de planta",
+                    "Se eliminará la siguiente equivalencia:" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    descripcion +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Los registros de esta localidad volverán a quedar pendientes de equivalencia de planta." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Si existen equivalencias de línea asociadas a esta localidad, también se eliminarán para evitar relaciones inconsistentes." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "No se eliminarán trabajadores, plantas, líneas, certificaciones ni expedientes." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "¿Desea continuar?",
+                    "Eliminar");
+
+            if (!confirmar)
+            {
+                return;
+            }
+
+            Mensaje respuesta =
+                HdcEquivalencia
+                    .EliminarPlanta(
+                        localidad);
+
+            MostrarResultadoEliminacion(
+                respuesta);
+
+            if (respuesta.Id == 1)
+            {
+                CargarEquivalencias();
+
+                CargarEquivalenciaPlantaSeleccionada();
+
+                LocalidadLineaCambio();
             }
         }
 
+        private void EliminarTurnoSeleccionado()
+        {
+            if (dgvTurnos.CurrentRow is null)
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Seleccione una equivalencia",
+                    "Seleccione primero la equivalencia de turno que desea eliminar.");
+
+                return;
+            }
+
+            string turnoHdc =
+                Convert.ToString(
+                    dgvTurnos.CurrentRow
+                        .Cells["ValorTurnoHdc"]
+                        .Value)
+                ?.Trim()
+                ?? string.Empty;
+
+            string turnoSistema =
+                dgvTurnos.Columns.Contains(
+                    "NombreTurno")
+                    ? Convert.ToString(
+                        dgvTurnos.CurrentRow
+                            .Cells["NombreTurno"]
+                            .Value)
+                        ?.Trim()
+                        ?? string.Empty
+                    : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(
+                    turnoHdc))
+            {
+                return;
+            }
+
+            string descripcion =
+                string.IsNullOrWhiteSpace(
+                    turnoSistema)
+                    ? turnoHdc
+                    : turnoHdc +
+                      " → " +
+                      turnoSistema;
+
+            bool confirmar =
+                AppDialog.Confirm(
+                    this,
+                    "Eliminar equivalencia de turno",
+                    "Se eliminará la siguiente equivalencia:" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    descripcion +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Los registros que dependan de este valor volverán a quedar pendientes de equivalencia de turno." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "No se eliminarán trabajadores ni turnos del catálogo." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "¿Desea continuar?",
+                    "Eliminar");
+
+            if (!confirmar)
+            {
+                return;
+            }
+
+            Mensaje respuesta =
+                HdcEquivalencia
+                    .EliminarTurno(
+                        turnoHdc);
+
+            MostrarResultadoEliminacion(
+                respuesta);
+
+            if (respuesta.Id == 1)
+            {
+                CargarEquivalencias();
+            }
+        }
+
+        private void EliminarLineaSeleccionada()
+        {
+            if (dgvLineas.CurrentRow is null)
+            {
+                AppDialog.ShowWarning(
+                    this,
+                    "Seleccione una equivalencia",
+                    "Seleccione primero la equivalencia de línea que desea eliminar.");
+
+                return;
+            }
+
+            string localidad =
+                Convert.ToString(
+                    dgvLineas.CurrentRow
+                        .Cells["CodigoLocalidadHdc"]
+                        .Value)
+                ?.Trim()
+                ?? string.Empty;
+
+            string lineaHdc =
+                Convert.ToString(
+                    dgvLineas.CurrentRow
+                        .Cells["ValorLineaHdc"]
+                        .Value)
+                ?.Trim()
+                ?? string.Empty;
+
+            string accion =
+                Convert.ToString(
+                    dgvLineas.CurrentRow
+                        .Cells["Accion"]
+                        .Value)
+                ?.Trim()
+                ?? string.Empty;
+
+            string lineaSistema =
+                dgvLineas.Columns.Contains(
+                    "NombreLinea")
+                    ? Convert.ToString(
+                        dgvLineas.CurrentRow
+                            .Cells["NombreLinea"]
+                            .Value)
+                        ?.Trim()
+                        ?? string.Empty
+                    : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(
+                    localidad) ||
+                string.IsNullOrWhiteSpace(
+                    lineaHdc))
+            {
+                return;
+            }
+
+            string destino =
+                string.Equals(
+                    accion,
+                    "MAPEAR",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(
+                    lineaSistema)
+                    ? lineaSistema
+                    : accion;
+
+            bool confirmar =
+                AppDialog.Confirm(
+                    this,
+                    "Eliminar equivalencia de línea",
+                    "Se eliminará la siguiente equivalencia:" +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    localidad +
+                    " / " +
+                    lineaHdc +
+                    " → " +
+                    destino +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Los registros que utilicen esta línea HDC volverán a quedar pendientes de equivalencia de línea." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "No se eliminarán trabajadores ni líneas del catálogo." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "¿Desea continuar?",
+                    "Eliminar");
+
+            if (!confirmar)
+            {
+                return;
+            }
+
+            Mensaje respuesta =
+                HdcEquivalencia
+                    .EliminarLinea(
+                        localidad,
+                        lineaHdc);
+
+            MostrarResultadoEliminacion(
+                respuesta);
+
+            if (respuesta.Id == 1)
+            {
+                CargarEquivalencias();
+
+                LocalidadLineaCambio();
+            }
+        }
 
         private void GuardarTurno()
         {
@@ -3540,6 +3932,25 @@ namespace Aseguranza.Ventanas
             AppDialog.ShowError(
                 this,
                 "No se pudo guardar",
+                respuesta.Nombre);
+        }
+
+        private void MostrarResultadoEliminacion(
+            Mensaje respuesta)
+        {
+            if (respuesta.Id == 1)
+            {
+                AppDialog.ShowInfo(
+                    this,
+                    "Equivalencia eliminada",
+                    respuesta.Nombre);
+
+                return;
+            }
+
+            AppDialog.ShowError(
+                this,
+                "No se pudo eliminar",
                 respuesta.Nombre);
         }
 

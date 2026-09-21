@@ -27,6 +27,16 @@ namespace Aseguranza.Data.Interfaces
             string accion,
             int? idLinea);
 
+        Mensaje EliminarPlanta(
+            string codigoLocalidadHdc);
+
+        Mensaje EliminarTurno(
+            string valorTurnoHdc);
+
+        Mensaje EliminarLinea(
+            string codigoLocalidadHdc,
+            string valorLineaHdc);
+
         HashSet<string> ConsultarNumerosReloj();
     }
 }
