@@ -104,8 +104,10 @@ namespace Aseguranza.UI
                         e.Index >= 0 &&
                         e.Index < comboBox.Items.Count
                             ? comboBox.GetItemText(
-                                comboBox.Items[e.Index])
-                            : comboBox.Text;
+                                  comboBox.Items[e.Index])
+                              ?? string.Empty
+                            : comboBox.Text
+                              ?? string.Empty;
 
                     Rectangle areaTexto =
                         new Rectangle(

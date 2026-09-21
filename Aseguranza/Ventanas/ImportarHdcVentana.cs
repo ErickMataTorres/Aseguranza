@@ -1581,14 +1581,21 @@ namespace Aseguranza.Ventanas
                     e.Value)
                 ?? string.Empty;
 
-            e.CellStyle.Font =
+            DataGridViewCellStyle cellStyle =
+                e.CellStyle
+                ?? new DataGridViewCellStyle();
+
+            e.CellStyle =
+                cellStyle;
+
+            cellStyle.Font =
                 AppFonts.Regular(
                     9F,
                     FontStyle.Bold);
 
             if (estado == "Nuevo")
             {
-                e.CellStyle.ForeColor =
+                cellStyle.ForeColor =
                     Color.FromArgb(
                         0,
                         110,
@@ -1596,29 +1603,29 @@ namespace Aseguranza.Ventanas
             }
             else if (estado == "Actualizar")
             {
-                e.CellStyle.ForeColor =
+                cellStyle.ForeColor =
                     Color.DarkOrange;
             }
             else if (estado == "Sin cambios")
             {
-                e.CellStyle.ForeColor =
+                cellStyle.ForeColor =
                     AppColors.Primary;
             }
             else if (estado == "Ignorar")
             {
-                e.CellStyle.ForeColor =
+                cellStyle.ForeColor =
                     AppColors.TextSecondary;
             }
             else if (estado.StartsWith(
                          "Sin equivalencia",
                          StringComparison.OrdinalIgnoreCase))
             {
-                e.CellStyle.ForeColor =
+                cellStyle.ForeColor =
                     Color.DarkOrange;
             }
             else
             {
-                e.CellStyle.ForeColor =
+                cellStyle.ForeColor =
                     AppColors.Danger;
             }
         }
