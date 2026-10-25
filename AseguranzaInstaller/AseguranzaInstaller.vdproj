@@ -82,7 +82,7 @@
         {
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_721AFA72DC424E368DD9C9A11933B8E7"
             {
-            "SourcePath" = "8:..\\Aseguranza\\Database\\AseguranzaBD.sql"
+            "SourcePath" = "8:..\\Aseguranza\\Database\\SQLServer\\AseguranzaBD.sql"
             "TargetName" = "8:AseguranzaBD.sql"
             "Tag" = "8:"
             "Folder" = "8:_F5196533D50E494B9141DFD61630C6F7"
@@ -178,7 +178,7 @@
         "ARPIconIndex" = "3:0"
         "SearchPath" = "8:"
         "UseSystemSearchPath" = "11:TRUE"
-        "TargetPlatform" = "3:0"
+        "TargetPlatform" = "3:1"
         "PreBuildEvent" = "8:"
         "PostBuildEvent" = "8:"
         "RunPostBuildEvent" = "3:0"
@@ -716,6 +716,7 @@
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
                 {
+                "ExcludeFilter" = "8:portable.flag"
                 }
             }
         }
