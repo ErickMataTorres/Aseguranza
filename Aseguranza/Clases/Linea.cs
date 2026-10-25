@@ -1,100 +1,115 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Aseguranza.Data;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Aseguranza.Clases
 {
     public class Linea
     {
         public int Id { get; set; }
+
         public string? Nombre { get; set; }
+
         public int IdPlanta { get; set; }
+
         public string? NombrePlanta { get; set; }
-        public static DataTable ConsultarLineas(string textoBuscar)
+
+        public static DataTable ConsultarLineas(
+            string textoBuscar)
         {
-            SqlConnection conexion = Conexion.Conectar();
-            DataTable tabla = new DataTable();
-            conexion.Open();
-            SqlCommand command = new SqlCommand("spConsultarLineas", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@TextoBuscar", textoBuscar);
-            SqlDataAdapter adapter = new SqlDataAdapter(command);
-            adapter.Fill(tabla);
-            conexion.Close();
-            return tabla;
+            return RepositorioFactory
+                .CrearLineaRepository()
+                .Consultar(textoBuscar ?? string.Empty);
         }
-        public static DataTable ConsultarLineasPorPlanta(int idPlanta)
+
+        public static DataTable ConsultarLineasPorPlanta(
+            int idPlanta)
         {
-            SqlConnection conexion = Conexion.Conectar();
-            DataTable tabla = new DataTable();
-            conexion.Open();
-            SqlCommand command = new SqlCommand("spConsultarLineasPorPlanta", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@IdPlanta", idPlanta);
-            SqlDataAdapter adapter = new SqlDataAdapter(command);
-            adapter.Fill(tabla);
-            conexion.Close();
-            return tabla;
+            return RepositorioFactory
+                .CrearLineaRepository()
+                .ConsultarPorPlanta(idPlanta);
         }
-        public static Clases.Mensaje BorrarLinea(int id)
+
+        public static Mensaje BorrarLinea(int id)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spBorrarLinea", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", id);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
-            {
-                if (dr.Read())
-                {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
-                }
-            }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+            return RepositorioFactory
+                .CrearLineaRepository()
+                .Borrar(id);
         }
-        public Clases.Mensaje GuardarLinea()
+
+        // =========================================================
+        // VALIDAR DUPLICADO POR PLANTA
+        // =========================================================
+
+        public static bool ExisteNombreEnPlanta(
+            int idPlanta,
+            string nombre,
+            int idExcluir = 0)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spGuardarLinea", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", Id);
-            command.Parameters.AddWithValue("@Nombre", Nombre);
-            command.Parameters.AddWithValue("@IdPlanta", IdPlanta);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
+            string nombreNormalizado =
+                (nombre ?? string.Empty)
+                    .Trim();
+
+            if (idPlanta <= 0 ||
+                string.IsNullOrWhiteSpace(
+                    nombreNormalizado))
             {
-                if (dr.Read())
+                return false;
+            }
+
+            DataTable lineas =
+                ConsultarLineasPorPlanta(
+                    idPlanta);
+
+            if (!lineas.Columns.Contains(
+                    "Nombre"))
+            {
+                return false;
+            }
+
+            foreach (DataRow fila in lineas.Rows)
+            {
+                string nombreExistente =
+                    Convert.ToString(
+                        fila["Nombre"])
+                        ?.Trim()
+                    ?? string.Empty;
+
+                if (!string.Equals(
+                        nombreExistente,
+                        nombreNormalizado,
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
+                    continue;
+                }
+
+                int idExistente =
+                    0;
+
+                if (lineas.Columns.Contains(
+                        "Id") &&
+                    fila["Id"] != DBNull.Value)
+                {
+                    idExistente =
+                        Convert.ToInt32(
+                            fila["Id"]);
+                }
+
+                if (idExistente !=
+                    idExcluir)
+                {
+                    return true;
                 }
             }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+
+            return false;
+        }
+
+        public Mensaje GuardarLinea()
+        {
+            return RepositorioFactory
+                .CrearLineaRepository()
+                .Guardar(this);
         }
     }
 }

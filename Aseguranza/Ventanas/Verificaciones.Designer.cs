@@ -104,7 +104,6 @@
             // pbContec
             // 
             pbContec.BorderStyle = BorderStyle.FixedSingle;
-            pbContec.Image = Properties.Resources.Contec;
             pbContec.Location = new Point(3, 62);
             pbContec.Name = "pbContec";
             pbContec.Size = new Size(60, 56);

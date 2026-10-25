@@ -1,84 +1,101 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Aseguranza.Data;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Aseguranza.Clases
 {
     public class Turno
     {
         public int Id { get; set; }
+
         public string? Nombre { get; set; }
-        public static DataTable ConsultarTurnos(string textoBuscar)
+
+        public static DataTable ConsultarTurnos(
+            string textoBuscar)
         {
-            SqlConnection conexion = Conexion.Conectar();
-            DataTable tabla = new DataTable();
-            conexion.Open();
-            SqlCommand command = new SqlCommand("spConsultarTurnos", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@TextoBuscar", textoBuscar);
-            SqlDataAdapter adapter = new SqlDataAdapter(command);
-            adapter.Fill(tabla);
-            conexion.Close();
-            return tabla;
+            return RepositorioFactory
+                .CrearTurnoRepository()
+                .Consultar(textoBuscar ?? string.Empty);
         }
-        public static Clases.Mensaje BorrarTurno(int id)
+
+        public static Mensaje BorrarTurno(int id)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spBorrarTurno", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", id);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
-            {
-                if (dr.Read())
-                {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
-                }
-            }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+            return RepositorioFactory
+                .CrearTurnoRepository()
+                .Borrar(id);
         }
-        public Clases.Mensaje GuardarTurno()
+
+        // =========================================================
+        // VALIDAR DUPLICADO
+        // =========================================================
+
+        public static bool ExisteNombre(
+            string nombre,
+            int idExcluir = 0)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spGuardarTurno", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", Id);
-            command.Parameters.AddWithValue("@Nombre", Nombre);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
+            string nombreNormalizado =
+                (nombre ?? string.Empty)
+                    .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    nombreNormalizado))
             {
-                if (dr.Read())
+                return false;
+            }
+
+            DataTable turnos =
+                ConsultarTurnos(
+                    string.Empty);
+
+            if (!turnos.Columns.Contains(
+                    "Nombre"))
+            {
+                return false;
+            }
+
+            foreach (DataRow fila in turnos.Rows)
+            {
+                string nombreExistente =
+                    Convert.ToString(
+                        fila["Nombre"])
+                        ?.Trim()
+                    ?? string.Empty;
+
+                if (!string.Equals(
+                        nombreExistente,
+                        nombreNormalizado,
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
+                    continue;
+                }
+
+                int idExistente =
+                    0;
+
+                if (turnos.Columns.Contains(
+                        "Id") &&
+                    fila["Id"] != DBNull.Value)
+                {
+                    idExistente =
+                        Convert.ToInt32(
+                            fila["Id"]);
+                }
+
+                if (idExistente !=
+                    idExcluir)
+                {
+                    return true;
                 }
             }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+
+            return false;
+        }
+
+        public Mensaje GuardarTurno()
+        {
+            return RepositorioFactory
+                .CrearTurnoRepository()
+                .Guardar(this);
         }
     }
 }

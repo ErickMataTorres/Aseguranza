@@ -1,89 +1,105 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Aseguranza.Data;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Aseguranza.Clases
 {
     public class Proceso
     {
         public int Id { get; set; }
+
         public string? Nombre { get; set; }
+
         public string? Descripcion { get; set; }
+
         public int VigenciaMeses { get; set; }
 
-        public static DataTable ConsultarProcesos(string textoBuscar)
+        public static DataTable ConsultarProcesos(
+            string textoBuscar)
         {
-            SqlConnection conexion = Conexion.Conectar();
-            DataTable tabla = new DataTable();
-            conexion.Open();
-            SqlCommand command = new SqlCommand("spConsultarProcesos", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@TextoBuscar", textoBuscar);
-            SqlDataAdapter adapter = new SqlDataAdapter(command);
-            adapter.Fill(tabla);
-            conexion.Close();
-            return tabla;
+            return RepositorioFactory
+                .CrearProcesoRepository()
+                .Consultar(textoBuscar ?? string.Empty);
         }
-        public static Clases.Mensaje BorrarProceso(int id)
+
+        public static Mensaje BorrarProceso(int id)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spBorrarProceso", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", id);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
-            {
-                if (dr.Read())
-                {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
-                }
-            }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+            return RepositorioFactory
+                .CrearProcesoRepository()
+                .Borrar(id);
         }
-        public Clases.Mensaje GuardarProceso()
+
+        // =========================================================
+        // VALIDAR DUPLICADO
+        // =========================================================
+
+        public static bool ExisteNombre(
+            string nombre,
+            int idExcluir = 0)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spGuardarProceso", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", Id);
-            command.Parameters.AddWithValue("@Nombre", Nombre);
-            command.Parameters.AddWithValue("@Descripcion", Descripcion);
-            command.Parameters.AddWithValue("@VigenciaMeses", VigenciaMeses);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
+            string nombreNormalizado =
+                (nombre ?? string.Empty)
+                    .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    nombreNormalizado))
             {
-                if (dr.Read())
+                return false;
+            }
+
+            DataTable procesos =
+                ConsultarProcesos(
+                    string.Empty);
+
+            if (!procesos.Columns.Contains(
+                    "Nombre"))
+            {
+                return false;
+            }
+
+            foreach (DataRow fila in procesos.Rows)
+            {
+                string nombreExistente =
+                    Convert.ToString(
+                        fila["Nombre"])
+                        ?.Trim()
+                    ?? string.Empty;
+
+                if (!string.Equals(
+                        nombreExistente,
+                        nombreNormalizado,
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
+                    continue;
+                }
+
+                int idExistente =
+                    0;
+
+                if (procesos.Columns.Contains(
+                        "Id") &&
+                    fila["Id"] != DBNull.Value)
+                {
+                    idExistente =
+                        Convert.ToInt32(
+                            fila["Id"]);
+                }
+
+                if (idExistente !=
+                    idExcluir)
+                {
+                    return true;
                 }
             }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+
+            return false;
+        }
+
+        public Mensaje GuardarProceso()
+        {
+            return RepositorioFactory
+                .CrearProcesoRepository()
+                .Guardar(this);
         }
     }
 }

@@ -128,7 +128,7 @@
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "Localidades";
-            StartPosition = FormStartPosition.CenterScreen;
+            StartPosition = FormStartPosition.CenterParent;
             Text = "Localidades";
             Load += Localidades_Load;
             ((System.ComponentModel.ISupportInitialize)dgvLocalidades).EndInit();

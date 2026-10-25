@@ -1,86 +1,101 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Aseguranza.Data;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Aseguranza.Clases
 {
     public class Localidad
     {
         public int Id { get; set; }
+
         public string? Nombre { get; set; }
 
-        public static DataTable ConsultarLocalidades(string textoBuscar)
+        public static DataTable ConsultarLocalidades(
+            string textoBuscar)
         {
-            SqlConnection conexion = Conexion.Conectar();
-            DataTable tabla = new DataTable();
-            conexion.Open();
-            SqlCommand command = new SqlCommand("spConsultarLocalidades", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@TextoBuscar", textoBuscar);
-            SqlDataAdapter adapter = new SqlDataAdapter(command);
-            adapter.Fill(tabla);
-            conexion.Close();
-            return tabla;
+            return RepositorioFactory
+                .CrearLocalidadRepository()
+                .Consultar(textoBuscar ?? string.Empty);
         }
-        public static Clases.Mensaje BorrarLocalidad(int id)
+
+        public static Mensaje BorrarLocalidad(int id)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spBorrarLocalidad", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", id);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
-            {
-                if (dr.Read())
-                {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
-                }
-            }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+            return RepositorioFactory
+                .CrearLocalidadRepository()
+                .Borrar(id);
         }
-        public Clases.Mensaje GuardarLocalidad()
+
+        // =========================================================
+        // VALIDAR DUPLICADO
+        // =========================================================
+
+        public static bool ExisteNombre(
+            string nombre,
+            int idExcluir = 0)
         {
-            Clases.Mensaje respuesta = new Clases.Mensaje();
-            SqlConnection conexion = Conexion.Conectar();
-            SqlCommand command = new SqlCommand("spGuardarLocalidad", conexion);
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.AddWithValue("@Id", Id);
-            command.Parameters.AddWithValue("@Nombre", Nombre);
-            conexion.Open();
-            SqlDataReader dr = command.ExecuteReader();
-            try
+            string nombreNormalizado =
+                (nombre ?? string.Empty)
+                    .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    nombreNormalizado))
             {
-                if (dr.Read())
+                return false;
+            }
+
+            DataTable localidades =
+                ConsultarLocalidades(
+                    string.Empty);
+
+            if (!localidades.Columns.Contains(
+                    "Nombre"))
+            {
+                return false;
+            }
+
+            foreach (DataRow fila in localidades.Rows)
+            {
+                string nombreExistente =
+                    Convert.ToString(
+                        fila["Nombre"])
+                        ?.Trim()
+                    ?? string.Empty;
+
+                if (!string.Equals(
+                        nombreExistente,
+                        nombreNormalizado,
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    respuesta.Id = int.Parse(dr["Id"].ToString()!);
-                    respuesta.Nombre = dr["Nombre"].ToString();
+                    continue;
+                }
+
+                int idExistente =
+                    0;
+
+                if (localidades.Columns.Contains(
+                        "Id") &&
+                    fila["Id"] != DBNull.Value)
+                {
+                    idExistente =
+                        Convert.ToInt32(
+                            fila["Id"]);
+                }
+
+                if (idExistente !=
+                    idExcluir)
+                {
+                    return true;
                 }
             }
-            catch (Exception error)
-            {
-                respuesta.Nombre = error.Message;
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-            return respuesta;
+
+            return false;
+        }
+
+        public Mensaje GuardarLocalidad()
+        {
+            return RepositorioFactory
+                .CrearLocalidadRepository()
+                .Guardar(this);
         }
     }
 }

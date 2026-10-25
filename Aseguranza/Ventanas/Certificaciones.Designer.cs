@@ -416,8 +416,6 @@
         #endregion
 
         private Button btnRegresar;
-        private Button btnBorrar;
-        private Button btnModificar;
         private Button btnCertificaciones;
         private TextBox txtBuscar;
         private Label lblBuscar;
