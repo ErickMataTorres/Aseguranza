@@ -808,7 +808,7 @@ namespace Aseguranza.Ventanas
             MostrarSoloVistaHtml();
 
             bool htmlGenerado =
-                await MostrarCertificacionHtmlAsync();
+                await MostrarCertificacionHtmlAsync(noReloj);
 
             if (!htmlGenerado)
             {
@@ -1146,7 +1146,7 @@ namespace Aseguranza.Ventanas
             flowProcesosCertificados.Controls.Add(lbl);
         }
 
-        private async Task<bool> MostrarCertificacionHtmlAsync()
+        private async Task<bool> MostrarCertificacionHtmlAsync(string noReloj)
         {
             if (dgvCertificaciones.Rows.Count == 0)
                 return false;
@@ -1189,7 +1189,7 @@ namespace Aseguranza.Ventanas
             html = html.Replace("{{EMPLEADO}}", nombre);
             html = html.Replace("{{NOMBRE}}", nombre);
             html = html.Replace("{{PROCESOS_CERTIFICADOS}}", GenerarProcesosCertificadosHtmlDinamicos());
-            html = html.Replace("{{FOTO_HTML}}", ObtenerFotoHtml());
+            html = html.Replace("{{FOTO_HTML}}", ObtenerFotoHtml(noReloj));
             html = html.Replace("{{TABLA_PROCESOS}}", GenerarTablaProcesosHtml());
 
             await NavegarHtmlAsync(html);
@@ -1638,35 +1638,28 @@ namespace Aseguranza.Ventanas
             return resultado;
         }
 
-        private string ObtenerFotoHtml()
+        private string ObtenerFotoHtml(string noReloj)
         {
             if (dgvCertificaciones.Rows.Count > 0 && dgvCertificaciones.Columns.Contains("RutaFoto"))
             {
                 string ruta = dgvCertificaciones.Rows[0].Cells["RutaFoto"]?.Value?.ToString() ?? "";
 
-                if (!string.IsNullOrWhiteSpace(ruta) && File.Exists(ruta))
+                string? rutaFisica = Clases.RutasArchivos.ResolverFotoPerfil(
+                    ruta, noReloj);
+
+                if (rutaFisica is not null)
                 {
-                    string extension = Path.GetExtension(ruta).ToLower();
+                    string extension = Path.GetExtension(rutaFisica).ToLower();
                     string mimeType = "image/jpeg";
 
                     if (extension == ".png") mimeType = "image/png";
                     else if (extension == ".bmp") mimeType = "image/bmp";
                     else if (extension == ".webp") mimeType = "image/webp";
 
-                    byte[] bytes = File.ReadAllBytes(ruta);
+                    byte[] bytes = File.ReadAllBytes(rutaFisica);
                     string base64 = Convert.ToBase64String(bytes);
 
                     return $"<img src='data:{mimeType};base64,{base64}' style='width:100%;height:100%;object-fit:cover;' />";
-                }
-            }
-
-            if (pictureBox1.Image != null)
-            {
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    pictureBox1.Image.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
-                    string base64 = Convert.ToBase64String(ms.ToArray());
-                    return $"<img src='data:image/jpeg;base64,{base64}' style='width:100%;height:100%;object-fit:cover;' />";
                 }
             }
 

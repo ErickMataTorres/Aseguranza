@@ -1319,7 +1319,8 @@ namespace Aseguranza.Ventanas
                     : trabajador.NombreLinea;
 
             MostrarFotografia(
-                trabajador.RutaFoto);
+                trabajador.RutaFoto,
+                trabajador.NoReloj);
 
             btnAgregar.Enabled =
                 true;
@@ -1390,15 +1391,16 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void MostrarFotografia(
-            string? rutaFoto)
+            string? rutaFoto,
+            string? noReloj = null)
         {
             pictureBox1.ImageLocation =
                 null;
 
-            if (string.IsNullOrWhiteSpace(
-                    rutaFoto) ||
-                !File.Exists(
-                    rutaFoto))
+            string? rutaFisica = Clases.RutasArchivos.ResolverFotoPerfil(
+                rutaFoto, noReloj);
+
+            if (rutaFisica is null)
             {
                 pictureBox1.Visible =
                     false;
@@ -1415,7 +1417,7 @@ namespace Aseguranza.Ventanas
             }
 
             pictureBox1.ImageLocation =
-                rutaFoto;
+                rutaFisica;
 
             pictureBox1.Visible =
                 true;

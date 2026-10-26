@@ -672,9 +672,8 @@ namespace Aseguranza.Ventanas
 
             if (dgvExpediente.Columns.Contains("RutaArchivo"))
             {
-                // La ruta completa sigue disponible para abrir ubicación,
-                // copiar ruta y demás acciones, pero no ocupa espacio
-                // en la tabla principal.
+                // La referencia se resuelve al abrir, copiar o ubicar el
+                // archivo y no ocupa espacio en la tabla principal.
                 dgvExpediente.Columns["RutaArchivo"].Visible = false;
             }
 
@@ -821,19 +820,28 @@ namespace Aseguranza.Ventanas
             string carpetaDestino = Clases.RutasArchivos.ObtenerCarpetaExpedienteFotos(noReloj);
             Directory.CreateDirectory(carpetaDestino);
 
-            string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
+            string nombreGestionado = CrearNombreGestionado(
+                Path.GetFileNameWithoutExtension(nombreArchivo), ".jpg");
+            string rutaDestino = Path.Combine(carpetaDestino, nombreGestionado);
+            bool guardado = false;
+            bool archivoCreado = false;
 
             try
             {
-                imagen.Save(rutaDestino, ImageFormat.Jpeg);
+                using (FileStream archivoNuevo = new FileStream(
+                    rutaDestino, FileMode.CreateNew, FileAccess.Write))
+                {
+                    archivoCreado = true;
+                    imagen.Save(archivoNuevo, ImageFormat.Jpeg);
+                }
 
                 Clases.ExpedienteTrabajador expediente = new Clases.ExpedienteTrabajador
                 {
                     IdTrabajador = idTrabajador,
                     NombreOriginal = nombreArchivo,
-                    NombreArchivo = nombreArchivo,
+                    NombreArchivo = nombreGestionado,
                     Extension = ".jpg",
-                    RutaArchivo = rutaDestino,
+                    RutaArchivo = Clases.RutasArchivos.ObtenerReferenciaGestionada(rutaDestino),
                     TipoArchivo = "Imagen",
                     Comentario = comentario
                 };
@@ -842,6 +850,7 @@ namespace Aseguranza.Ventanas
 
                 if (respuesta.Id == 1)
                 {
+                    guardado = true;
                     AppDialog.ShowInfo(
                         this,
                         "Operación completada",
@@ -852,21 +861,16 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    if (File.Exists(rutaDestino))
-                        File.Delete(rutaDestino);
-
                     AppDialog.ShowError(
                         this,
                         "Error",
                         respuesta.Nombre);
                 }
             }
-            catch
+            finally
             {
-                if (File.Exists(rutaDestino))
-                    File.Delete(rutaDestino);
-
-                throw;
+                if (!guardado && archivoCreado)
+                    EliminarArchivoNuevoFallido(rutaDestino);
             }
         }
 
@@ -954,12 +958,20 @@ namespace Aseguranza.Ventanas
             string nombreSinExtension = Path.GetFileNameWithoutExtension(rutaOrigen);
             string nombreSeguro = LimpiarNombreArchivo(nombreSinExtension);
 
-            string nombreArchivo = $"{DateTime.Now:yyyyMMdd_HHmmss}_{nombreSeguro}{extension}";
+            string nombreArchivo = CrearNombreGestionado(nombreSeguro, extension);
             string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
+            bool guardado = false;
+            bool archivoCreado = false;
 
             try
             {
-                File.Copy(rutaOrigen, rutaDestino, false);
+                using (FileStream archivoNuevo = new FileStream(
+                    rutaDestino, FileMode.CreateNew, FileAccess.Write))
+                {
+                    archivoCreado = true;
+                    using FileStream archivoOrigen = File.OpenRead(rutaOrigen);
+                    archivoOrigen.CopyTo(archivoNuevo);
+                }
 
                 Clases.ExpedienteTrabajador expediente = new Clases.ExpedienteTrabajador
                 {
@@ -967,7 +979,7 @@ namespace Aseguranza.Ventanas
                     NombreOriginal = nombreOriginal,
                     NombreArchivo = nombreArchivo,
                     Extension = extension,
-                    RutaArchivo = rutaDestino,
+                    RutaArchivo = Clases.RutasArchivos.ObtenerReferenciaGestionada(rutaDestino),
                     TipoArchivo = tipoArchivo,
                     Comentario = txtComentario.Text.Trim()
                 };
@@ -976,6 +988,7 @@ namespace Aseguranza.Ventanas
 
                 if (respuesta.Id == 1)
                 {
+                    guardado = true;
                     AppDialog.ShowInfo(
                         this,
                         "Operación completada",
@@ -986,9 +999,6 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    if (File.Exists(rutaDestino))
-                        File.Delete(rutaDestino);
-
                     AppDialog.ShowError(
                         this,
                         "Error",
@@ -1002,22 +1012,29 @@ namespace Aseguranza.Ventanas
                     "Error al adjuntar archivo",
                     error.Message);
             }
+            finally
+            {
+                if (!guardado && archivoCreado)
+                    EliminarArchivoNuevoFallido(rutaDestino);
+            }
         }
 
         private void btnAbrir_Click(object sender, EventArgs e)
         {
-            string? rutaArchivo = ObtenerRutaArchivoSeleccionado();
+            string? referencia = ObtenerRutaArchivoSeleccionado();
 
-            if (string.IsNullOrWhiteSpace(rutaArchivo))
+            if (string.IsNullOrWhiteSpace(referencia))
                 return;
 
-            if (!File.Exists(rutaArchivo))
+            string? rutaArchivo = Clases.RutasArchivos.ResolverArchivoExpediente(
+                referencia, noReloj);
+            if (rutaArchivo is null)
             {
                 AppDialog.ShowWarning(
                     this,
                     "Archivo no encontrado",
                     "El archivo no existe en la ubicación guardada.\n\n" +
-                    $"Ruta: {rutaArchivo}\n\n" +
+                    $"Referencia: {referencia}\n\n" +
                     "Es posible que haya sido eliminado, movido o que no tenga acceso a la carpeta.");
 
                 return;
@@ -1049,7 +1066,8 @@ namespace Aseguranza.Ventanas
             if (idExpediente == null)
                 return;
 
-            string? rutaAnterior = ObtenerRutaArchivoSeleccionado();
+            string? rutaAnterior = Clases.RutasArchivos.ResolverArchivoExpediente(
+                ObtenerRutaArchivoSeleccionado(), noReloj);
 
             string nombreArchivoActual = "archivo seleccionado";
 
@@ -1092,12 +1110,20 @@ namespace Aseguranza.Ventanas
             string nombreSinExtension = Path.GetFileNameWithoutExtension(rutaOrigen);
             string nombreSeguro = LimpiarNombreArchivo(nombreSinExtension);
 
-            string nombreArchivo = $"{DateTime.Now:yyyyMMdd_HHmmss}_{nombreSeguro}{extension}";
+            string nombreArchivo = CrearNombreGestionado(nombreSeguro, extension);
             string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
+            bool guardado = false;
+            bool archivoCreado = false;
 
             try
             {
-                File.Copy(rutaOrigen, rutaDestino, false);
+                using (FileStream archivoNuevo = new FileStream(
+                    rutaDestino, FileMode.CreateNew, FileAccess.Write))
+                {
+                    archivoCreado = true;
+                    using FileStream archivoOrigen = File.OpenRead(rutaOrigen);
+                    archivoOrigen.CopyTo(archivoNuevo);
+                }
 
                 Clases.ExpedienteTrabajador expediente = new Clases.ExpedienteTrabajador
                 {
@@ -1106,7 +1132,7 @@ namespace Aseguranza.Ventanas
                     NombreOriginal = nombreOriginal,
                     NombreArchivo = nombreArchivo,
                     Extension = extension,
-                    RutaArchivo = rutaDestino,
+                    RutaArchivo = Clases.RutasArchivos.ObtenerReferenciaGestionada(rutaDestino),
                     TipoArchivo = tipoArchivo,
                     Comentario = txtComentario.Text.Trim()
                 };
@@ -1115,20 +1141,8 @@ namespace Aseguranza.Ventanas
 
                 if (respuesta.Id == 1)
                 {
-                    if (!string.IsNullOrWhiteSpace(rutaAnterior)
-                        && File.Exists(rutaAnterior)
-                        && rutaAnterior != rutaDestino)
-                    {
-                        try
-                        {
-                            File.Delete(rutaAnterior);
-                        }
-                        catch
-                        {
-                            // Si no se puede borrar el anterior porque está abierto,
-                            // no detenemos el proceso. El nuevo ya quedó guardado.
-                        }
-                    }
+                    guardado = true;
+                    EliminarArchivoExpedienteSinReferencias(rutaAnterior);
 
                     AppDialog.ShowInfo(
                         this,
@@ -1140,9 +1154,6 @@ namespace Aseguranza.Ventanas
                 }
                 else
                 {
-                    if (File.Exists(rutaDestino))
-                        File.Delete(rutaDestino);
-
                     AppDialog.ShowError(
                         this,
                         "Error",
@@ -1156,6 +1167,11 @@ namespace Aseguranza.Ventanas
                     "Error al reemplazar archivo",
                     error.Message);
             }
+            finally
+            {
+                if (!guardado && archivoCreado)
+                    EliminarArchivoNuevoFallido(rutaDestino);
+            }
         }
 
         private void btnEliminar_Click(object sender, EventArgs e)
@@ -1165,7 +1181,8 @@ namespace Aseguranza.Ventanas
             if (idExpediente == null)
                 return;
 
-            string? rutaArchivo = ObtenerRutaArchivoSeleccionado();
+            string? rutaArchivo = Clases.RutasArchivos.ResolverArchivoExpediente(
+                ObtenerRutaArchivoSeleccionado(), noReloj);
 
             string nombreArchivo = "archivo seleccionado";
 
@@ -1189,20 +1206,7 @@ namespace Aseguranza.Ventanas
 
             if (respuesta.Id == 1)
             {
-                if (!string.IsNullOrWhiteSpace(rutaArchivo) && File.Exists(rutaArchivo))
-                {
-                    try
-                    {
-                        File.Delete(rutaArchivo);
-                    }
-                    catch
-                    {
-                        AppDialog.ShowWarning(
-                            this,
-                            "Advertencia",
-                            "El registro se eliminó del expediente, pero el archivo físico no se pudo borrar. Es posible que esté abierto.");
-                    }
-                }
+                EliminarArchivoExpedienteSinReferencias(rutaArchivo);
 
                 AppDialog.ShowInfo(
                     this,
@@ -1315,6 +1319,15 @@ namespace Aseguranza.Ventanas
             limpio = limpio.Replace(" ", "_");
 
             return string.IsNullOrWhiteSpace(limpio) ? "ARCHIVO" : limpio;
+        }
+
+        private static string CrearNombreGestionado(string nombreBase, string extension)
+        {
+            // NombreArchivo es varchar(255) en SQL Server.
+            string nombreCorto = nombreBase.Length > 150
+                ? nombreBase[..150]
+                : nombreBase;
+            return $"{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}_{nombreCorto}{extension}";
         }
 
         private void btnIniciarCamara_Click(object sender, EventArgs e)
@@ -1489,7 +1502,8 @@ namespace Aseguranza.Ventanas
             if (camaraActiva)
                 return;
 
-            string? rutaArchivo = ObtenerRutaArchivoSeleccionadoSinMensaje();
+            string? rutaArchivo = Clases.RutasArchivos.ResolverArchivoExpediente(
+                ObtenerRutaArchivoSeleccionadoSinMensaje(), noReloj);
 
             if (string.IsNullOrWhiteSpace(rutaArchivo))
             {
@@ -1550,6 +1564,55 @@ namespace Aseguranza.Ventanas
                 return null;
 
             return valor.ToString();
+        }
+
+        private void EliminarArchivoNuevoFallido(string rutaArchivo)
+        {
+            try
+            {
+                File.Delete(rutaArchivo);
+            }
+            catch (Exception error)
+            {
+                AppDialog.ShowWarning(this, "Limpieza de archivo",
+                    "No se pudo eliminar el archivo nuevo tras fallar el guardado. " +
+                    "Revise la carpeta del expediente.\n\n" + error.Message);
+            }
+        }
+
+        private void EliminarArchivoExpedienteSinReferencias(string? rutaArchivo)
+        {
+            if (rutaArchivo is null ||
+                !Clases.RutasArchivos.EsArchivoExpedienteGestionado(rutaArchivo, noReloj) ||
+                !File.Exists(rutaArchivo))
+                return;
+
+            try
+            {
+                // Las capturas antiguas podían compartir nombre dentro de un
+                // mismo segundo. Conservar el archivo si otro registro lo usa.
+                DataTable activos = Clases.ExpedienteTrabajador
+                    .ConsultarExpedienteTrabajador(idTrabajador);
+                string rutaAnteriorNormalizada = Path.GetFullPath(rutaArchivo);
+                foreach (DataRow fila in activos.Rows)
+                {
+                    string? referencia = fila["RutaArchivo"]?.ToString();
+                    string? rutaActiva = Clases.RutasArchivos.ResolverArchivoExpediente(
+                        referencia, noReloj);
+                    if (rutaActiva is not null && string.Equals(
+                        Path.GetFullPath(rutaActiva), rutaAnteriorNormalizada,
+                        StringComparison.OrdinalIgnoreCase))
+                        return;
+                }
+
+                File.Delete(rutaArchivo);
+            }
+            catch (Exception error)
+            {
+                AppDialog.ShowWarning(this, "Archivo anterior",
+                    "El cambio se guardó, pero no se pudo comprobar o eliminar el archivo físico anterior.\n\n" +
+                    error.Message);
+            }
         }
 
 
@@ -1632,10 +1695,15 @@ namespace Aseguranza.Ventanas
 
         private void tsmCopiarRuta_Click(object sender, EventArgs e)
         {
-            string? rutaArchivo = ObtenerRutaArchivoSeleccionadoSinMensaje();
+            string? rutaArchivo = Clases.RutasArchivos.ResolverArchivoExpediente(
+                ObtenerRutaArchivoSeleccionadoSinMensaje(), noReloj);
 
             if (string.IsNullOrWhiteSpace(rutaArchivo))
+            {
+                AppDialog.ShowWarning(this, "Archivo no encontrado",
+                    "No se encontró el archivo del expediente en la carpeta actual.");
                 return;
+            }
 
             Clipboard.SetText(rutaArchivo);
 
@@ -1647,12 +1715,14 @@ namespace Aseguranza.Ventanas
 
         private void tsmAbrirUbicacion_Click(object sender, EventArgs e)
         {
-            string? rutaArchivo = ObtenerRutaArchivoSeleccionadoSinMensaje();
-
-            if (string.IsNullOrWhiteSpace(rutaArchivo))
+            string? referencia = ObtenerRutaArchivoSeleccionadoSinMensaje();
+            if (string.IsNullOrWhiteSpace(referencia))
                 return;
 
-            if (!File.Exists(rutaArchivo))
+            string? rutaArchivo = Clases.RutasArchivos.ResolverArchivoExpediente(
+                referencia, noReloj);
+
+            if (rutaArchivo is null)
             {
                 AppDialog.ShowWarning(
                     this,
@@ -1702,7 +1772,8 @@ namespace Aseguranza.Ventanas
                 if (string.IsNullOrWhiteSpace(rutaArchivo))
                     continue;
 
-                if (!File.Exists(rutaArchivo))
+                if (Clases.RutasArchivos.ResolverArchivoExpediente(
+                        rutaArchivo, noReloj) is null)
                 {
                     row.DefaultCellStyle.BackColor = Color.FromArgb(255, 226, 226);
                     row.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);

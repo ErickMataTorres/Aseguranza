@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Aseguranza.Clases
 {
@@ -22,6 +23,150 @@ namespace Aseguranza.Clases
         public static string ObtenerRutaFotoPerfil(string noReloj)
         {
             return Path.Combine(ObtenerCarpetaFotoPerfil(noReloj), "perfil.jpg");
+        }
+
+        // Las referencias gestionadas se guardan relativas a RUTA_ARCHIVOS,
+        // tanto en instalaciones portables como en SQL Server.
+        public static string ObtenerReferenciaGestionada(string rutaFisica)
+        {
+            string relativa = Path.GetRelativePath(CarpetaRaiz, rutaFisica);
+            if (!EsRutaRelativaSegura(relativa))
+                throw new ArgumentException("El archivo no pertenece a la carpeta gestionada.", nameof(rutaFisica));
+
+            return relativa;
+        }
+
+        public static string? ResolverFotoPerfil(string? referencia, string? noReloj)
+            => ResolverArchivoGestionado(referencia, noReloj, expediente: false);
+
+        public static string? ResolverArchivoExpediente(string? referencia, string? noReloj)
+            => ResolverArchivoGestionado(referencia, noReloj, expediente: true);
+
+        private static string? ResolverArchivoGestionado(
+            string? referencia, string? noReloj, bool expediente)
+        {
+            if (string.IsNullOrWhiteSpace(referencia))
+                return null;
+
+            try
+            {
+                string valor = referencia.Trim();
+                if (Path.IsPathFullyQualified(valor))
+                {
+                    if (File.Exists(valor))
+                        return valor;
+
+                    // La recuperación se limita al mismo archivo y trabajador.
+                    // No se buscan nombres de archivo en otras carpetas.
+                    string[] partes = valor.Replace('/', '\\')
+                        .Split('\\', StringSplitOptions.RemoveEmptyEntries);
+                    if (string.IsNullOrWhiteSpace(noReloj) || partes.Length == 0 ||
+                        !EsNombreArchivoSeguro(partes[^1]))
+                        return null;
+
+                    string? recuperada = null;
+                    if (!expediente && partes.Length >= 4 &&
+                        partes[^4].Equals("Trabajadores", StringComparison.OrdinalIgnoreCase) &&
+                        partes[^3].Equals(LimpiarNombreArchivo(noReloj), StringComparison.OrdinalIgnoreCase) &&
+                        partes[^2].Equals("FotoPerfil", StringComparison.OrdinalIgnoreCase))
+                    {
+                        recuperada = Path.Combine(ObtenerCarpetaFotoPerfil(noReloj), partes[^1]);
+                    }
+                    else if (expediente && partes.Length >= 5 &&
+                        partes[^5].Equals("Trabajadores", StringComparison.OrdinalIgnoreCase) &&
+                        partes[^4].Equals(LimpiarNombreArchivo(noReloj), StringComparison.OrdinalIgnoreCase) &&
+                        partes[^3].Equals("Expediente", StringComparison.OrdinalIgnoreCase) &&
+                        EsSubcarpetaExpediente(partes[^2]))
+                    {
+                        recuperada = Path.Combine(ObtenerCarpetaExpediente(noReloj), partes[^2], partes[^1]);
+                    }
+
+                    return recuperada is not null && File.Exists(recuperada)
+                        ? recuperada : null;
+                }
+
+                string relativa = valor.Replace('\\', Path.DirectorySeparatorChar)
+                    .Replace('/', Path.DirectorySeparatorChar);
+                if (!EsRutaRelativaSegura(relativa) ||
+                    string.IsNullOrWhiteSpace(noReloj))
+                    return null;
+
+                string ruta = Path.GetFullPath(Path.Combine(CarpetaRaiz, relativa));
+                bool gestionada = expediente
+                    ? EsArchivoExpedienteGestionado(ruta, noReloj)
+                    : EsFotoPerfilGestionada(ruta, noReloj);
+                return gestionada && File.Exists(ruta)
+                    ? ruta : null;
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return null;
+            }
+            catch (NotSupportedException)
+            {
+                return null;
+            }
+        }
+
+        public static bool EsFotoPerfilGestionada(string rutaFisica, string noReloj)
+        {
+            try
+            {
+                string relativa = Path.GetRelativePath(ObtenerCarpetaFotoPerfil(noReloj), rutaFisica);
+                return EsRutaRelativaSegura(relativa) && EsNombreArchivoSeguro(relativa);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
+        public static bool EsArchivoExpedienteGestionado(string rutaFisica, string noReloj)
+        {
+            try
+            {
+                string relativa = Path.GetRelativePath(ObtenerCarpetaExpediente(noReloj), rutaFisica);
+                if (!EsRutaRelativaSegura(relativa))
+                    return false;
+
+                string[] partes = relativa.Split(Path.DirectorySeparatorChar);
+                return partes.Length == 2 && EsSubcarpetaExpediente(partes[0]) &&
+                    EsNombreArchivoSeguro(partes[1]);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
+        private static bool EsNombreArchivoSeguro(string nombre)
+            => !string.IsNullOrWhiteSpace(nombre) &&
+               nombre is not ("." or "..") &&
+               !Path.IsPathRooted(nombre) &&
+               Path.GetFileName(nombre) == nombre &&
+               nombre.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
+
+        private static bool EsSubcarpetaExpediente(string carpeta)
+            => carpeta.Equals("Fotos", StringComparison.OrdinalIgnoreCase) ||
+               carpeta.Equals("PDFs", StringComparison.OrdinalIgnoreCase) ||
+               carpeta.Equals("Documentos", StringComparison.OrdinalIgnoreCase);
+
+        private static bool EsRutaRelativaSegura(string ruta)
+        {
+            return !string.IsNullOrWhiteSpace(ruta) &&
+                !Path.IsPathRooted(ruta) &&
+                ruta != "." &&
+                ruta != ".." &&
+                !ruta.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) &&
+                !ruta.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal);
         }
 
         public static string ObtenerCarpetaExpediente(string noReloj)
@@ -61,14 +206,19 @@ namespace Aseguranza.Clases
 
             char[] caracteresInvalidos = Path.GetInvalidFileNameChars();
 
-            string limpio = new string(
-                texto
-                    .Trim()
-                    .Where(c => !caracteresInvalidos.Contains(c))
-                    .ToArray()
-            );
+            string valor = texto.Trim();
+            StringBuilder seguro = new StringBuilder();
+            for (int i = 0; i < valor.Length; i++)
+            {
+                char caracter = valor[i];
+                if (caracter == '%' || caracteresInvalidos.Contains(caracter) ||
+                    (caracter == '.' && (valor is "." or ".." || i == valor.Length - 1)))
+                    seguro.Append('%').Append(((int)caracter).ToString("X4"));
+                else
+                    seguro.Append(caracter);
+            }
 
-            return string.IsNullOrWhiteSpace(limpio) ? "SIN_NUMERO_RELOJ" : limpio;
+            return seguro.Length == 0 ? "SIN_NUMERO_RELOJ" : seguro.ToString();
         }
 
         public static string ObtenerCarpetaTrabajadoresEliminados()

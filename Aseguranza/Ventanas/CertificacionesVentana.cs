@@ -856,12 +856,13 @@ namespace Aseguranza.Ventanas
                 pictureBox1.Image = null;
             }
 
-            if (!string.IsNullOrWhiteSpace(trabajadorActual.RutaFoto) &&
-                File.Exists(trabajadorActual.RutaFoto))
+            string? rutaFotoFisica = Clases.RutasArchivos.ResolverFotoPerfil(
+                trabajadorActual.RutaFoto, trabajadorActual.NoReloj);
+            if (rutaFotoFisica is not null)
             {
                 try
                 {
-                    pictureBox1.Image = CargarImagenSinBloquearArchivo(trabajadorActual.RutaFoto);
+                    pictureBox1.Image = CargarImagenSinBloquearArchivo(rutaFotoFisica);
                     pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                 }
                 catch (Exception ex)
