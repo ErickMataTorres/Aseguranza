@@ -1215,7 +1215,8 @@ GO
    ============================================================ */
 
 CREATE   PROCEDURE [dbo].[spConsultarTrabajadores]
-    @TextoBuscar VARCHAR(100) = ''
+    @TextoBuscar VARCHAR(100) = '',
+    @Activo BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1253,14 +1254,15 @@ BEGIN
     LEFT JOIN dbo.Linea AS Li
         ON Li.Id = T.IdLinea
 
-    WHERE
+    WHERE (@Activo IS NULL OR T.Activo = @Activo)
+      AND (
         T.NoReloj LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR T.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR ISNULL(Lo.Nombre, '') LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR Tu.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR P.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
-            LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
+            LIKE '%' + ISNULL(@TextoBuscar, '') + '%')
 
     ORDER BY T.Nombre;
 END;
@@ -1329,14 +1331,15 @@ GO
 
 CREATE   PROCEDURE [dbo].[spConsultarTrabajadoresEstadoCertificacion]
     @MostrarPor VARCHAR(20),
-    @TextoBuscar VARCHAR(100)
+    @TextoBuscar VARCHAR(100),
+    @Activo BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
     ;WITH TrabajadoresEstado AS
     (
-        SELECT TOP (300)
+        SELECT
             T.Id,
             T.NoReloj,
             T.Nombre,
@@ -1420,8 +1423,8 @@ BEGIN
                   )
            )
 
-        WHERE
-        (
+        WHERE (@Activo IS NULL OR T.Activo = @Activo)
+        AND (
             T.NoReloj LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
             OR T.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
             OR ISNULL(Lo.Nombre, '')
@@ -1451,7 +1454,7 @@ BEGIN
             Li.Nombre
     )
 
-    SELECT *
+    SELECT TOP (300) *
     FROM TrabajadoresEstado
     WHERE
         @MostrarPor = 'Todas'

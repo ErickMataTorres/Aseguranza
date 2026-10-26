@@ -40,23 +40,26 @@ namespace Aseguranza.Clases
         }
 
         public static DataTable ConsultarTrabajadores(
-            string textoBuscar)
+            string textoBuscar,
+            bool? activo = null)
         {
             return RepositorioFactory
                 .CrearTrabajadorRepository()
-                .Consultar(textoBuscar ?? string.Empty);
+                .Consultar(textoBuscar ?? string.Empty, activo);
         }
 
         public static DataTable
             ConsultarTrabajadoresEstadoCertificacion(
                 string mostrarPor,
-                string textoBuscar)
+                string textoBuscar,
+                bool? activo = null)
         {
             return RepositorioFactory
                 .CrearTrabajadorRepository()
                 .ConsultarEstadoCertificacion(
                     mostrarPor ?? string.Empty,
-                    textoBuscar ?? string.Empty);
+                    textoBuscar ?? string.Empty,
+                    activo);
         }
 
         public static DataTable

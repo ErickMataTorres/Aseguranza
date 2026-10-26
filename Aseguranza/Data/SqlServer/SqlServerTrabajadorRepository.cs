@@ -118,7 +118,8 @@ namespace Aseguranza.Data.SqlServer
         }
 
         public DataTable Consultar(
-            string textoBuscar)
+            string textoBuscar,
+            bool? activo)
         {
             DataTable tabla =
                 new DataTable();
@@ -138,6 +139,9 @@ namespace Aseguranza.Data.SqlServer
                 SqlDbType.VarChar,
                 100).Value =
                     textoBuscar ?? string.Empty;
+
+            comando.Parameters.Add("@Activo", SqlDbType.Bit).Value =
+                activo.HasValue ? activo.Value : DBNull.Value;
 
             using SqlDataAdapter adaptador =
                 new SqlDataAdapter(
@@ -217,7 +221,8 @@ namespace Aseguranza.Data.SqlServer
 
         public DataTable ConsultarEstadoCertificacion(
             string mostrarPor,
-            string textoBuscar)
+            string textoBuscar,
+            bool? activo)
         {
             DataTable tabla =
                 new DataTable();
@@ -243,6 +248,9 @@ namespace Aseguranza.Data.SqlServer
                 SqlDbType.VarChar,
                 100).Value =
                     textoBuscar ?? string.Empty;
+
+            comando.Parameters.Add("@Activo", SqlDbType.Bit).Value =
+                activo.HasValue ? activo.Value : DBNull.Value;
 
             using SqlDataAdapter adaptador =
                 new SqlDataAdapter(

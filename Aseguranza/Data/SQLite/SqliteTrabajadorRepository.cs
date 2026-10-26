@@ -68,7 +68,8 @@ namespace Aseguranza.Data.SQLite
         }
 
         public DataTable Consultar(
-            string textoBuscar)
+            string textoBuscar,
+            bool? activo)
         {
             DataTable tabla = new DataTable();
 
@@ -103,12 +104,13 @@ namespace Aseguranza.Data.SQLite
                     ON P.Id = T.IdPlanta
                 LEFT JOIN Linea AS Li
                     ON Li.Id = T.IdLinea
-                WHERE T.NoReloj LIKE @TextoBuscar COLLATE NOCASE
+                WHERE (@Activo IS NULL OR T.Activo = @Activo)
+                  AND (T.NoReloj LIKE @TextoBuscar COLLATE NOCASE
                    OR T.Nombre LIKE @TextoBuscar COLLATE NOCASE
                    OR Tu.Nombre LIKE @TextoBuscar COLLATE NOCASE
                    OR P.Nombre LIKE @TextoBuscar COLLATE NOCASE
                    OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
-                          LIKE @TextoBuscar COLLATE NOCASE
+                          LIKE @TextoBuscar COLLATE NOCASE)
                 ORDER BY T.Nombre
                 LIMIT 100;
                 """;
@@ -116,6 +118,9 @@ namespace Aseguranza.Data.SQLite
             comando.Parameters.AddWithValue(
                 "@TextoBuscar",
                 $"%{textoBuscar ?? string.Empty}%");
+            comando.Parameters.AddWithValue(
+                "@Activo",
+                activo.HasValue ? (object)(activo.Value ? 1 : 0) : DBNull.Value);
 
             using SqliteDataReader lector =
                 comando.ExecuteReader();
@@ -224,7 +229,8 @@ namespace Aseguranza.Data.SQLite
 
         public DataTable ConsultarEstadoCertificacion(
             string mostrarPor,
-            string textoBuscar)
+            string textoBuscar,
+            bool? activo)
         {
             DataTable tabla = new DataTable();
 
@@ -312,7 +318,8 @@ namespace Aseguranza.Data.SQLite
                               )
                        )
 
-                    WHERE T.NoReloj
+                    WHERE (@Activo IS NULL OR T.Activo = @Activo)
+                      AND (T.NoReloj
                               LIKE @TextoBuscar COLLATE NOCASE
                        OR T.Nombre
                               LIKE @TextoBuscar COLLATE NOCASE
@@ -321,7 +328,7 @@ namespace Aseguranza.Data.SQLite
                        OR P.Nombre
                               LIKE @TextoBuscar COLLATE NOCASE
                        OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
-                              LIKE @TextoBuscar COLLATE NOCASE
+                              LIKE @TextoBuscar COLLATE NOCASE)
 
                     GROUP BY
                         T.Id,
@@ -352,6 +359,9 @@ namespace Aseguranza.Data.SQLite
             comando.Parameters.AddWithValue(
                 "@TextoBuscar",
                 $"%{textoBuscar ?? string.Empty}%");
+            comando.Parameters.AddWithValue(
+                "@Activo",
+                activo.HasValue ? (object)(activo.Value ? 1 : 0) : DBNull.Value);
 
             using SqliteDataReader lector =
                 comando.ExecuteReader();

@@ -9,11 +9,13 @@ namespace Aseguranza.Data.Interfaces
             string noReloj);
 
         DataTable Consultar(
-            string textoBuscar);
+            string textoBuscar,
+            bool? activo);
 
         DataTable ConsultarEstadoCertificacion(
             string mostrarPor,
-            string textoBuscar);
+            string textoBuscar,
+            bool? activo);
 
         DataTable ConsultarParaImportacionHdc();
 

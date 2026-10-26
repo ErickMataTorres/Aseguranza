@@ -22,6 +22,7 @@ namespace Aseguranza.Ventanas
         private bool _estiloAplicado;
 
         private Panel? _pnlAcciones;
+        private readonly ComboBox _cbPersonal = new ComboBox();
 
         // =========================================================
         // COLORES DE ESTADO
@@ -241,6 +242,31 @@ namespace Aseguranza.Ventanas
                 pnlFiltros,
                 10);
 
+            Label lblPersonal = new Label
+            {
+                Text = "Personal",
+                AutoSize = true,
+                Location = new Point(18, 13),
+                ForeColor = AppColors.TextPrimary,
+                Font = AppFonts.Regular(9.5F, FontStyle.Bold)
+            };
+
+            Panel pnlPersonal = new Panel
+            {
+                Name = "pnlPersonal",
+                Location = new Point(18, 39),
+                Size = new Size(220, 42),
+                BackColor = Color.White
+            };
+            _cbPersonal.Items.AddRange(new object[]
+                { "Activos", "Inactivos", "Todos" });
+            ComboBoxStyler.ApplyOutlinedComboBox(
+                pnlPersonal, _cbPersonal);
+            pnlPersonal.Controls.Add(_cbPersonal);
+            _cbPersonal.SelectedIndex = 0;
+            _cbPersonal.SelectedIndexChanged +=
+                (_, _) => CargarTrabajadores();
+
             // =====================================================
             // MOSTRAR POR
             // =====================================================
@@ -253,7 +279,7 @@ namespace Aseguranza.Ventanas
 
             lblMostrarPor.Location =
                 new Point(
-                    18,
+                    258,
                     13);
 
             lblMostrarPor.ForeColor =
@@ -272,7 +298,7 @@ namespace Aseguranza.Ventanas
 
                     Location =
                         new Point(
-                            18,
+                            258,
                             39),
 
                     Size =
@@ -318,7 +344,7 @@ namespace Aseguranza.Ventanas
 
             lblBuscar.Location =
                 new Point(
-                    258,
+                    498,
                     13);
 
             lblBuscar.ForeColor =
@@ -354,7 +380,7 @@ namespace Aseguranza.Ventanas
             int anchoBuscador =
                 xBuscarBoton -
                 espacio -
-                258;
+                498;
 
             Panel pnlBuscar =
                 new Panel
@@ -364,7 +390,7 @@ namespace Aseguranza.Ventanas
 
                     Location =
                         new Point(
-                            258,
+                            498,
                             39),
 
                     Size =
@@ -538,6 +564,12 @@ namespace Aseguranza.Ventanas
             // =====================================================
             // AGREGAR FILTROS
             // =====================================================
+
+            pnlFiltros.Controls.Add(
+                lblPersonal);
+
+            pnlFiltros.Controls.Add(
+                pnlPersonal);
 
             pnlFiltros.Controls.Add(
                 lblMostrarPor);
@@ -1225,6 +1257,13 @@ namespace Aseguranza.Ventanas
                 110,
                 true,
                 DataGridViewContentAlignment.MiddleCenter);
+
+            AgregarColumnaTexto(
+                "Activo",
+                "PERSONAL",
+                80,
+                true,
+                DataGridViewContentAlignment.MiddleCenter);
         }
 
         private void AgregarColumnaTexto(
@@ -1300,7 +1339,13 @@ namespace Aseguranza.Ventanas
                     Clases.Trabajador
                         .ConsultarTrabajadoresEstadoCertificacion(
                             mostrarPor,
-                            textoBuscar);
+                            textoBuscar,
+                            _cbPersonal.SelectedIndex switch
+                            {
+                                0 => true,
+                                1 => false,
+                                _ => null
+                            });
 
                 OcultarColumnas();
 
@@ -1338,7 +1383,8 @@ namespace Aseguranza.Ventanas
 
             ProgramarSincronizacionSeleccion();
 
-            txtBuscar.Focus();
+            if (!_cbPersonal.Focused && !cbMostrarPor.Focused)
+                txtBuscar.Focus();
         }
 
         // =========================================================
@@ -1414,6 +1460,12 @@ namespace Aseguranza.Ventanas
                 "EstadoCertificacion",
                 "ESTADO",
                 110,
+                DataGridViewContentAlignment.MiddleCenter);
+
+            ConfigurarColumna(
+                "Activo",
+                "PERSONAL",
+                80,
                 DataGridViewContentAlignment.MiddleCenter);
         }
 
@@ -1958,7 +2010,7 @@ namespace Aseguranza.Ventanas
             object? sender,
             DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0)
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
             {
                 return;
             }
@@ -1996,6 +2048,13 @@ namespace Aseguranza.Ventanas
 
             fila.DefaultCellStyle.Font =
                 _boldFont;
+
+            if (dgvTrabajadores.Columns[e.ColumnIndex].Name == "Activo" &&
+                fila.Cells["Activo"].Value is bool activo)
+            {
+                e.Value = activo ? "ACTIVO" : "INACTIVO";
+                e.FormattingApplied = true;
+            }
 
             object? valorEstado =
                 fila.Cells["EstadoCertificacion"]
