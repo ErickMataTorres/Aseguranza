@@ -252,6 +252,8 @@ namespace Aseguranza.Clases
 
             registro.ExisteTrabajador = true;
             registro.IdTrabajadorSistema = LeerEntero(actual, "Id");
+            registro.ActivoActualSistema =
+                Convert.ToBoolean(actual["Activo"]);
 
             registro.NombreActualSistema =
                 LeerTexto(actual, "Nombre");
@@ -309,9 +311,11 @@ namespace Aseguranza.Clases
                 string.Join(", ", cambios);
 
             registro.Estado =
-                cambios.Count > 0
-                    ? "Actualizar"
-                    : "Sin cambios";
+                !registro.ActivoActualSistema
+                    ? "Reactivar"
+                    : cambios.Count > 0
+                        ? "Actualizar"
+                        : "Sin cambios";
         }
 
         private static void AplicarReglaLineaParaTrabajadorExistente(
@@ -414,6 +418,7 @@ namespace Aseguranza.Clases
             registro.Estado = "Pendiente";
             registro.ExisteTrabajador = false;
             registro.IdTrabajadorSistema = 0;
+            registro.ActivoActualSistema = false;
 
             registro.IdPlantaSistema = 0;
             registro.PlantaSistema = string.Empty;
@@ -459,10 +464,12 @@ namespace Aseguranza.Clases
             resultado.TotalRegistros = resultado.Registros.Count;
             resultado.Nuevos = Contar(resultado, "Nuevo");
             resultado.Actualizados = Contar(resultado, "Actualizar");
+            resultado.Reactivados = Contar(resultado, "Reactivar");
             resultado.SinCambios = Contar(resultado, "Sin cambios");
 
             resultado.Existentes =
                 resultado.Actualizados +
+                resultado.Reactivados +
                 resultado.SinCambios;
 
             resultado.SinEquivalenciaPlanta =

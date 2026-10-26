@@ -522,12 +522,27 @@ namespace Aseguranza.Data.SQLite
             int? idImportacionHdc = null,
             string? motivo = null)
         {
-            TrabajadorEstadoHistorial.ValidarCambio(
-                idTrabajador, origen, idImportacionHdc, motivo);
-
             using SqliteConnection conexion = ConexionSqlite.Crear();
             conexion.Open();
             using SqliteTransaction transaccion = conexion.BeginTransaction();
+            bool cambiado = CambiarEstadoEnTransaccion(
+                conexion, transaccion, idTrabajador, activo,
+                origen, idImportacionHdc, motivo);
+            transaccion.Commit();
+            return cambiado;
+        }
+
+        internal static bool CambiarEstadoEnTransaccion(
+            SqliteConnection conexion,
+            SqliteTransaction transaccion,
+            int idTrabajador,
+            bool activo,
+            string origen,
+            int? idImportacionHdc = null,
+            string? motivo = null)
+        {
+            TrabajadorEstadoHistorial.ValidarCambio(
+                idTrabajador, origen, idImportacionHdc, motivo);
             using SqliteCommand comando = conexion.CreateCommand();
             comando.Transaction = transaccion;
             comando.CommandText =
@@ -544,7 +559,6 @@ namespace Aseguranza.Data.SQLite
             bool anterior = Convert.ToInt64(valor) != 0;
             if (anterior == activo)
             {
-                transaccion.Commit();
                 return false;
             }
 
@@ -582,7 +596,6 @@ namespace Aseguranza.Data.SQLite
                     ? DBNull.Value
                     : motivo.Trim());
             comando.ExecuteNonQuery();
-            transaccion.Commit();
             return true;
         }
 

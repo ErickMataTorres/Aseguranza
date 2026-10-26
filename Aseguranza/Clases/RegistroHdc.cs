@@ -25,6 +25,7 @@
         // Información resuelta contra los catálogos.
         public bool ExisteTrabajador { get; set; }
         public int IdTrabajadorSistema { get; set; }
+        public bool ActivoActualSistema { get; set; }
 
         public int IdPlantaSistema { get; set; }
         public string PlantaSistema { get; set; } = string.Empty;

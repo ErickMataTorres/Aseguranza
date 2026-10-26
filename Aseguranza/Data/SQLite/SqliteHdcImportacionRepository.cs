@@ -42,6 +42,10 @@ namespace Aseguranza.Data.SQLite
                 preparados.Count(
                     item => EstadoEs(item, "Actualizar"));
 
+            int reactivados =
+                preparados.Count(
+                    item => EstadoEs(item, "Reactivar"));
+
             int sinCambios =
                 preparados.Count(
                     item => EstadoEs(item, "Sin cambios"));
@@ -85,6 +89,7 @@ namespace Aseguranza.Data.SQLite
                         resultado,
                         nuevos,
                         actualizados,
+                        reactivados,
                         sinCambios,
                         excluidos,
                         ignorados);
@@ -97,7 +102,7 @@ namespace Aseguranza.Data.SQLite
                         transaccion,
                         registro);
 
-                    int idTrabajador =
+                    (int idTrabajador, bool activoActual) =
                         ObtenerIdTrabajador(
                             conexion,
                             transaccion,
@@ -130,9 +135,20 @@ namespace Aseguranza.Data.SQLite
                                 "El trabajador dejó de existir después del análisis HDC.");
                         }
 
+                        if (idTrabajador != registro.IdTrabajadorSistema ||
+                            activoActual != registro.ActivoActualSistema)
+                        {
+                            throw CrearErrorFila(
+                                registro,
+                                "El trabajador o su estado Activo cambió después del análisis. " +
+                                "Vuelva a analizar antes de importar.");
+                        }
+
                         if (EstadoEs(
                                 registro,
-                                "Actualizar"))
+                                "Actualizar") ||
+                            (EstadoEs(registro, "Reactivar") &&
+                             !string.IsNullOrWhiteSpace(registro.CambiosDetectados)))
                         {
                             ActualizarTrabajador(
                                 conexion,
@@ -140,9 +156,8 @@ namespace Aseguranza.Data.SQLite
                                 idTrabajador,
                                 registro);
                         }
-                        else if (EstadoEs(
-                                     registro,
-                                     "Sin cambios") &&
+                        else if ((EstadoEs(registro, "Sin cambios") ||
+                                  EstadoEs(registro, "Reactivar")) &&
                                  !TrabajadorCoincideConHdc(
                                      conexion,
                                      transaccion,
@@ -153,6 +168,16 @@ namespace Aseguranza.Data.SQLite
                                 registro,
                                 "El trabajador cambió después del análisis y ya no coincide " +
                                 "con el HDC. Vuelva a analizar antes de importar.");
+                        }
+
+                        if (EstadoEs(registro, "Reactivar") &&
+                            !SqliteTrabajadorRepository.CambiarEstadoEnTransaccion(
+                                conexion, transaccion, idTrabajador,
+                                true, "HDC", idImportacion))
+                        {
+                            throw CrearErrorFila(
+                                registro,
+                                "No se pudo reactivar al trabajador. Vuelva a analizar el HDC.");
                         }
                     }
 
@@ -179,6 +204,9 @@ namespace Aseguranza.Data.SQLite
 
                     Actualizados =
                         actualizados,
+
+                    Reactivados =
+                        reactivados,
 
                     SinCambios =
                         sinCambios,
@@ -214,6 +242,7 @@ namespace Aseguranza.Data.SQLite
             return
                 EstadoEs(registro, "Nuevo") ||
                 EstadoEs(registro, "Actualizar") ||
+                EstadoEs(registro, "Reactivar") ||
                 EstadoEs(registro, "Sin cambios");
         }
 
@@ -336,6 +365,7 @@ namespace Aseguranza.Data.SQLite
             ResultadoAnalisisHdc resultado,
             int nuevos,
             int actualizados,
+            int reactivados,
             int sinCambios,
             int excluidos,
             int ignorados)
@@ -407,6 +437,7 @@ namespace Aseguranza.Data.SQLite
             comando.Parameters.AddWithValue(
                 "@Observaciones",
                 "Importación transaccional HDC. " +
+                $"Reactivados: {reactivados:N0}. " +
                 $"Excluidos por equivalencias/revisión: {excluidos:N0}. " +
                 $"Ignorados: {ignorados:N0}.");
 
@@ -417,7 +448,7 @@ namespace Aseguranza.Data.SQLite
                 transaccion);
         }
 
-        private static int ObtenerIdTrabajador(
+        private static (int Id, bool Activo) ObtenerIdTrabajador(
             SqliteConnection conexion,
             SqliteTransaction transaccion,
             string noReloj)
@@ -429,7 +460,7 @@ namespace Aseguranza.Data.SQLite
                 transaccion;
 
             comando.CommandText = """
-                SELECT Id
+                SELECT Id, Activo
                 FROM Trabajador
                 WHERE NoReloj = @NoReloj COLLATE NOCASE
                 LIMIT 1;
@@ -439,17 +470,13 @@ namespace Aseguranza.Data.SQLite
                 "@NoReloj",
                 noReloj.Trim());
 
-            object? valor =
-                comando.ExecuteScalar();
-
-            if (valor is null ||
-                valor == DBNull.Value)
+            using SqliteDataReader lector = comando.ExecuteReader();
+            if (!lector.Read())
             {
-                return 0;
+                return (0, false);
             }
 
-            return Convert.ToInt32(
-                valor);
+            return (lector.GetInt32(0), lector.GetInt64(1) != 0);
         }
 
         private static int InsertarTrabajador(

@@ -40,6 +40,9 @@ namespace Aseguranza.Ventanas
         private readonly Label lblActualizar =
             CrearLabelResumen();
 
+        private readonly Label lblReactivar =
+            CrearLabelResumen();
+
         private readonly Label lblSinCambios =
             CrearLabelResumen();
 
@@ -102,6 +105,11 @@ namespace Aseguranza.Ventanas
                 lblActualizar,
                 "Actualizar",
                 "Mostrar solo registros que requieren actualización");
+
+            ConfigurarFiltroResumen(
+                lblReactivar,
+                "Reactivar",
+                "Mostrar solo trabajadores presentes en HDC que se reactivarán");
 
             ConfigurarFiltroResumen(
                 lblSinCambios,
@@ -551,63 +559,70 @@ namespace Aseguranza.Ventanas
                 lblTotal,
                 "Registros",
                 ref x,
-                125);
+                110);
 
             AgregarResumen(
                 pnlResumen,
                 lblNuevos,
                 "Nuevos",
                 ref x,
-                105);
+                95);
 
             AgregarResumen(
                 pnlResumen,
                 lblActualizar,
                 "Actualizar",
                 ref x,
-                115);
+                105);
+
+            AgregarResumen(
+                pnlResumen,
+                lblReactivar,
+                "Reactivar",
+                ref x,
+                105);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinCambios,
                 "Sin cambios",
                 ref x,
-                120);
+                110);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinPlanta,
                 "Sin planta",
                 ref x,
-                110);
+                100);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinTurno,
                 "Sin turno",
                 ref x,
-                105);
+                95);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinLinea,
                 "Sin línea",
                 ref x,
-                105);
+                95);
 
             AgregarResumen(
                 pnlResumen,
                 lblIgnorados,
                 "Ignorados",
                 ref x,
-                110);
+                100);
 
             AgregarResumen(
                 pnlResumen,
                 lblRevisar,
                 "Revisar",
                 ref x,
-                100);
+                90);
 
             Panel pnlTabla =
                 new Panel
@@ -1212,12 +1227,16 @@ namespace Aseguranza.Ventanas
             int actualizados =
                 resultadoActual.Actualizados;
 
+            int reactivados =
+                resultadoActual.Reactivados;
+
             int sinCambios =
                 resultadoActual.SinCambios;
 
             int cambiosPendientes =
                 nuevos +
-                actualizados;
+                actualizados +
+                reactivados;
 
             int pendientes =
                 resultadoActual.SinEquivalenciaPlanta +
@@ -1231,7 +1250,7 @@ namespace Aseguranza.Ventanas
                 AppDialog.ShowInfo(
                     this,
                     "Sin cambios para importar",
-                    "No hay trabajadores nuevos ni actualizaciones pendientes.");
+                    "No hay trabajadores nuevos, actualizaciones ni reactivaciones pendientes.");
 
                 return;
             }
@@ -1258,6 +1277,8 @@ namespace Aseguranza.Ventanas
                     $"Nuevos: {nuevos:N0}" +
                     Environment.NewLine +
                     $"Actualizar: {actualizados:N0}" +
+                    Environment.NewLine +
+                    $"Reactivar: {reactivados:N0}" +
                     Environment.NewLine +
                     $"Sin cambios: {sinCambios:N0}" +
                     Environment.NewLine +
@@ -1388,6 +1409,8 @@ namespace Aseguranza.Ventanas
                     Environment.NewLine +
                     $"Actualizados: {importacion.Actualizados:N0}" +
                     Environment.NewLine +
+                    $"Reactivados: {importacion.Reactivados:N0}" +
+                    Environment.NewLine +
                     $"Sin cambios: {importacion.SinCambios:N0}" +
                     Environment.NewLine +
                     $"Excluidos: {importacion.Excluidos:N0}" +
@@ -1447,7 +1470,8 @@ namespace Aseguranza.Ventanas
 
             int cambiosPendientes =
                 resultadoActual.Nuevos +
-                resultadoActual.Actualizados;
+                resultadoActual.Actualizados +
+                resultadoActual.Reactivados;
 
             btnImportar.Enabled =
                 cambiosPendientes > 0;
@@ -1471,6 +1495,7 @@ namespace Aseguranza.Ventanas
             int preparados =
                 resultado.Nuevos +
                 resultado.Actualizados +
+                resultado.Reactivados +
                 resultado.SinCambios;
 
             if (string.IsNullOrWhiteSpace(
@@ -1512,6 +1537,7 @@ namespace Aseguranza.Ventanas
                 lblTotal.Text = "0";
                 lblNuevos.Text = "0";
                 lblActualizar.Text = "0";
+                lblReactivar.Text = "0";
                 lblSinCambios.Text = "0";
                 lblSinPlanta.Text = "0";
                 lblSinTurno.Text = "0";
@@ -1531,6 +1557,10 @@ namespace Aseguranza.Ventanas
 
             lblActualizar.Text =
                 resultado.Actualizados
+                    .ToString("N0");
+
+            lblReactivar.Text =
+                resultado.Reactivados
                     .ToString("N0");
 
             lblSinCambios.Text =
@@ -1602,6 +1632,11 @@ namespace Aseguranza.Ventanas
                         45);
             }
             else if (estado == "Actualizar")
+            {
+                cellStyle.ForeColor =
+                    Color.DarkOrange;
+            }
+            else if (estado == "Reactivar")
             {
                 cellStyle.ForeColor =
                     Color.DarkOrange;

@@ -12,6 +12,7 @@ namespace Aseguranza.Clases
         public int TotalRegistros { get; set; }
         public int Nuevos { get; set; }
         public int Actualizados { get; set; }
+        public int Reactivados { get; set; }
         public int SinCambios { get; set; }
 
         // Compatibilidad con el análisis anterior.

@@ -174,7 +174,8 @@ namespace Aseguranza.Data.SqlServer
                     T.IdPlanta,
                     P.Nombre AS NombrePlanta,
                     T.IdLinea,
-                    COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea
+                    COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea,
+                    T.Activo
                 FROM dbo.Trabajador AS T
                 INNER JOIN dbo.Turno AS Tu
                     ON Tu.Id = T.IdTurno
@@ -189,6 +190,23 @@ namespace Aseguranza.Data.SqlServer
                 new SqlDataAdapter(comando);
 
             conexion.Open();
+
+            using (SqlCommand validarEstado = conexion.CreateCommand())
+            {
+                validarEstado.CommandText = """
+                    SELECT CASE WHEN
+                        COL_LENGTH(N'dbo.Trabajador', N'Activo') IS NOT NULL
+                        AND OBJECT_ID(N'dbo.TrabajadorEstadoHistorial', N'U') IS NOT NULL
+                        THEN 1 ELSE 0 END;
+                    """;
+
+                if (Convert.ToInt32(validarEstado.ExecuteScalar()) != 1)
+                {
+                    throw new InvalidOperationException(
+                        "La base SQL Server requiere la migración " +
+                        "10_TrabajadorEstado.sql antes de analizar HDC.");
+                }
+            }
 
             adaptador.Fill(tabla);
 
@@ -374,13 +392,28 @@ namespace Aseguranza.Data.SqlServer
             int? idImportacionHdc = null,
             string? motivo = null)
         {
-            TrabajadorEstadoHistorial.ValidarCambio(
-                idTrabajador, origen, idImportacionHdc, motivo);
-
             using SqlConnection conexion = Conexion.Conectar();
             conexion.Open();
             using SqlTransaction transaccion =
                 conexion.BeginTransaction(IsolationLevel.Serializable);
+            bool cambiado = CambiarEstadoEnTransaccion(
+                conexion, transaccion, idTrabajador, activo,
+                origen, idImportacionHdc, motivo);
+            transaccion.Commit();
+            return cambiado;
+        }
+
+        internal static bool CambiarEstadoEnTransaccion(
+            SqlConnection conexion,
+            SqlTransaction transaccion,
+            int idTrabajador,
+            bool activo,
+            string origen,
+            int? idImportacionHdc = null,
+            string? motivo = null)
+        {
+            TrabajadorEstadoHistorial.ValidarCambio(
+                idTrabajador, origen, idImportacionHdc, motivo);
             using SqlCommand comando = conexion.CreateCommand();
             comando.Transaction = transaccion;
             comando.CommandText = """
@@ -399,7 +432,6 @@ namespace Aseguranza.Data.SqlServer
             bool anterior = Convert.ToBoolean(valor);
             if (anterior == activo)
             {
-                transaccion.Commit();
                 return false;
             }
 
@@ -436,7 +468,6 @@ namespace Aseguranza.Data.SqlServer
                     ? DBNull.Value
                     : motivo.Trim();
             comando.ExecuteNonQuery();
-            transaccion.Commit();
             return true;
         }
 

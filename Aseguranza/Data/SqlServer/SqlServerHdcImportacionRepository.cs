@@ -44,6 +44,10 @@ namespace Aseguranza.Data.SqlServer
                 preparados.Count(
                     item => EstadoEs(item, "Actualizar"));
 
+            int reactivados =
+                preparados.Count(
+                    item => EstadoEs(item, "Reactivar"));
+
             int sinCambios =
                 preparados.Count(
                     item => EstadoEs(item, "Sin cambios"));
@@ -87,6 +91,7 @@ namespace Aseguranza.Data.SqlServer
                         resultado,
                         nuevos,
                         actualizados,
+                        reactivados,
                         sinCambios,
                         excluidos,
                         ignorados);
@@ -99,7 +104,7 @@ namespace Aseguranza.Data.SqlServer
                         transaccion,
                         registro);
 
-                    int idTrabajador =
+                    (int idTrabajador, bool activoActual) =
                         ObtenerIdTrabajador(
                             conexion,
                             transaccion,
@@ -134,9 +139,20 @@ namespace Aseguranza.Data.SqlServer
                                 "Vuelva a analizar el archivo antes de importar.");
                         }
 
+                        if (idTrabajador != registro.IdTrabajadorSistema ||
+                            activoActual != registro.ActivoActualSistema)
+                        {
+                            throw CrearErrorFila(
+                                registro,
+                                "El trabajador o su estado Activo cambió después del análisis. " +
+                                "Vuelva a analizar antes de importar.");
+                        }
+
                         if (EstadoEs(
                                 registro,
-                                "Actualizar"))
+                                "Actualizar") ||
+                            (EstadoEs(registro, "Reactivar") &&
+                             !string.IsNullOrWhiteSpace(registro.CambiosDetectados)))
                         {
                             ActualizarTrabajador(
                                 conexion,
@@ -144,9 +160,8 @@ namespace Aseguranza.Data.SqlServer
                                 idTrabajador,
                                 registro);
                         }
-                        else if (EstadoEs(
-                                     registro,
-                                     "Sin cambios") &&
+                        else if ((EstadoEs(registro, "Sin cambios") ||
+                                  EstadoEs(registro, "Reactivar")) &&
                                  !TrabajadorCoincideConHdc(
                                      conexion,
                                      transaccion,
@@ -157,6 +172,16 @@ namespace Aseguranza.Data.SqlServer
                                 registro,
                                 "El trabajador cambió después del análisis y ya no coincide " +
                                 "con el HDC. Vuelva a analizar antes de importar.");
+                        }
+
+                        if (EstadoEs(registro, "Reactivar") &&
+                            !SqlServerTrabajadorRepository.CambiarEstadoEnTransaccion(
+                                conexion, transaccion, idTrabajador,
+                                true, "HDC", idImportacion))
+                        {
+                            throw CrearErrorFila(
+                                registro,
+                                "No se pudo reactivar al trabajador. Vuelva a analizar el HDC.");
                         }
                     }
 
@@ -183,6 +208,9 @@ namespace Aseguranza.Data.SqlServer
 
                     Actualizados =
                         actualizados,
+
+                    Reactivados =
+                        reactivados,
 
                     SinCambios =
                         sinCambios,
@@ -218,6 +246,7 @@ namespace Aseguranza.Data.SqlServer
             return
                 EstadoEs(registro, "Nuevo") ||
                 EstadoEs(registro, "Actualizar") ||
+                EstadoEs(registro, "Reactivar") ||
                 EstadoEs(registro, "Sin cambios");
         }
 
@@ -270,6 +299,20 @@ namespace Aseguranza.Data.SqlServer
                     "SQL Server no tiene completa la estructura requerida para " +
                     "la importación HDC. Ejecute primero el script de verificación " +
                     "de la Fase 2D2.");
+            }
+
+            comando.CommandText = """
+                SELECT CASE WHEN
+                    COL_LENGTH(N'dbo.Trabajador', N'Activo') IS NOT NULL
+                    AND OBJECT_ID(N'dbo.TrabajadorEstadoHistorial', N'U') IS NOT NULL
+                    THEN 1 ELSE 0 END;
+                """;
+
+            if (Convert.ToInt32(comando.ExecuteScalar()) != 1)
+            {
+                throw new InvalidOperationException(
+                    "La base SQL Server requiere la migración 10_TrabajadorEstado.sql " +
+                    "antes de importar HDC con estado de trabajador.");
             }
 
             comando.CommandText = """
@@ -403,6 +446,7 @@ namespace Aseguranza.Data.SqlServer
             ResultadoAnalisisHdc resultado,
             int nuevos,
             int actualizados,
+            int reactivados,
             int sinCambios,
             int excluidos,
             int ignorados)
@@ -488,6 +532,7 @@ namespace Aseguranza.Data.SqlServer
                 SqlDbType.VarChar,
                 1000).Value =
                     "Importación transaccional HDC desde SQL Server/Azure SQL. " +
+                    $"Reactivados: {reactivados:N0}. " +
                     $"Excluidos por equivalencias/revisión: {excluidos:N0}. " +
                     $"Ignorados: {ignorados:N0}.";
 
@@ -495,7 +540,7 @@ namespace Aseguranza.Data.SqlServer
                 comando.ExecuteScalar());
         }
 
-        private static int ObtenerIdTrabajador(
+        private static (int Id, bool Activo) ObtenerIdTrabajador(
             SqlConnection conexion,
             SqlTransaction transaccion,
             string noReloj)
@@ -507,8 +552,8 @@ namespace Aseguranza.Data.SqlServer
                 transaccion;
 
             comando.CommandText = """
-                SELECT TOP (1) Id
-                FROM dbo.Trabajador
+                SELECT TOP (1) Id, Activo
+                FROM dbo.Trabajador WITH (UPDLOCK, HOLDLOCK)
                 WHERE NoReloj = @NoReloj;
                 """;
 
@@ -518,17 +563,13 @@ namespace Aseguranza.Data.SqlServer
                 10).Value =
                     noReloj.Trim();
 
-            object? valor =
-                comando.ExecuteScalar();
-
-            if (valor is null ||
-                valor == DBNull.Value)
+            using SqlDataReader lector = comando.ExecuteReader();
+            if (!lector.Read())
             {
-                return 0;
+                return (0, false);
             }
 
-            return Convert.ToInt32(
-                valor);
+            return (lector.GetInt32(0), lector.GetBoolean(1));
         }
 
         private static int InsertarTrabajador(
