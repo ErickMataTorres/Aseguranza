@@ -17,6 +17,7 @@ namespace Aseguranza.Ventanas
         private Label? _lblAvisoLimite;
 
         private Button? _btnImportarHdc;
+        private readonly ComboBox _cbEstadoPersonal = new ComboBox();
 
         private bool _estiloAplicado;
 
@@ -273,6 +274,30 @@ namespace Aseguranza.Ventanas
             pnlBuscar.Controls.Add(
                 txtBuscar);
 
+            Label lblEstadoPersonal = new Label
+            {
+                Text = "Estado:",
+                AutoSize = true,
+                Location = new Point(20, 106),
+                ForeColor = AppColors.TextPrimary,
+                Font = AppFonts.Regular(10F, FontStyle.Bold)
+            };
+
+            Panel pnlEstadoPersonal = new Panel
+            {
+                Location = new Point(92, 96),
+                Size = new Size(170, 42),
+                BackColor = Color.White
+            };
+            _cbEstadoPersonal.Items.AddRange(new object[]
+                { "Activos", "Inactivos", "Todos" });
+            ComboBoxStyler.ApplyOutlinedComboBox(
+                pnlEstadoPersonal, _cbEstadoPersonal);
+            pnlEstadoPersonal.Controls.Add(_cbEstadoPersonal);
+            _cbEstadoPersonal.SelectedIndex = 0;
+            _cbEstadoPersonal.SelectedIndexChanged +=
+                (_, _) => CargarTrabajadores();
+
             // =====================================================
             // CONTADOR
             // =====================================================
@@ -288,7 +313,7 @@ namespace Aseguranza.Ventanas
 
                     Location =
                         new Point(
-                            20,
+                            282,
                             101),
 
                     Text =
@@ -315,7 +340,7 @@ namespace Aseguranza.Ventanas
                     Location =
                         new Point(
                             20,
-                            123),
+                            143),
 
                     Text =
                         "Se muestran hasta 100 trabajadores. Use Buscar para localizar otros registros.",
@@ -343,6 +368,8 @@ namespace Aseguranza.Ventanas
              * ese valor como una imagen.
              */
             PrepararColumnasTrabajadores();
+            dgvTrabajadores.CellFormatting +=
+                dgvTrabajadores_CellFormatting;
 
             // =====================================================
             // CONTENEDOR TABLA
@@ -357,12 +384,12 @@ namespace Aseguranza.Ventanas
                     Location =
                         new Point(
                             20,
-                            150),
+                            170),
 
                     Size =
                         new Size(
                             pnlContenido.ClientSize.Width - 40,
-                            pnlContenido.ClientSize.Height - 228),
+                            pnlContenido.ClientSize.Height - 248),
 
                     BackColor =
                         Color.White,
@@ -523,6 +550,9 @@ namespace Aseguranza.Ventanas
             pnlContenido.Controls.Add(
                 btnLimpiar);
 
+            pnlContenido.Controls.Add(lblEstadoPersonal);
+            pnlContenido.Controls.Add(pnlEstadoPersonal);
+
             pnlContenido.Controls.Add(
                 _lblRegistros);
 
@@ -626,6 +656,11 @@ namespace Aseguranza.Ventanas
                 "NombreLinea",
                 "LÍNEA",
                 visible: true);
+
+            AgregarColumnaTexto(
+                "Activo",
+                "ESTADO",
+                visible: true);
         }
 
         private void AgregarColumnaTexto(
@@ -668,7 +703,13 @@ namespace Aseguranza.Ventanas
             dgvTrabajadores.DataSource =
                 Clases.Trabajador
                     .ConsultarTrabajadores(
-                        txtBuscar.Text.Trim());
+                        txtBuscar.Text.Trim(),
+                        _cbEstadoPersonal.SelectedIndex switch
+                        {
+                            0 => true,
+                            1 => false,
+                            _ => null
+                        });
 
             ConfigurarColumnas();
 
@@ -757,7 +798,37 @@ namespace Aseguranza.Ventanas
             ConfigurarColumna(
                 "NombreLinea",
                 "LÍNEA",
-                19);
+                16);
+
+            ConfigurarColumna(
+                "Activo",
+                "ESTADO",
+                10);
+        }
+
+        private void dgvTrabajadores_CellFormatting(
+            object? sender,
+            DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
+                return;
+
+            object? valorActivo = dgvTrabajadores.Rows[e.RowIndex]
+                .Cells["Activo"].Value;
+            if (valorActivo is not bool activo)
+                return;
+
+            if (!activo && e.CellStyle is DataGridViewCellStyle estilo)
+            {
+                estilo.BackColor = Color.FromArgb(241, 243, 247);
+                estilo.ForeColor = Color.FromArgb(80, 88, 105);
+            }
+
+            if (dgvTrabajadores.Columns[e.ColumnIndex].Name == "Activo")
+            {
+                e.Value = activo ? "ACTIVO" : "INACTIVO";
+                e.FormattingApplied = true;
+            }
         }
 
         private void OcultarColumna(
@@ -886,6 +957,7 @@ namespace Aseguranza.Ventanas
 
             return new Clases.Trabajador
             {
+                Activo = ObtenerValorCelda("Activo") is bool activo && activo,
                 Id =
                     Convert.ToInt32(
                         idValor),

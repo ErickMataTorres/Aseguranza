@@ -10,6 +10,9 @@ namespace Aseguranza.Clases
 
         public int Actualizados { get; set; }
 
+        public int Reactivados { get; set; }
+        public int Inactivados { get; set; }
+
         public int SinCambios { get; set; }
 
         public int Excluidos { get; set; }
@@ -22,6 +25,8 @@ namespace Aseguranza.Clases
         public int TotalProcesados =>
             NuevosInsertados +
             Actualizados +
+            Reactivados +
+            Inactivados +
             SinCambios;
     }
 }

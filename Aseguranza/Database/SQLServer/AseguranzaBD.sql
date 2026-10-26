@@ -187,6 +187,10 @@ CREATE TABLE [dbo].[ImportacionHdc](
 	[Actualizados] [int] NOT NULL,
 	[SinCambios] [int] NOT NULL,
 	[ConAdvertencias] [int] NOT NULL,
+	[ConciliarAusencias] [bit] NOT NULL CONSTRAINT [DF_ImportacionHdc_ConciliarAusencias] DEFAULT (0),
+
+	[HuellaSha256] [varchar](64) NULL,
+
 	[Observaciones] [varchar](1000) NULL,
  CONSTRAINT [PK_ImportacionHdc] PRIMARY KEY CLUSTERED 
 (
@@ -194,7 +198,18 @@ CREATE TABLE [dbo].[ImportacionHdc](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[Linea] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
+CREATE TABLE [dbo].[ImportacionHdcAlcance](
+    [IdImportacionHdc] [int] NOT NULL,
+    [CodigoLocalidadHdc] [varchar](50) NOT NULL,
+    CONSTRAINT [PK_ImportacionHdcAlcance] PRIMARY KEY
+        ([IdImportacionHdc], [CodigoLocalidadHdc]),
+    CONSTRAINT [FK_ImportacionHdcAlcance_Importacion]
+        FOREIGN KEY ([IdImportacionHdc]) REFERENCES [dbo].[ImportacionHdc]([Id])
+);
+GO
+
+/****** Objeto: Table [dbo].[Linea] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -316,6 +331,7 @@ CREATE TABLE [dbo].[Trabajador](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[NoReloj] [varchar](10) NOT NULL,
 	[Nombre] [varchar](200) NOT NULL,
+	[Activo] [bit] NOT NULL CONSTRAINT [DF_Trabajador_Activo] DEFAULT ((1)),
 	[RutaFoto] [varchar](300) NULL,
 	[IdLocalidad] [int] NULL,
 	[IdTurno] [int] NOT NULL,
@@ -331,6 +347,35 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+CREATE TABLE [dbo].[TrabajadorEstadoHistorial](
+    [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [IdTrabajador] int NOT NULL,
+    [ActivoAnterior] bit NULL,
+    [ActivoNuevo] bit NOT NULL,
+    [FechaCambioUtc] datetime2(3) NOT NULL,
+    [Origen] varchar(20) NOT NULL,
+    [IdImportacionHdc] int NULL,
+    [Motivo] nvarchar(500) NULL,
+    CONSTRAINT [CK_TrabajadorEstadoHistorial_Origen]
+        CHECK ([Origen] IN ('HDC', 'MANUAL')),
+    CONSTRAINT [FK_TrabajadorEstadoHistorial_Trabajador]
+        FOREIGN KEY ([IdTrabajador]) REFERENCES [dbo].[Trabajador]([Id]),
+    CONSTRAINT [FK_TrabajadorEstadoHistorial_Importacion]
+        FOREIGN KEY ([IdImportacionHdc]) REFERENCES [dbo].[ImportacionHdc]([Id])
+);
+GO
+CREATE INDEX [IX_TrabajadorEstadoHistorial_Trabajador_Fecha]
+    ON [dbo].[TrabajadorEstadoHistorial]([IdTrabajador], [FechaCambioUtc]);
+GO
+INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
+VALUES (10, SYSUTCDATETIME(), 'Estado activo de trabajador e historial de cambios');
+GO
+INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
+VALUES (11, SYSUTCDATETIME(), 'Conciliacion de ausencias HDC con alcance y huella de origen');
+GO
+INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
+VALUES (12, SYSUTCDATETIME(), 'Filtros de personal activo e inactivo en listas operativas');
+GO
 /****** Objeto: Table [dbo].[Turno] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
 SET ANSI_NULLS ON
 GO
@@ -802,7 +847,7 @@ CREATE   PROCEDURE [dbo].[spBorrarTrabajador]
 AS
 BEGIN
 	SET NOCOUNT ON;
-	IF NOT EXISTS (SELECT 1 FROM Certificador WHERE IdTrabajador=@Id) AND NOT EXISTS (SELECT 1 FROM Certificacion WHERE IdTrabajador=@Id)
+	IF NOT EXISTS (SELECT 1 FROM Certificador WHERE IdTrabajador=@Id) AND NOT EXISTS (SELECT 1 FROM Certificacion WHERE IdTrabajador=@Id) AND NOT EXISTS (SELECT 1 FROM TrabajadorEstadoHistorial WHERE IdTrabajador=@Id)
 	BEGIN
 		DELETE FROM Trabajador WHERE Id=@Id
 		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
@@ -1129,6 +1174,7 @@ BEGIN
         T.Id,
         T.NoReloj,
         T.Nombre,
+        T.Activo,
         T.RutaFoto,
 
         T.IdLocalidad,
@@ -1172,7 +1218,8 @@ GO
    ============================================================ */
 
 CREATE   PROCEDURE [dbo].[spConsultarTrabajadores]
-    @TextoBuscar VARCHAR(100) = ''
+    @TextoBuscar VARCHAR(100) = '',
+    @Activo BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1181,6 +1228,7 @@ BEGIN
         T.Id,
         T.NoReloj,
         T.Nombre,
+        T.Activo,
         T.RutaFoto,
 
         T.IdLocalidad,
@@ -1209,14 +1257,15 @@ BEGIN
     LEFT JOIN dbo.Linea AS Li
         ON Li.Id = T.IdLinea
 
-    WHERE
+    WHERE (@Activo IS NULL OR T.Activo = @Activo)
+      AND (
         T.NoReloj LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR T.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR ISNULL(Lo.Nombre, '') LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR Tu.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR P.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
         OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
-            LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
+            LIKE '%' + ISNULL(@TextoBuscar, '') + '%')
 
     ORDER BY T.Nombre;
 END;
@@ -1285,17 +1334,19 @@ GO
 
 CREATE   PROCEDURE [dbo].[spConsultarTrabajadoresEstadoCertificacion]
     @MostrarPor VARCHAR(20),
-    @TextoBuscar VARCHAR(100)
+    @TextoBuscar VARCHAR(100),
+    @Activo BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
     ;WITH TrabajadoresEstado AS
     (
-        SELECT TOP (300)
+        SELECT
             T.Id,
             T.NoReloj,
             T.Nombre,
+            T.Activo,
             T.RutaFoto,
 
             T.IdLocalidad,
@@ -1375,8 +1426,8 @@ BEGIN
                   )
            )
 
-        WHERE
-        (
+        WHERE (@Activo IS NULL OR T.Activo = @Activo)
+        AND (
             T.NoReloj LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
             OR T.Nombre LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
             OR ISNULL(Lo.Nombre, '')
@@ -1394,6 +1445,7 @@ BEGIN
             T.Id,
             T.NoReloj,
             T.Nombre,
+            T.Activo,
             T.RutaFoto,
             T.IdLocalidad,
             Lo.Nombre,
@@ -1405,7 +1457,7 @@ BEGIN
             Li.Nombre
     )
 
-    SELECT *
+    SELECT TOP (300) *
     FROM TrabajadoresEstado
     WHERE
         @MostrarPor = 'Todas'

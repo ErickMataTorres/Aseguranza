@@ -9,11 +9,13 @@ namespace Aseguranza.Data.Interfaces
             string noReloj);
 
         DataTable Consultar(
-            string textoBuscar);
+            string textoBuscar,
+            bool? activo);
 
         DataTable ConsultarEstadoCertificacion(
             string mostrarPor,
-            string textoBuscar);
+            string textoBuscar,
+            bool? activo);
 
         DataTable ConsultarParaImportacionHdc();
 
@@ -22,5 +24,12 @@ namespace Aseguranza.Data.Interfaces
 
         Mensaje Borrar(
             int id);
+
+        bool CambiarEstado(
+            int idTrabajador,
+            bool activo,
+            string origen,
+            int? idImportacionHdc = null,
+            string? motivo = null);
     }
 }

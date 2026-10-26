@@ -13,6 +13,96 @@ namespace Aseguranza.Data.SqlServer
     public sealed class SqlServerHdcImportacionRepository
         : IHdcImportacionRepository
     {
+        public EstadoConciliacionHdc ConsultarEstadoConciliacion()
+        {
+            using SqlConnection conexion = Conexion.Conectar();
+            conexion.Open();
+            ValidarEstructuraConciliacion(conexion);
+            using SqlTransaction transaccion =
+                conexion.BeginTransaction(IsolationLevel.Serializable);
+            EstadoConciliacionHdc estado =
+                CargarEstadoConciliacion(conexion, transaccion, false);
+            transaccion.Commit();
+            return estado;
+        }
+
+        private static void ValidarEstructuraConciliacion(
+            SqlConnection conexion)
+        {
+            using SqlCommand comando = conexion.CreateCommand();
+            comando.CommandText = """
+                SELECT CASE WHEN
+                    COL_LENGTH(N'dbo.ImportacionHdc', N'ConciliarAusencias') IS NOT NULL
+                    AND COL_LENGTH(N'dbo.ImportacionHdc', N'HuellaSha256') IS NOT NULL
+                    AND OBJECT_ID(N'dbo.ImportacionHdcAlcance', N'U') IS NOT NULL
+                    AND OBJECT_ID(N'dbo.SchemaVersion', N'U') IS NOT NULL
+                    THEN 1 ELSE 0 END;
+                """;
+            if (Convert.ToInt32(comando.ExecuteScalar()) != 1)
+            {
+                throw new InvalidOperationException(
+                    "La base SQL Server requiere la migración " +
+                    "11_ConciliacionAusenciasHdc.sql antes de conciliar ausencias.");
+            }
+            comando.CommandText =
+                "SELECT COUNT(*) FROM dbo.SchemaVersion WHERE Version = 11;";
+            if (Convert.ToInt32(comando.ExecuteScalar()) != 1)
+            {
+                throw new InvalidOperationException(
+                    "La migración SQL Server 11 no está registrada. Despliegue " +
+                    "11_ConciliacionAusenciasHdc.sql antes de importar HDC.");
+            }
+        }
+
+        private static EstadoConciliacionHdc CargarEstadoConciliacion(
+            SqlConnection conexion, SqlTransaction transaccion, bool bloquear)
+        {
+            EstadoConciliacionHdc estado = new();
+            string bloqueo = bloquear ? " WITH (UPDLOCK, HOLDLOCK)" : string.Empty;
+            using SqlCommand comando = conexion.CreateCommand();
+            comando.Transaction = transaccion;
+            comando.CommandText = $"""
+                SELECT T.Id, T.NoReloj, T.Nombre, T.Activo,
+                       P.EmpleadoHdc, P.LocalidadHdc, P.IdImportacionHdc,
+                       P.EncontradoUltimoHdc
+                FROM dbo.Trabajador AS T{bloqueo}
+                INNER JOIN dbo.PerfilHdcTrabajador AS P{bloqueo}
+                    ON P.IdTrabajador = T.Id
+                ORDER BY T.Id;
+                """;
+            using (SqlDataReader lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    estado.Perfiles.Add(new PerfilConciliacionHdc(
+                        lector.GetInt32(0), lector.GetString(1),
+                        lector.GetString(2), lector.GetBoolean(3),
+                        lector.IsDBNull(4) ? string.Empty : lector.GetString(4),
+                        lector.IsDBNull(5) ? string.Empty : lector.GetString(5),
+                        lector.IsDBNull(6) ? null : lector.GetInt32(6),
+                        lector.GetBoolean(7)));
+                }
+            }
+            comando.CommandText = $"""
+                SELECT E.CodigoLocalidadHdc, E.Accion, E.IdPlanta,
+                       E.Activo, COALESCE(P.Nombre, '')
+                FROM dbo.EquivalenciaPlantaHdc AS E{bloqueo}
+                LEFT JOIN dbo.Planta AS P{bloqueo} ON P.Id = E.IdPlanta
+                ORDER BY E.CodigoLocalidadHdc;
+                """;
+            using (SqlDataReader lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    estado.Plantas.Add(new PlantaConciliacionHdc(
+                        lector.GetString(0), lector.GetString(1),
+                        lector.IsDBNull(2) ? null : lector.GetInt32(2),
+                        lector.GetBoolean(3), lector.GetString(4)));
+                }
+            }
+            return estado;
+        }
+
         public ResultadoImportacionHdc Importar(
             string rutaArchivo,
             ResultadoAnalisisHdc resultado)
@@ -31,6 +121,9 @@ namespace Aseguranza.Data.SqlServer
                     nameof(rutaArchivo));
             }
 
+            using FileStream fuente =
+                HdcConciliacionAusencias.AbrirFuenteVerificada(rutaArchivo, resultado);
+
             List<RegistroHdc> preparados =
                 resultado.Registros
                     .Where(EsRegistroPreparado)
@@ -44,6 +137,12 @@ namespace Aseguranza.Data.SqlServer
                 preparados.Count(
                     item => EstadoEs(item, "Actualizar"));
 
+            int reactivados =
+                preparados.Count(
+                    item => EstadoEs(item, "Reactivar"));
+            int inactivados = resultado.ConciliarAusencias
+                ? resultado.Inactivados : 0;
+
             int sinCambios =
                 preparados.Count(
                     item => EstadoEs(item, "Sin cambios"));
@@ -55,11 +154,11 @@ namespace Aseguranza.Data.SqlServer
             int excluidos =
                 Math.Max(
                     0,
-                    resultado.Registros.Count -
+                    resultado.TotalRegistros -
                     preparados.Count -
                     ignorados);
 
-            if (preparados.Count == 0)
+            if (preparados.Count == 0 && inactivados == 0)
             {
                 throw new InvalidOperationException(
                     "No hay registros preparados para importar.");
@@ -75,7 +174,9 @@ namespace Aseguranza.Data.SqlServer
 
             using SqlTransaction transaccion =
                 conexion.BeginTransaction(
-                    IsolationLevel.ReadCommitted);
+                    resultado.ConciliarAusencias
+                        ? IsolationLevel.Serializable
+                        : IsolationLevel.ReadCommitted);
 
             try
             {
@@ -87,9 +188,21 @@ namespace Aseguranza.Data.SqlServer
                         resultado,
                         nuevos,
                         actualizados,
+                        reactivados,
+                        inactivados,
                         sinCambios,
                         excluidos,
                         ignorados);
+
+                PlanConciliacionHdc plan = resultado.ConciliarAusencias
+                    ? HdcConciliacionAusencias.CalcularPlan(
+                        resultado, CargarEstadoConciliacion(conexion, transaccion, true))
+                    : new PlanConciliacionHdc(
+                        string.Empty, string.Empty,
+                        Array.Empty<PerfilConciliacionHdc>());
+                HdcConciliacionAusencias.ValidarPlanImportacion(resultado, plan);
+
+                GuardarAlcance(conexion, transaccion, idImportacion, resultado);
 
                 foreach (RegistroHdc registro
                          in preparados)
@@ -99,7 +212,7 @@ namespace Aseguranza.Data.SqlServer
                         transaccion,
                         registro);
 
-                    int idTrabajador =
+                    (int idTrabajador, bool activoActual) =
                         ObtenerIdTrabajador(
                             conexion,
                             transaccion,
@@ -134,9 +247,20 @@ namespace Aseguranza.Data.SqlServer
                                 "Vuelva a analizar el archivo antes de importar.");
                         }
 
+                        if (idTrabajador != registro.IdTrabajadorSistema ||
+                            activoActual != registro.ActivoActualSistema)
+                        {
+                            throw CrearErrorFila(
+                                registro,
+                                "El trabajador o su estado Activo cambió después del análisis. " +
+                                "Vuelva a analizar antes de importar.");
+                        }
+
                         if (EstadoEs(
                                 registro,
-                                "Actualizar"))
+                                "Actualizar") ||
+                            (EstadoEs(registro, "Reactivar") &&
+                             !string.IsNullOrWhiteSpace(registro.CambiosDetectados)))
                         {
                             ActualizarTrabajador(
                                 conexion,
@@ -144,9 +268,8 @@ namespace Aseguranza.Data.SqlServer
                                 idTrabajador,
                                 registro);
                         }
-                        else if (EstadoEs(
-                                     registro,
-                                     "Sin cambios") &&
+                        else if ((EstadoEs(registro, "Sin cambios") ||
+                                  EstadoEs(registro, "Reactivar")) &&
                                  !TrabajadorCoincideConHdc(
                                      conexion,
                                      transaccion,
@@ -158,6 +281,16 @@ namespace Aseguranza.Data.SqlServer
                                 "El trabajador cambió después del análisis y ya no coincide " +
                                 "con el HDC. Vuelva a analizar antes de importar.");
                         }
+
+                        if (EstadoEs(registro, "Reactivar") &&
+                            !SqlServerTrabajadorRepository.CambiarEstadoEnTransaccion(
+                                conexion, transaccion, idTrabajador,
+                                true, "HDC", idImportacion))
+                        {
+                            throw CrearErrorFila(
+                                registro,
+                                "No se pudo reactivar al trabajador. Vuelva a analizar el HDC.");
+                        }
                     }
 
                     GuardarPerfilHdc(
@@ -168,6 +301,9 @@ namespace Aseguranza.Data.SqlServer
                         registro);
                 }
 
+                InactivarCandidatos(
+                    conexion, transaccion, idImportacion, plan);
+
                 transaccion.Commit();
 
                 return new ResultadoImportacionHdc
@@ -176,13 +312,18 @@ namespace Aseguranza.Data.SqlServer
                         idImportacion,
 
                     TotalRegistrosArchivo =
-                        resultado.Registros.Count,
+                        resultado.TotalRegistros,
 
                     NuevosInsertados =
                         nuevos,
 
                     Actualizados =
                         actualizados,
+
+                    Reactivados =
+                        reactivados,
+                    Inactivados =
+                        inactivados,
 
                     SinCambios =
                         sinCambios,
@@ -218,6 +359,7 @@ namespace Aseguranza.Data.SqlServer
             return
                 EstadoEs(registro, "Nuevo") ||
                 EstadoEs(registro, "Actualizar") ||
+                EstadoEs(registro, "Reactivar") ||
                 EstadoEs(registro, "Sin cambios");
         }
 
@@ -273,6 +415,20 @@ namespace Aseguranza.Data.SqlServer
             }
 
             comando.CommandText = """
+                SELECT CASE WHEN
+                    COL_LENGTH(N'dbo.Trabajador', N'Activo') IS NOT NULL
+                    AND OBJECT_ID(N'dbo.TrabajadorEstadoHistorial', N'U') IS NOT NULL
+                    THEN 1 ELSE 0 END;
+                """;
+
+            if (Convert.ToInt32(comando.ExecuteScalar()) != 1)
+            {
+                throw new InvalidOperationException(
+                    "La base SQL Server requiere la migración 10_TrabajadorEstado.sql " +
+                    "antes de importar HDC con estado de trabajador.");
+            }
+
+            comando.CommandText = """
                 SELECT COUNT(*)
                 FROM sys.columns
                 WHERE object_id = OBJECT_ID(N'dbo.Trabajador')
@@ -286,6 +442,8 @@ namespace Aseguranza.Data.SqlServer
                 throw new InvalidOperationException(
                     "dbo.Trabajador.IdLinea debe permitir NULL antes de importar HDC.");
             }
+
+            ValidarEstructuraConciliacion(conexion);
         }
 
         private static void ValidarRegistroPreparado(
@@ -403,6 +561,8 @@ namespace Aseguranza.Data.SqlServer
             ResultadoAnalisisHdc resultado,
             int nuevos,
             int actualizados,
+            int reactivados,
+            int inactivados,
             int sinCambios,
             int excluidos,
             int ignorados)
@@ -424,6 +584,8 @@ namespace Aseguranza.Data.SqlServer
                     Actualizados,
                     SinCambios,
                     ConAdvertencias,
+                    ConciliarAusencias,
+                    HuellaSha256,
                     Observaciones
                 )
                 VALUES
@@ -436,6 +598,8 @@ namespace Aseguranza.Data.SqlServer
                     @Actualizados,
                     @SinCambios,
                     @ConAdvertencias,
+                    @ConciliarAusencias,
+                    @HuellaSha256,
                     @Observaciones
                 );
 
@@ -461,7 +625,7 @@ namespace Aseguranza.Data.SqlServer
             comando.Parameters.Add(
                 "@TotalRegistros",
                 SqlDbType.Int).Value =
-                    resultado.Registros.Count;
+                    resultado.TotalRegistros;
 
             comando.Parameters.Add(
                 "@Nuevos",
@@ -482,12 +646,20 @@ namespace Aseguranza.Data.SqlServer
                 "@ConAdvertencias",
                 SqlDbType.Int).Value =
                     excluidos;
+            comando.Parameters.Add(
+                "@ConciliarAusencias",
+                SqlDbType.Bit).Value = resultado.ConciliarAusencias;
+            comando.Parameters.Add(
+                "@HuellaSha256",
+                SqlDbType.VarChar, 64).Value = resultado.HuellaSha256;
 
             comando.Parameters.Add(
                 "@Observaciones",
                 SqlDbType.VarChar,
                 1000).Value =
                     "Importación transaccional HDC desde SQL Server/Azure SQL. " +
+                    $"Reactivados: {reactivados:N0}. " +
+                    $"Inactivados: {inactivados:N0}. " +
                     $"Excluidos por equivalencias/revisión: {excluidos:N0}. " +
                     $"Ignorados: {ignorados:N0}.";
 
@@ -495,7 +667,61 @@ namespace Aseguranza.Data.SqlServer
                 comando.ExecuteScalar());
         }
 
-        private static int ObtenerIdTrabajador(
+        private static void GuardarAlcance(
+            SqlConnection conexion, SqlTransaction transaccion,
+            int idImportacion, ResultadoAnalisisHdc resultado)
+        {
+            if (!resultado.ConciliarAusencias) return;
+            foreach (string codigo in resultado.LocalidadesCompletas)
+            {
+                using SqlCommand comando = conexion.CreateCommand();
+                comando.Transaction = transaccion;
+                comando.CommandText = """
+                    INSERT INTO dbo.ImportacionHdcAlcance
+                        (IdImportacionHdc, CodigoLocalidadHdc)
+                    VALUES (@IdImportacion, @Codigo);
+                    """;
+                comando.Parameters.Add("@IdImportacion", SqlDbType.Int)
+                    .Value = idImportacion;
+                comando.Parameters.Add("@Codigo", SqlDbType.VarChar, 50)
+                    .Value = HdcConciliacionAusencias.Normalizar(codigo);
+                comando.ExecuteNonQuery();
+            }
+        }
+
+        private static void InactivarCandidatos(
+            SqlConnection conexion, SqlTransaction transaccion,
+            int idImportacion, PlanConciliacionHdc plan)
+        {
+            foreach (PerfilConciliacionHdc perfil in plan.Candidatos)
+            {
+                string motivo = "Ausente de la población HDC completa de " +
+                    HdcConciliacionAusencias.Normalizar(perfil.LocalidadHdc) + ".";
+                if (!SqlServerTrabajadorRepository.CambiarEstadoEnTransaccion(
+                    conexion, transaccion, perfil.IdTrabajador,
+                    false, "HDC", idImportacion, motivo))
+                {
+                    throw new InvalidOperationException(
+                        "El estado del trabajador cambió durante la conciliación HDC.");
+                }
+                using SqlCommand comando = conexion.CreateCommand();
+                comando.Transaction = transaccion;
+                comando.CommandText = """
+                    UPDATE dbo.PerfilHdcTrabajador
+                    SET EncontradoUltimoHdc = 0
+                    WHERE IdTrabajador = @Id;
+                    """;
+                comando.Parameters.Add("@Id", SqlDbType.Int)
+                    .Value = perfil.IdTrabajador;
+                if (comando.ExecuteNonQuery() != 1)
+                {
+                    throw new InvalidOperationException(
+                        "Cambió el perfil HDC durante la conciliación. Se revirtió la importación.");
+                }
+            }
+        }
+
+        private static (int Id, bool Activo) ObtenerIdTrabajador(
             SqlConnection conexion,
             SqlTransaction transaccion,
             string noReloj)
@@ -507,8 +733,8 @@ namespace Aseguranza.Data.SqlServer
                 transaccion;
 
             comando.CommandText = """
-                SELECT TOP (1) Id
-                FROM dbo.Trabajador
+                SELECT TOP (1) Id, Activo
+                FROM dbo.Trabajador WITH (UPDLOCK, HOLDLOCK)
                 WHERE NoReloj = @NoReloj;
                 """;
 
@@ -518,17 +744,13 @@ namespace Aseguranza.Data.SqlServer
                 10).Value =
                     noReloj.Trim();
 
-            object? valor =
-                comando.ExecuteScalar();
-
-            if (valor is null ||
-                valor == DBNull.Value)
+            using SqlDataReader lector = comando.ExecuteReader();
+            if (!lector.Read())
             {
-                return 0;
+                return (0, false);
             }
 
-            return Convert.ToInt32(
-                valor);
+            return (lector.GetInt32(0), lector.GetBoolean(1));
         }
 
         private static int InsertarTrabajador(

@@ -68,6 +68,26 @@ namespace Aseguranza
             ConfiguracionSistema
                 .AsegurarEstructuraPortableConfigurada();
 
+            if (ConfiguracionSistema.ObtenerProveedorBaseDatos() ==
+                ProveedorBaseDatos.SQLite)
+            {
+                try
+                {
+                    InicializadorSqlite.ActualizarEsquemaExistente();
+                    InicializadorSqlite.ActualizarEsquemaConciliacion();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "No fue posible actualizar la base SQLite configurada." +
+                        Environment.NewLine + ex.Message,
+                        "Actualización SQLite",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
             Application.Run(
                 new MenuPrincipal());
         }

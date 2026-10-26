@@ -30,6 +30,9 @@ namespace Aseguranza.Ventanas
 
         private readonly DataGridView dgvRegistros =
             new DataGridView();
+        private readonly CheckBox chkConciliarAusencias = new CheckBox();
+        private readonly CheckedListBox lstLocalidadesCompletas = new CheckedListBox();
+        private bool actualizandoAlcance;
 
         private readonly Label lblTotal =
             CrearLabelResumen();
@@ -38,6 +41,11 @@ namespace Aseguranza.Ventanas
             CrearLabelResumen();
 
         private readonly Label lblActualizar =
+            CrearLabelResumen();
+
+        private readonly Label lblReactivar =
+            CrearLabelResumen();
+        private readonly Label lblInactivar =
             CrearLabelResumen();
 
         private readonly Label lblSinCambios =
@@ -102,6 +110,15 @@ namespace Aseguranza.Ventanas
                 lblActualizar,
                 "Actualizar",
                 "Mostrar solo registros que requieren actualización");
+
+            ConfigurarFiltroResumen(
+                lblReactivar,
+                "Reactivar",
+                "Mostrar solo trabajadores presentes en HDC que se reactivarán");
+            ConfigurarFiltroResumen(
+                lblInactivar,
+                "Inactivar",
+                "Mostrar solo trabajadores ausentes de localidades declaradas completas");
 
             ConfigurarFiltroResumen(
                 lblSinCambios,
@@ -254,7 +271,7 @@ namespace Aseguranza.Ventanas
             lblEstado.Text =
                 $"Filtro: {descripcionFiltro}. " +
                 $"Mostrando {lista.Count:N0} de " +
-                $"{resultadoActual.TotalRegistros:N0} registros.";
+                $"{resultadoActual.TotalRegistros + resultadoActual.Inactivados:N0} registros.";
         }
 
         private void ConfigurarVentana()
@@ -264,7 +281,7 @@ namespace Aseguranza.Ventanas
                 "Importar HDC",
                 new Size(
                     1360,
-                    800));
+                    870));
 
             StartPosition =
                 FormStartPosition.CenterParent;
@@ -272,7 +289,7 @@ namespace Aseguranza.Ventanas
             MinimumSize =
                 new Size(
                     1160,
-                    700);
+                    760);
 
             DoubleBuffered =
                 true;
@@ -551,63 +568,122 @@ namespace Aseguranza.Ventanas
                 lblTotal,
                 "Registros",
                 ref x,
-                125);
+                100);
 
             AgregarResumen(
                 pnlResumen,
                 lblNuevos,
                 "Nuevos",
                 ref x,
-                105);
+                90);
 
             AgregarResumen(
                 pnlResumen,
                 lblActualizar,
                 "Actualizar",
                 ref x,
-                115);
+                100);
+
+            AgregarResumen(
+                pnlResumen,
+                lblReactivar,
+                "Reactivar",
+                ref x,
+                100);
+
+            AgregarResumen(
+                pnlResumen,
+                lblInactivar,
+                "Inactivar",
+                ref x,
+                90);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinCambios,
                 "Sin cambios",
                 ref x,
-                120);
+                100);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinPlanta,
                 "Sin planta",
                 ref x,
-                110);
+                95);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinTurno,
                 "Sin turno",
                 ref x,
-                105);
+                90);
 
             AgregarResumen(
                 pnlResumen,
                 lblSinLinea,
                 "Sin línea",
                 ref x,
-                105);
+                90);
 
             AgregarResumen(
                 pnlResumen,
                 lblIgnorados,
                 "Ignorados",
                 ref x,
-                110);
+                95);
 
             AgregarResumen(
                 pnlResumen,
                 lblRevisar,
                 "Revisar",
                 ref x,
-                100);
+                85);
+
+            Panel pnlAlcance = new Panel
+            {
+                Location = new Point(20, 238),
+                Size = new Size(pnlContenido.ClientSize.Width - 40, 155),
+                BackColor = AppColors.SectionBackground,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            chkConciliarAusencias.Text = "Conciliar ausencias";
+            chkConciliarAusencias.AutoSize = true;
+            chkConciliarAusencias.Location = new Point(18, 12);
+            chkConciliarAusencias.Enabled = false;
+            chkConciliarAusencias.CheckedChanged +=
+                async (_, _) => await ActualizarAlcanceAsync();
+            Label lblAlcance = new Label
+            {
+                Text = "Localidades HDC con población completa (selección explícita)",
+                AutoSize = true,
+                Location = new Point(230, 9),
+                ForeColor = AppColors.TextPrimary
+            };
+            lstLocalidadesCompletas.Location = new Point(230, 29);
+            lstLocalidadesCompletas.Size =
+                new Size(pnlAlcance.ClientSize.Width - 248, 120);
+            lstLocalidadesCompletas.Anchor =
+                AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lstLocalidadesCompletas.CheckOnClick = true;
+            lstLocalidadesCompletas.Enabled = false;
+            lstLocalidadesCompletas.ItemCheck += (_, e) =>
+            {
+                if (actualizandoAlcance) return;
+                if (e.NewValue == CheckState.Checked &&
+                    lstLocalidadesCompletas.Items[e.Index] is LocalidadHdcOpcion opcion &&
+                    !opcion.Disponible)
+                {
+                    e.NewValue = CheckState.Unchecked;
+                    AppDialog.ShowWarning(this, "Localidad no disponible",
+                        "Esa localidad HDC no tiene una equivalencia de planta válida.");
+                    return;
+                }
+                BeginInvoke(new Action(async () => await ActualizarAlcanceAsync()));
+            };
+            pnlAlcance.Controls.Add(chkConciliarAusencias);
+            pnlAlcance.Controls.Add(lblAlcance);
+            pnlAlcance.Controls.Add(lstLocalidadesCompletas);
 
             Panel pnlTabla =
                 new Panel
@@ -615,12 +691,12 @@ namespace Aseguranza.Ventanas
                     Location =
                         new Point(
                             20,
-                            238),
+                            405),
 
                     Size =
                         new Size(
                             pnlContenido.ClientSize.Width - 40,
-                            pnlContenido.ClientSize.Height - 310),
+                            pnlContenido.ClientSize.Height - 477),
 
                     BackColor =
                         Color.White,
@@ -724,6 +800,7 @@ namespace Aseguranza.Ventanas
 
             pnlContenido.Controls.Add(
                 pnlResumen);
+            pnlContenido.Controls.Add(pnlAlcance);
 
             pnlContenido.Controls.Add(
                 pnlTabla);
@@ -1008,6 +1085,12 @@ namespace Aseguranza.Ventanas
 
             resultadoActual =
                 null;
+            actualizandoAlcance = true;
+            chkConciliarAusencias.Checked = false;
+            chkConciliarAusencias.Enabled = false;
+            lstLocalidadesCompletas.Items.Clear();
+            lstLocalidadesCompletas.Enabled = false;
+            actualizandoAlcance = false;
 
             filtroEstadoActual =
                 null;
@@ -1026,6 +1109,79 @@ namespace Aseguranza.Ventanas
 
             lblEstado.Text =
                 "Archivo seleccionado. Presione Analizar HDC.";
+        }
+
+        private void MostrarOpcionesAlcance(ResultadoAnalisisHdc resultado)
+        {
+            actualizandoAlcance = true;
+            try
+            {
+                chkConciliarAusencias.Enabled = true;
+                chkConciliarAusencias.Checked = resultado.ConciliarAusencias;
+                lstLocalidadesCompletas.Items.Clear();
+                foreach (LocalidadHdcOpcion opcion in resultado.OpcionesLocalidad
+                    .OrderByDescending(o =>
+                        resultado.LocalidadesCompletas.Contains(o.Codigo))
+                    .ThenBy(o => o.Codigo, StringComparer.OrdinalIgnoreCase))
+                {
+                    int indice = lstLocalidadesCompletas.Items.Add(opcion);
+                    if (resultado.LocalidadesCompletas.Contains(opcion.Codigo))
+                    {
+                        lstLocalidadesCompletas.SetItemChecked(indice, true);
+                    }
+                }
+                if (lstLocalidadesCompletas.Items.Count > 0)
+                    lstLocalidadesCompletas.TopIndex = 0;
+                lstLocalidadesCompletas.Enabled = resultado.ConciliarAusencias;
+            }
+            finally
+            {
+                actualizandoAlcance = false;
+            }
+        }
+
+        private async Task ActualizarAlcanceAsync()
+        {
+            if (actualizandoAlcance || analizando || resultadoActual is null)
+                return;
+
+            ResultadoAnalisisHdc resultado = resultadoActual;
+            resultado.ConciliarAusencias = chkConciliarAusencias.Checked;
+            resultado.LocalidadesCompletas.Clear();
+            if (resultado.ConciliarAusencias)
+            {
+                foreach (LocalidadHdcOpcion opcion in
+                    lstLocalidadesCompletas.CheckedItems)
+                {
+                    resultado.LocalidadesCompletas.Add(opcion.Codigo);
+                }
+            }
+            analizando = true;
+            btnImportar.Enabled = false;
+            chkConciliarAusencias.Enabled = false;
+            lstLocalidadesCompletas.Enabled = false;
+            try
+            {
+                await Task.Run(() => AnalizadorHdcSistema.Clasificar(resultado));
+                MostrarResultado(resultado);
+            }
+            catch (Exception ex)
+            {
+                resultadoActual = null;
+                dgvRegistros.DataSource = null;
+                ActualizarResumen(null);
+                AppDialog.ShowError(this, "Conciliación HDC",
+                    ex.Message + Environment.NewLine +
+                    "Analice de nuevo el archivo antes de importar.");
+            }
+            finally
+            {
+                analizando = false;
+                chkConciliarAusencias.Enabled = resultadoActual is not null;
+                lstLocalidadesCompletas.Enabled =
+                    resultadoActual?.ConciliarAusencias == true;
+                ActualizarDisponibilidadImportar();
+            }
         }
 
         private async void btnAnalizar_Click(
@@ -1050,6 +1206,8 @@ namespace Aseguranza.Ventanas
 
                 return;
             }
+
+            ResultadoAnalisisHdc? resultadoAnterior = resultadoActual;
 
             analizando =
                 true;
@@ -1085,6 +1243,16 @@ namespace Aseguranza.Ventanas
                                 LectorHdcExcel
                                     .Analizar(
                                         ruta);
+
+                            if (resultadoAnterior is not null &&
+                                analisis.HuellaSha256 ==
+                                resultadoAnterior.HuellaSha256)
+                            {
+                                analisis.ConciliarAusencias =
+                                    resultadoAnterior.ConciliarAusencias;
+                                analisis.LocalidadesCompletas.UnionWith(
+                                    resultadoAnterior.LocalidadesCompletas);
+                            }
 
                             AnalizadorHdcSistema
                                 .Clasificar(
@@ -1184,6 +1352,10 @@ namespace Aseguranza.Ventanas
             }
             catch (Exception ex)
             {
+                resultadoActual = null;
+                btnImportar.Enabled = false;
+                chkConciliarAusencias.Enabled = false;
+                lstLocalidadesCompletas.Enabled = false;
                 AppDialog.ShowError(
                     this,
                     "No se pudo actualizar",
@@ -1212,12 +1384,19 @@ namespace Aseguranza.Ventanas
             int actualizados =
                 resultadoActual.Actualizados;
 
+            int reactivados =
+                resultadoActual.Reactivados;
+            int inactivados =
+                resultadoActual.Inactivados;
+
             int sinCambios =
                 resultadoActual.SinCambios;
 
             int cambiosPendientes =
                 nuevos +
-                actualizados;
+                actualizados +
+                reactivados +
+                inactivados;
 
             int pendientes =
                 resultadoActual.SinEquivalenciaPlanta +
@@ -1231,7 +1410,7 @@ namespace Aseguranza.Ventanas
                 AppDialog.ShowInfo(
                     this,
                     "Sin cambios para importar",
-                    "No hay trabajadores nuevos ni actualizaciones pendientes.");
+                    "No hay cambios de trabajadores pendientes.");
 
                 return;
             }
@@ -1259,6 +1438,10 @@ namespace Aseguranza.Ventanas
                     Environment.NewLine +
                     $"Actualizar: {actualizados:N0}" +
                     Environment.NewLine +
+                    $"Reactivar: {reactivados:N0}" +
+                    Environment.NewLine +
+                    $"Inactivar: {inactivados:N0}" +
+                    Environment.NewLine +
                     $"Sin cambios: {sinCambios:N0}" +
                     Environment.NewLine +
                     Environment.NewLine +
@@ -1279,6 +1462,30 @@ namespace Aseguranza.Ventanas
                     "Importar");
 
             if (!confirmar)
+            {
+                return;
+            }
+
+            if (inactivados > 0 &&
+                !AppDialog.Confirm(
+                    this,
+                    "Confirmar inactivación por ausencia",
+                    "La conciliación de ausencias está ACTIVADA." +
+                    Environment.NewLine +
+                    "Localidades HDC declaradas con población completa: " +
+                    string.Join(", ", resultadoActual.LocalidadesCompletas
+                        .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)) +
+                    Environment.NewLine +
+                    $"Trabajadores que quedarán inactivos: {inactivados:N0}." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "No se borrará ningún trabajador. Se conservarán certificaciones, " +
+                    "fotografías, expedientes e historial." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Confirme solo si el archivo contiene la población COMPLETA " +
+                    "de cada localidad indicada.",
+                    "Confirmar inactivación"))
             {
                 return;
             }
@@ -1388,6 +1595,10 @@ namespace Aseguranza.Ventanas
                     Environment.NewLine +
                     $"Actualizados: {importacion.Actualizados:N0}" +
                     Environment.NewLine +
+                    $"Reactivados: {importacion.Reactivados:N0}" +
+                    Environment.NewLine +
+                    $"Inactivados: {importacion.Inactivados:N0}" +
+                    Environment.NewLine +
                     $"Sin cambios: {importacion.SinCambios:N0}" +
                     Environment.NewLine +
                     $"Excluidos: {importacion.Excluidos:N0}" +
@@ -1447,15 +1658,20 @@ namespace Aseguranza.Ventanas
 
             int cambiosPendientes =
                 resultadoActual.Nuevos +
-                resultadoActual.Actualizados;
+                resultadoActual.Actualizados +
+                resultadoActual.Reactivados +
+                resultadoActual.Inactivados;
 
             btnImportar.Enabled =
-                cambiosPendientes > 0;
+                cambiosPendientes > 0 &&
+                (!resultadoActual.ConciliarAusencias ||
+                 resultadoActual.LocalidadesCompletas.Count > 0);
         }
 
         private void MostrarResultado(
             ResultadoAnalisisHdc resultado)
         {
+            MostrarOpcionesAlcance(resultado);
             ActualizarResumen(
                 resultado);
 
@@ -1471,6 +1687,7 @@ namespace Aseguranza.Ventanas
             int preparados =
                 resultado.Nuevos +
                 resultado.Actualizados +
+                resultado.Reactivados +
                 resultado.SinCambios;
 
             if (string.IsNullOrWhiteSpace(
@@ -1485,6 +1702,7 @@ namespace Aseguranza.Ventanas
                 lblEstado.Text =
                     $"Análisis completado. Hoja: {resultado.NombreHoja}. " +
                     $"Preparados: {preparados:N0}. " +
+                    $"Inactivar: {resultado.Inactivados:N0}. " +
                     $"Pendientes: {pendientes:N0}. " +
                     $"Ignorados: {resultado.Ignorados:N0}. " +
                     "No se realizó ningún cambio en Trabajador.";
@@ -1512,6 +1730,8 @@ namespace Aseguranza.Ventanas
                 lblTotal.Text = "0";
                 lblNuevos.Text = "0";
                 lblActualizar.Text = "0";
+                lblReactivar.Text = "0";
+                lblInactivar.Text = "0";
                 lblSinCambios.Text = "0";
                 lblSinPlanta.Text = "0";
                 lblSinTurno.Text = "0";
@@ -1531,6 +1751,14 @@ namespace Aseguranza.Ventanas
 
             lblActualizar.Text =
                 resultado.Actualizados
+                    .ToString("N0");
+
+            lblReactivar.Text =
+                resultado.Reactivados
+                    .ToString("N0");
+
+            lblInactivar.Text =
+                resultado.Inactivados
                     .ToString("N0");
 
             lblSinCambios.Text =
@@ -1570,6 +1798,14 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
+            if (dgvRegistros.Columns[e.ColumnIndex].Name == "NumeroFilaExcel" &&
+                Convert.ToString(e.Value) == "0")
+            {
+                e.Value = "—";
+                e.FormattingApplied = true;
+                return;
+            }
+
             if (dgvRegistros.Columns[e.ColumnIndex]
                     .Name != "Estado")
             {
@@ -1605,6 +1841,16 @@ namespace Aseguranza.Ventanas
             {
                 cellStyle.ForeColor =
                     Color.DarkOrange;
+            }
+            else if (estado == "Reactivar")
+            {
+                cellStyle.ForeColor =
+                    Color.DarkOrange;
+            }
+            else if (estado == "Inactivar")
+            {
+                cellStyle.ForeColor =
+                    Color.FromArgb(135, 45, 90);
             }
             else if (estado == "Sin cambios")
             {

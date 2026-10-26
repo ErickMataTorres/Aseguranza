@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS "Trabajador"
     "Id" INTEGER PRIMARY KEY AUTOINCREMENT,
     "NoReloj" TEXT NOT NULL UNIQUE,
     "Nombre" TEXT NOT NULL,
+    "Activo" INTEGER NOT NULL DEFAULT 1 CHECK("Activo" IN (0, 1)),
     "RutaFoto" TEXT NULL,
     "IdLocalidad" INTEGER NULL,
     "IdTurno" INTEGER NOT NULL,
@@ -172,7 +173,17 @@ CREATE TABLE IF NOT EXISTS "ImportacionHdc"
     "Actualizados" INTEGER NOT NULL DEFAULT 0,
     "SinCambios" INTEGER NOT NULL DEFAULT 0,
     "ConAdvertencias" INTEGER NOT NULL DEFAULT 0,
+    "ConciliarAusencias" INTEGER NOT NULL DEFAULT 0 CHECK("ConciliarAusencias" IN (0, 1)),
+    "HuellaSha256" TEXT NULL,
     "Observaciones" TEXT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "ImportacionHdcAlcance"
+(
+    "IdImportacionHdc" INTEGER NOT NULL,
+    "CodigoLocalidadHdc" TEXT NOT NULL,
+    PRIMARY KEY ("IdImportacionHdc", "CodigoLocalidadHdc"),
+    FOREIGN KEY ("IdImportacionHdc") REFERENCES "ImportacionHdc"("Id")
 );
 
 CREATE TABLE IF NOT EXISTS "PerfilHdcTrabajador"
@@ -214,6 +225,20 @@ CREATE TABLE IF NOT EXISTS "PerfilHdcTrabajador"
         FOREIGN KEY("IdImportacionHdc")
         REFERENCES "ImportacionHdc"("Id")
         ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS "TrabajadorEstadoHistorial"
+(
+    "Id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "IdTrabajador" INTEGER NOT NULL,
+    "ActivoAnterior" INTEGER NULL CHECK("ActivoAnterior" IN (0, 1)),
+    "ActivoNuevo" INTEGER NOT NULL CHECK("ActivoNuevo" IN (0, 1)),
+    "FechaCambioUtc" TEXT NOT NULL,
+    "Origen" TEXT NOT NULL CHECK("Origen" IN ('HDC', 'MANUAL')),
+    "IdImportacionHdc" INTEGER NULL,
+    "Motivo" TEXT NULL,
+    FOREIGN KEY("IdTrabajador") REFERENCES "Trabajador"("Id"),
+    FOREIGN KEY("IdImportacionHdc") REFERENCES "ImportacionHdc"("Id")
 );
 
 CREATE TABLE IF NOT EXISTS "EquivalenciaPlantaHdc"
@@ -387,6 +412,10 @@ CREATE INDEX IF NOT EXISTS
     ON "PerfilHdcTrabajador"("IdImportacionHdc");
 
 CREATE INDEX IF NOT EXISTS
+    "IX_TrabajadorEstadoHistorial_Trabajador_Fecha"
+    ON "TrabajadorEstadoHistorial"("IdTrabajador", "FechaCambioUtc");
+
+CREATE INDEX IF NOT EXISTS
     "IX_PerfilHdcTrabajador_LocalidadHdc"
     ON "PerfilHdcTrabajador"("LocalidadHdc");
 
@@ -504,6 +533,12 @@ VALUES
     9,
     'Trabajador con planta directa y linea opcional'
 );
+
+INSERT OR IGNORE INTO "SchemaVersion" ("Version", "Descripcion")
+VALUES (10, 'Estado activo de trabajador e historial de cambios');
+
+INSERT OR IGNORE INTO "SchemaVersion" ("Version", "Descripcion")
+VALUES (11, 'Conciliacion de ausencias HDC con alcance y huella de origen');
 
 COMMIT;
 
