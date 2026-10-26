@@ -57,6 +57,9 @@ namespace Aseguranza.Data.SqlServer
                         lector,
                         "Id"),
 
+                Activo =
+                    LeerActivo(lector),
+
                 NoReloj =
                     LeerTexto(
                         lector,
@@ -145,6 +148,8 @@ namespace Aseguranza.Data.SqlServer
             adaptador.Fill(
                 tabla);
 
+            ValidarColumnaActivo(tabla);
+
             return tabla;
         }
 
@@ -186,6 +191,8 @@ namespace Aseguranza.Data.SqlServer
             conexion.Open();
 
             adaptador.Fill(tabla);
+
+            ValidarColumnaActivo(tabla);
 
             return tabla;
         }
@@ -360,6 +367,79 @@ namespace Aseguranza.Data.SqlServer
             }
         }
 
+        public bool CambiarEstado(
+            int idTrabajador,
+            bool activo,
+            string origen,
+            int? idImportacionHdc = null,
+            string? motivo = null)
+        {
+            TrabajadorEstadoHistorial.ValidarCambio(
+                idTrabajador, origen, idImportacionHdc, motivo);
+
+            using SqlConnection conexion = Conexion.Conectar();
+            conexion.Open();
+            using SqlTransaction transaccion =
+                conexion.BeginTransaction(IsolationLevel.Serializable);
+            using SqlCommand comando = conexion.CreateCommand();
+            comando.Transaction = transaccion;
+            comando.CommandText = """
+                SELECT Activo FROM dbo.Trabajador WITH (UPDLOCK, HOLDLOCK)
+                WHERE Id = @Id;
+                """;
+            comando.Parameters.Add("@Id", SqlDbType.Int).Value = idTrabajador;
+
+            object? valor = comando.ExecuteScalar();
+            if (valor is null || valor == DBNull.Value)
+            {
+                throw new InvalidOperationException(
+                    "No se encontró el trabajador cuyo estado se intenta cambiar.");
+            }
+
+            bool anterior = Convert.ToBoolean(valor);
+            if (anterior == activo)
+            {
+                transaccion.Commit();
+                return false;
+            }
+
+            comando.CommandText = """
+                UPDATE dbo.Trabajador SET Activo = @Activo
+                WHERE Id = @Id AND Activo = @Anterior;
+                """;
+            comando.Parameters.Add("@Activo", SqlDbType.Bit).Value = activo;
+            comando.Parameters.Add("@Anterior", SqlDbType.Bit).Value = anterior;
+            if (comando.ExecuteNonQuery() != 1)
+            {
+                throw new InvalidOperationException(
+                    "El estado del trabajador cambió durante la operación.");
+            }
+
+            comando.CommandText = """
+                INSERT INTO dbo.TrabajadorEstadoHistorial
+                    (IdTrabajador, ActivoAnterior, ActivoNuevo,
+                     FechaCambioUtc, Origen, IdImportacionHdc, Motivo)
+                VALUES
+                    (@Id, @Anterior, @Activo,
+                     @FechaCambioUtc, @Origen, @IdImportacionHdc, @Motivo);
+                """;
+            comando.Parameters.Add("@FechaCambioUtc", SqlDbType.DateTime2)
+                .Value = DateTime.UtcNow;
+            comando.Parameters.Add("@Origen", SqlDbType.VarChar, 20)
+                .Value = origen;
+            comando.Parameters.Add("@IdImportacionHdc", SqlDbType.Int)
+                .Value = idImportacionHdc.HasValue
+                    ? idImportacionHdc.Value
+                    : DBNull.Value;
+            comando.Parameters.Add("@Motivo", SqlDbType.NVarChar, 500)
+                .Value = string.IsNullOrWhiteSpace(motivo)
+                    ? DBNull.Value
+                    : motivo.Trim();
+            comando.ExecuteNonQuery();
+            transaccion.Commit();
+            return true;
+        }
+
         private static Mensaje? Validar(
             Trabajador trabajador)
         {
@@ -460,6 +540,29 @@ namespace Aseguranza.Data.SqlServer
 
             return Convert.ToInt32(
                 lector[columna]);
+        }
+
+        private static bool LeerActivo(SqlDataReader lector)
+        {
+            if (!TieneColumna(lector, "Activo") ||
+                lector["Activo"] is DBNull)
+            {
+                throw new InvalidOperationException(
+                    "La consulta de trabajadores no devuelve Activo. " +
+                    "Aplique la actualización SQL Server de estado de trabajadores.");
+            }
+
+            return Convert.ToBoolean(lector["Activo"]);
+        }
+
+        private static void ValidarColumnaActivo(DataTable tabla)
+        {
+            if (!tabla.Columns.Contains("Activo"))
+            {
+                throw new InvalidOperationException(
+                    "La consulta de trabajadores no devuelve Activo. " +
+                    "Aplique la actualización SQL Server de estado de trabajadores.");
+            }
         }
 
         private static string? LeerTexto(

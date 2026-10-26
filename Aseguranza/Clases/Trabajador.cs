@@ -7,6 +7,8 @@ namespace Aseguranza.Clases
     {
         public int Id { get; set; }
 
+        public bool Activo { get; set; } = true;
+
         public string? NoReloj { get; set; }
 
         public string? Nombre { get; set; }

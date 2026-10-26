@@ -316,6 +316,7 @@ CREATE TABLE [dbo].[Trabajador](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[NoReloj] [varchar](10) NOT NULL,
 	[Nombre] [varchar](200) NOT NULL,
+	[Activo] [bit] NOT NULL CONSTRAINT [DF_Trabajador_Activo] DEFAULT ((1)),
 	[RutaFoto] [varchar](300) NULL,
 	[IdLocalidad] [int] NULL,
 	[IdTurno] [int] NOT NULL,
@@ -331,6 +332,29 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+CREATE TABLE [dbo].[TrabajadorEstadoHistorial](
+    [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [IdTrabajador] int NOT NULL,
+    [ActivoAnterior] bit NULL,
+    [ActivoNuevo] bit NOT NULL,
+    [FechaCambioUtc] datetime2(3) NOT NULL,
+    [Origen] varchar(20) NOT NULL,
+    [IdImportacionHdc] int NULL,
+    [Motivo] nvarchar(500) NULL,
+    CONSTRAINT [CK_TrabajadorEstadoHistorial_Origen]
+        CHECK ([Origen] IN ('HDC', 'MANUAL')),
+    CONSTRAINT [FK_TrabajadorEstadoHistorial_Trabajador]
+        FOREIGN KEY ([IdTrabajador]) REFERENCES [dbo].[Trabajador]([Id]),
+    CONSTRAINT [FK_TrabajadorEstadoHistorial_Importacion]
+        FOREIGN KEY ([IdImportacionHdc]) REFERENCES [dbo].[ImportacionHdc]([Id])
+);
+GO
+CREATE INDEX [IX_TrabajadorEstadoHistorial_Trabajador_Fecha]
+    ON [dbo].[TrabajadorEstadoHistorial]([IdTrabajador], [FechaCambioUtc]);
+GO
+INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
+VALUES (10, SYSUTCDATETIME(), 'Estado activo de trabajador e historial de cambios');
+GO
 /****** Objeto: Table [dbo].[Turno] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
 SET ANSI_NULLS ON
 GO
@@ -802,7 +826,7 @@ CREATE   PROCEDURE [dbo].[spBorrarTrabajador]
 AS
 BEGIN
 	SET NOCOUNT ON;
-	IF NOT EXISTS (SELECT 1 FROM Certificador WHERE IdTrabajador=@Id) AND NOT EXISTS (SELECT 1 FROM Certificacion WHERE IdTrabajador=@Id)
+	IF NOT EXISTS (SELECT 1 FROM Certificador WHERE IdTrabajador=@Id) AND NOT EXISTS (SELECT 1 FROM Certificacion WHERE IdTrabajador=@Id) AND NOT EXISTS (SELECT 1 FROM TrabajadorEstadoHistorial WHERE IdTrabajador=@Id)
 	BEGIN
 		DELETE FROM Trabajador WHERE Id=@Id
 		SELECT '1' AS [Id], 'Se ha borrado correctamente' AS [Nombre];	
@@ -1129,6 +1153,7 @@ BEGIN
         T.Id,
         T.NoReloj,
         T.Nombre,
+        T.Activo,
         T.RutaFoto,
 
         T.IdLocalidad,
@@ -1181,6 +1206,7 @@ BEGIN
         T.Id,
         T.NoReloj,
         T.Nombre,
+        T.Activo,
         T.RutaFoto,
 
         T.IdLocalidad,
@@ -1296,6 +1322,7 @@ BEGIN
             T.Id,
             T.NoReloj,
             T.Nombre,
+            T.Activo,
             T.RutaFoto,
 
             T.IdLocalidad,
@@ -1394,6 +1421,7 @@ BEGIN
             T.Id,
             T.NoReloj,
             T.Nombre,
+            T.Activo,
             T.RutaFoto,
             T.IdLocalidad,
             Lo.Nombre,

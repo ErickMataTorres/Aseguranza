@@ -22,5 +22,12 @@ namespace Aseguranza.Data.Interfaces
 
         Mensaje Borrar(
             int id);
+
+        bool CambiarEstado(
+            int idTrabajador,
+            bool activo,
+            string origen,
+            int? idImportacionHdc = null,
+            string? motivo = null);
     }
 }

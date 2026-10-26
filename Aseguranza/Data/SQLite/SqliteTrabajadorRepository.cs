@@ -39,7 +39,8 @@ namespace Aseguranza.Data.SQLite
                     COALESCE(
                         Li.Nombre,
                         'SIN ASIGNAR'
-                    ) AS NombreLinea
+                    ) AS NombreLinea,
+                    T.Activo
                 FROM Trabajador AS T
                 INNER JOIN Turno AS Tu
                     ON Tu.Id = T.IdTurno
@@ -93,7 +94,8 @@ namespace Aseguranza.Data.SQLite
                     COALESCE(
                         Li.Nombre,
                         'SIN ASIGNAR'
-                    ) AS NombreLinea
+                    ) AS NombreLinea,
+                    T.Activo
                 FROM Trabajador AS T
                 INNER JOIN Turno AS Tu
                     ON Tu.Id = T.IdTurno
@@ -154,7 +156,8 @@ namespace Aseguranza.Data.SQLite
                     T.IdPlanta,
                     P.Nombre AS NombrePlanta,
                     T.IdLinea,
-                    COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea
+                    COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea,
+                    T.Activo
                 FROM Trabajador AS T
                 INNER JOIN Turno AS Tu
                     ON Tu.Id = T.IdTurno
@@ -211,6 +214,8 @@ namespace Aseguranza.Data.SQLite
                         ? "SIN ASIGNAR"
                         : lector.GetString(8);
 
+                fila["Activo"] = lector.GetInt64(9) != 0;
+
                 tabla.Rows.Add(fila);
             }
 
@@ -248,6 +253,8 @@ namespace Aseguranza.Data.SQLite
                             Li.Nombre,
                             'SIN ASIGNAR'
                         ) AS NombreLinea,
+
+                        T.Activo,
 
                         CASE
                             WHEN COUNT(C.Id) = 0
@@ -326,7 +333,8 @@ namespace Aseguranza.Data.SQLite
                         T.IdPlanta,
                         P.Nombre,
                         T.IdLinea,
-                        Li.Nombre
+                        Li.Nombre,
+                        T.Activo
                 )
 
                 SELECT *
@@ -405,9 +413,11 @@ namespace Aseguranza.Data.SQLite
                         : lector.GetString(9);
 
                 fila["EstadoCertificacion"] =
-                    lector.IsDBNull(10)
+                    lector.IsDBNull(11)
                         ? "Sin certificar"
-                        : lector.GetString(10);
+                        : lector.GetString(11);
+
+                fila["Activo"] = lector.GetInt64(10) != 0;
 
                 tabla.Rows.Add(
                     fila);
@@ -503,6 +513,77 @@ namespace Aseguranza.Data.SQLite
             {
                 return CrearMensajeError(ex);
             }
+        }
+
+        public bool CambiarEstado(
+            int idTrabajador,
+            bool activo,
+            string origen,
+            int? idImportacionHdc = null,
+            string? motivo = null)
+        {
+            TrabajadorEstadoHistorial.ValidarCambio(
+                idTrabajador, origen, idImportacionHdc, motivo);
+
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteTransaction transaccion = conexion.BeginTransaction();
+            using SqliteCommand comando = conexion.CreateCommand();
+            comando.Transaction = transaccion;
+            comando.CommandText =
+                "SELECT Activo FROM Trabajador WHERE Id = @Id;";
+            comando.Parameters.AddWithValue("@Id", idTrabajador);
+
+            object? valor = comando.ExecuteScalar();
+            if (valor is null || valor == DBNull.Value)
+            {
+                throw new InvalidOperationException(
+                    "No se encontró el trabajador cuyo estado se intenta cambiar.");
+            }
+
+            bool anterior = Convert.ToInt64(valor) != 0;
+            if (anterior == activo)
+            {
+                transaccion.Commit();
+                return false;
+            }
+
+            comando.CommandText =
+                "UPDATE Trabajador SET Activo = @Activo " +
+                "WHERE Id = @Id AND Activo = @Anterior;";
+            comando.Parameters.AddWithValue("@Activo", activo ? 1 : 0);
+            comando.Parameters.AddWithValue("@Anterior", anterior ? 1 : 0);
+            if (comando.ExecuteNonQuery() != 1)
+            {
+                throw new InvalidOperationException(
+                    "El estado del trabajador cambió durante la operación.");
+            }
+
+            comando.CommandText = """
+                INSERT INTO TrabajadorEstadoHistorial
+                    (IdTrabajador, ActivoAnterior, ActivoNuevo,
+                     FechaCambioUtc, Origen, IdImportacionHdc, Motivo)
+                VALUES
+                    (@Id, @Anterior, @Activo,
+                     @FechaCambioUtc, @Origen, @IdImportacionHdc, @Motivo);
+                """;
+            comando.Parameters.AddWithValue(
+                "@FechaCambioUtc",
+                DateTime.UtcNow.ToString("O"));
+            comando.Parameters.AddWithValue("@Origen", origen);
+            comando.Parameters.AddWithValue(
+                "@IdImportacionHdc",
+                idImportacionHdc.HasValue
+                    ? idImportacionHdc.Value
+                    : DBNull.Value);
+            comando.Parameters.AddWithValue(
+                "@Motivo",
+                string.IsNullOrWhiteSpace(motivo)
+                    ? DBNull.Value
+                    : motivo.Trim());
+            comando.ExecuteNonQuery();
+            transaccion.Commit();
+            return true;
         }
 
         public Mensaje Borrar(int id)
@@ -623,6 +704,8 @@ namespace Aseguranza.Data.SQLite
 
             tabla.Columns.Add("NombreLinea", typeof(string));
 
+            tabla.Columns.Add("Activo", typeof(bool));
+
             return tabla;
         }
 
@@ -676,6 +759,8 @@ namespace Aseguranza.Data.SQLite
             tabla.Columns.Add(
                 "NombreLinea",
                 typeof(string));
+
+            tabla.Columns.Add("Activo", typeof(bool));
         }
 
         private static void PrepararTablaEstadoCertificacion(
@@ -744,6 +829,8 @@ namespace Aseguranza.Data.SQLite
                     ? "SIN ASIGNAR"
                     : lector.GetString(9);
 
+            fila["Activo"] = lector.GetInt64(10) != 0;
+
             tabla.Rows.Add(
                 fila);
         }
@@ -801,7 +888,10 @@ namespace Aseguranza.Data.SQLite
 
                 NombreLinea =
                     Convert.ToString(
-                        lector["NombreLinea"])
+                        lector["NombreLinea"]),
+
+                Activo =
+                    Convert.ToInt64(lector["Activo"]) != 0
             };
         }
 
@@ -1100,6 +1190,12 @@ namespace Aseguranza.Data.SQLite
                         FROM ExpedienteTrabajador
                         WHERE IdTrabajador = @IdTrabajador
                           AND Activo = 1
+                    )
+                    +
+                    (
+                        SELECT COUNT(*)
+                        FROM TrabajadorEstadoHistorial
+                        WHERE IdTrabajador = @IdTrabajador
                     );
                 """;
 
