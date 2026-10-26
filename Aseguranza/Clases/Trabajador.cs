@@ -48,6 +48,14 @@ namespace Aseguranza.Clases
                 .Consultar(textoBuscar ?? string.Empty, activo);
         }
 
+        public static PagedTableResult ConsultarTrabajadoresPaginados(
+            WorkerPageRequest request)
+        {
+            return RepositorioFactory
+                .CrearTrabajadorRepository()
+                .ConsultarPaginado(request);
+        }
+
         public static DataTable
             ConsultarTrabajadoresEstadoCertificacion(
                 string mostrarPor,

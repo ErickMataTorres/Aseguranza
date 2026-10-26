@@ -12,6 +12,9 @@ namespace Aseguranza.Data.Interfaces
             string textoBuscar,
             bool? activo);
 
+        PagedTableResult ConsultarPaginado(
+            WorkerPageRequest request);
+
         DataTable ConsultarEstadoCertificacion(
             string mostrarPor,
             string textoBuscar,

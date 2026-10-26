@@ -138,6 +138,81 @@ namespace Aseguranza.Data.SQLite
             return tabla;
         }
 
+        public PagedTableResult ConsultarPaginado(
+            WorkerPageRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            const string filtros = """
+                FROM Trabajador AS T
+                LEFT JOIN Localidad AS Lo ON Lo.Id = T.IdLocalidad
+                INNER JOIN Turno AS Tu ON Tu.Id = T.IdTurno
+                INNER JOIN Planta AS P ON P.Id = T.IdPlanta
+                LEFT JOIN Linea AS Li ON Li.Id = T.IdLinea
+                WHERE (@Activo IS NULL OR T.Activo = @Activo)
+                  AND (T.NoReloj LIKE @TextoBuscar COLLATE NOCASE
+                   OR T.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                   OR COALESCE(Lo.Nombre, '') LIKE @TextoBuscar COLLATE NOCASE
+                   OR Tu.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                   OR P.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                   OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
+                          LIKE @TextoBuscar COLLATE NOCASE)
+                """;
+
+            int pageSize = request.ValidPageSize;
+            string searchPattern = $"%{request.Search?.Trim() ?? string.Empty}%";
+            object activeValue = request.Active.HasValue
+                ? (request.Active.Value ? 1 : 0)
+                : DBNull.Value;
+
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteTransaction transaccion = conexion.BeginTransaction();
+
+            using SqliteCommand contar = conexion.CreateCommand();
+            contar.Transaction = transaccion;
+            contar.CommandText = "SELECT COUNT(*) " + filtros;
+            contar.Parameters.AddWithValue("@TextoBuscar", searchPattern);
+            contar.Parameters.AddWithValue("@Activo", activeValue);
+            int totalCount = Convert.ToInt32(contar.ExecuteScalar());
+            int totalPages = totalCount == 0
+                ? 0
+                : (totalCount - 1) / pageSize + 1;
+            int pageNumber = Math.Min(
+                request.ValidPageNumber,
+                Math.Max(1, totalPages));
+            long offset = ((long)pageNumber - 1) * pageSize;
+
+            using SqliteCommand pagina = conexion.CreateCommand();
+            pagina.Transaction = transaccion;
+            pagina.CommandText = """
+                SELECT
+                    T.Id, T.NoReloj, T.Nombre, T.RutaFoto,
+                    T.IdTurno, Tu.Nombre AS NombreTurno,
+                    T.IdPlanta, P.Nombre AS NombrePlanta,
+                    T.IdLinea, COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea,
+                    T.Activo
+                """ + "\n" + filtros + "\n" + """
+                ORDER BY T.Nombre, T.Id
+                LIMIT @PageSize OFFSET @Offset;
+                """;
+            pagina.Parameters.AddWithValue("@TextoBuscar", searchPattern);
+            pagina.Parameters.AddWithValue("@Activo", activeValue);
+            pagina.Parameters.AddWithValue("@PageSize", pageSize);
+            pagina.Parameters.AddWithValue("@Offset", offset);
+
+            DataTable tabla = new DataTable();
+            PrepararTablaTrabajadores(tabla);
+            using (SqliteDataReader lector = pagina.ExecuteReader())
+            {
+                while (lector.Read())
+                    AgregarFilaTrabajador(tabla, lector);
+            }
+
+            transaccion.Commit();
+            return new PagedTableResult(tabla, totalCount, pageNumber, pageSize);
+        }
+
         public DataTable ConsultarParaImportacionHdc()
         {
             DataTable tabla =

@@ -157,6 +157,51 @@ namespace Aseguranza.Data.SqlServer
             return tabla;
         }
 
+        public PagedTableResult ConsultarPaginado(
+            WorkerPageRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            using SqlConnection conexion = Conexion.Conectar();
+            using SqlCommand comando = new SqlCommand(
+                "spConsultarTrabajadores", conexion)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            comando.Parameters.Add("@TextoBuscar", SqlDbType.VarChar, 100).Value =
+                request.Search?.Trim() ?? string.Empty;
+            comando.Parameters.Add("@Activo", SqlDbType.Bit).Value =
+                request.Active.HasValue ? request.Active.Value : DBNull.Value;
+            SqlParameter numeroPagina = comando.Parameters.Add(
+                "@PageNumber", SqlDbType.Int);
+            numeroPagina.Direction = ParameterDirection.InputOutput;
+            numeroPagina.Value = request.ValidPageNumber;
+            comando.Parameters.Add("@PageSize", SqlDbType.Int).Value =
+                request.ValidPageSize;
+            SqlParameter total = comando.Parameters.Add(
+                "@TotalCount", SqlDbType.Int);
+            total.Direction = ParameterDirection.Output;
+
+            DataTable tabla = new DataTable();
+            using SqlDataAdapter adaptador = new SqlDataAdapter(comando);
+            conexion.Open();
+            adaptador.Fill(tabla);
+            ValidarColumnaActivo(tabla);
+
+            if (total.Value is null or DBNull ||
+                numeroPagina.Value is null or DBNull)
+            {
+                throw new InvalidOperationException(
+                    "La lista de trabajadores requiere la migración SQL Server 13.");
+            }
+
+            return new PagedTableResult(
+                tabla,
+                Convert.ToInt32(total.Value),
+                Convert.ToInt32(numeroPagina.Value),
+                request.ValidPageSize);
+        }
+
         public DataTable ConsultarParaImportacionHdc()
         {
             DataTable tabla = new DataTable();

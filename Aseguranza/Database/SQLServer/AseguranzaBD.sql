@@ -376,6 +376,9 @@ GO
 INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
 VALUES (12, SYSUTCDATETIME(), 'Filtros de personal activo e inactivo en listas operativas');
 GO
+INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
+VALUES (13, SYSUTCDATETIME(), 'Paginación de la lista de trabajadores');
+GO
 /****** Objeto: Table [dbo].[Turno] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
 SET ANSI_NULLS ON
 GO
@@ -1219,44 +1222,28 @@ GO
 
 CREATE   PROCEDURE [dbo].[spConsultarTrabajadores]
     @TextoBuscar VARCHAR(100) = '',
-    @Activo BIT = NULL
+    @Activo BIT = NULL,
+    @PageNumber INT = 1 OUTPUT,
+    @PageSize INT = 100,
+    @TotalCount INT = 0 OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT TOP (100)
+    IF @PageSize IS NULL OR @PageSize <= 0 OR @PageSize > 100
+        SET @PageSize = 100;
+    IF @PageNumber IS NULL OR @PageNumber < 1
+        SET @PageNumber = 1;
+
+    SELECT
         T.Id,
-        T.NoReloj,
-        T.Nombre,
-        T.Activo,
-        T.RutaFoto,
-
-        T.IdLocalidad,
-        Lo.Nombre AS NombreLocalidad,
-
-        T.IdTurno,
-        Tu.Nombre AS NombreTurno,
-
-        T.IdPlanta,
-        P.Nombre AS NombrePlanta,
-
-        T.IdLinea,
-        COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea
-
+        T.Nombre
+    INTO #TrabajadoresFiltrados
     FROM dbo.Trabajador AS T
-
-    LEFT JOIN dbo.Localidad AS Lo
-        ON Lo.Id = T.IdLocalidad
-
-    INNER JOIN dbo.Turno AS Tu
-        ON Tu.Id = T.IdTurno
-
-    INNER JOIN dbo.Planta AS P
-        ON P.Id = T.IdPlanta
-
-    LEFT JOIN dbo.Linea AS Li
-        ON Li.Id = T.IdLinea
-
+    LEFT JOIN dbo.Localidad AS Lo ON Lo.Id = T.IdLocalidad
+    INNER JOIN dbo.Turno AS Tu ON Tu.Id = T.IdTurno
+    INNER JOIN dbo.Planta AS P ON P.Id = T.IdPlanta
+    LEFT JOIN dbo.Linea AS Li ON Li.Id = T.IdLinea
     WHERE (@Activo IS NULL OR T.Activo = @Activo)
       AND (
         T.NoReloj LIKE '%' + ISNULL(@TextoBuscar, '') + '%'
@@ -1267,7 +1254,42 @@ BEGIN
         OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
             LIKE '%' + ISNULL(@TextoBuscar, '') + '%')
 
-    ORDER BY T.Nombre;
+    SELECT @TotalCount = COUNT(*) FROM #TrabajadoresFiltrados;
+
+    DECLARE @TotalPages INT = CASE WHEN @TotalCount = 0 THEN 0
+        ELSE (@TotalCount - 1) / @PageSize + 1 END;
+    IF @PageNumber > @TotalPages
+        SET @PageNumber = CASE WHEN @TotalPages = 0 THEN 1
+            ELSE @TotalPages END;
+
+    DECLARE @Offset BIGINT = (CONVERT(BIGINT, @PageNumber) - 1) * @PageSize;
+    ;WITH Pagina AS
+    (
+        SELECT Id, Nombre FROM #TrabajadoresFiltrados
+        ORDER BY Nombre, Id
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
+    )
+    SELECT
+        T.Id,
+        T.NoReloj,
+        T.Nombre,
+        T.Activo,
+        T.RutaFoto,
+        T.IdLocalidad,
+        Lo.Nombre AS NombreLocalidad,
+        T.IdTurno,
+        Tu.Nombre AS NombreTurno,
+        T.IdPlanta,
+        P.Nombre AS NombrePlanta,
+        T.IdLinea,
+        COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea
+    FROM Pagina AS F
+    INNER JOIN dbo.Trabajador AS T ON T.Id = F.Id
+    LEFT JOIN dbo.Localidad AS Lo ON Lo.Id = T.IdLocalidad
+    INNER JOIN dbo.Turno AS Tu ON Tu.Id = T.IdTurno
+    INNER JOIN dbo.Planta AS P ON P.Id = T.IdPlanta
+    LEFT JOIN dbo.Linea AS Li ON Li.Id = T.IdLinea
+    ORDER BY F.Nombre, F.Id;
 END;
 
 GO
