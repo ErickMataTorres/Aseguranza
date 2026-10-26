@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Aseguranza.Clases
 {
@@ -41,6 +42,8 @@ namespace Aseguranza.Clases
                     rutaArchivo);
             }
 
+            string huellaInicial = CalcularHuella(rutaArchivo);
+
             using XLWorkbook libro =
                 new XLWorkbook(rutaArchivo);
 
@@ -68,7 +71,8 @@ namespace Aseguranza.Clases
                 new ResultadoAnalisisHdc
                 {
                     NombreHoja =
-                        hoja.Name
+                        hoja.Name,
+                    HuellaSha256 = huellaInicial
                 };
 
             int ultimaFila =
@@ -140,7 +144,23 @@ resultado.LocalidadesDistintas =
                         StringComparer.OrdinalIgnoreCase)
                     .Count();
 
+            if (!string.Equals(
+                    huellaInicial,
+                    CalcularHuella(rutaArchivo),
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "El archivo HDC cambió durante el análisis. Analícelo de nuevo.");
+            }
+
             return resultado;
+        }
+
+        public static string CalcularHuella(string rutaArchivo)
+        {
+            using FileStream archivo = new FileStream(
+                rutaArchivo, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return Convert.ToHexString(SHA256.HashData(archivo));
         }
 
         private static Dictionary<string, int>

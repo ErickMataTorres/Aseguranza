@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using Aseguranza.Data;
 
 namespace Aseguranza.Clases
 {
@@ -9,6 +10,9 @@ namespace Aseguranza.Clases
     {
         public static void Clasificar(ResultadoAnalisisHdc resultado)
         {
+            resultado.Registros.RemoveAll(
+                r => r.EstadoArchivo == HdcConciliacionAusencias.EstadoArchivoAusente);
+
             DataTable equivalenciasPlanta =
                 HdcEquivalencia.ConsultarPlantas();
 
@@ -26,6 +30,24 @@ namespace Aseguranza.Clases
                 CrearDiccionario(
                     equivalenciasPlanta,
                     "CodigoLocalidadHdc");
+
+            resultado.OpcionesLocalidad.Clear();
+            foreach (string codigo in resultado.Registros
+                .Select(r => Normalizar(r.LocalidadHdc))
+                .Where(c => c.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => c, StringComparer.Ordinal))
+            {
+                bool disponible = plantas.TryGetValue(codigo, out DataRow? fila) &&
+                    Normalizar(LeerTexto(fila!, "Accion")) == "MAPEAR" &&
+                    fila!["IdPlanta"] != DBNull.Value &&
+                    Convert.ToInt32(fila["IdPlanta"]) > 0 &&
+                    !string.IsNullOrWhiteSpace(LeerTexto(fila, "NombrePlanta"));
+                resultado.OpcionesLocalidad.Add(new LocalidadHdcOpcion(
+                    codigo,
+                    disponible ? LeerTexto(fila!, "NombrePlanta") : string.Empty,
+                    disponible));
+            }
 
             Dictionary<string, DataRow> turnos =
                 CrearDiccionario(
@@ -232,6 +254,20 @@ namespace Aseguranza.Clases
                 ClasificarContraTrabajadorActual(
                     registro,
                     trabajadores);
+            }
+
+            if (resultado.ConciliarAusencias &&
+                resultado.LocalidadesCompletas.Count > 0)
+            {
+                EstadoConciliacionHdc estado = RepositorioFactory
+                    .CrearHdcImportacionRepository()
+                    .ConsultarEstadoConciliacion();
+                HdcConciliacionAusencias.AplicarAnalisis(resultado, estado);
+            }
+            else
+            {
+                resultado.AlcanceAnalizado = string.Empty;
+                resultado.HuellaEstadoConciliacion = string.Empty;
             }
 
             ActualizarContadores(resultado);
@@ -461,10 +497,12 @@ namespace Aseguranza.Clases
         private static void ActualizarContadores(
             ResultadoAnalisisHdc resultado)
         {
-            resultado.TotalRegistros = resultado.Registros.Count;
+            resultado.TotalRegistros = resultado.Registros.Count(r =>
+                r.EstadoArchivo != HdcConciliacionAusencias.EstadoArchivoAusente);
             resultado.Nuevos = Contar(resultado, "Nuevo");
             resultado.Actualizados = Contar(resultado, "Actualizar");
             resultado.Reactivados = Contar(resultado, "Reactivar");
+            resultado.Inactivados = Contar(resultado, "Inactivar");
             resultado.SinCambios = Contar(resultado, "Sin cambios");
 
             resultado.Existentes =

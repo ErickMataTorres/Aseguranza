@@ -173,7 +173,17 @@ CREATE TABLE IF NOT EXISTS "ImportacionHdc"
     "Actualizados" INTEGER NOT NULL DEFAULT 0,
     "SinCambios" INTEGER NOT NULL DEFAULT 0,
     "ConAdvertencias" INTEGER NOT NULL DEFAULT 0,
+    "ConciliarAusencias" INTEGER NOT NULL DEFAULT 0 CHECK("ConciliarAusencias" IN (0, 1)),
+    "HuellaSha256" TEXT NULL,
     "Observaciones" TEXT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "ImportacionHdcAlcance"
+(
+    "IdImportacionHdc" INTEGER NOT NULL,
+    "CodigoLocalidadHdc" TEXT NOT NULL,
+    PRIMARY KEY ("IdImportacionHdc", "CodigoLocalidadHdc"),
+    FOREIGN KEY ("IdImportacionHdc") REFERENCES "ImportacionHdc"("Id")
 );
 
 CREATE TABLE IF NOT EXISTS "PerfilHdcTrabajador"
@@ -526,6 +536,9 @@ VALUES
 
 INSERT OR IGNORE INTO "SchemaVersion" ("Version", "Descripcion")
 VALUES (10, 'Estado activo de trabajador e historial de cambios');
+
+INSERT OR IGNORE INTO "SchemaVersion" ("Version", "Descripcion")
+VALUES (11, 'Conciliacion de ausencias HDC con alcance y huella de origen');
 
 COMMIT;
 

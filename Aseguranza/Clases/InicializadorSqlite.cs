@@ -11,6 +11,8 @@ namespace Aseguranza.Clases
 
         private const string RutaRelativaActualizacionEstado =
             @"Database\SQLite\Migrations\10_TrabajadorEstado.sql";
+        private const string RutaRelativaConciliacion =
+            @"Database\SQLite\Migrations\11_ConciliacionAusenciasHdc.sql";
 
         public static void Inicializar()
         {
@@ -25,6 +27,7 @@ namespace Aseguranza.Clases
                 }
 
                 ActualizarEsquemaExistente();
+                ActualizarEsquemaConciliacion();
                 return;
             }
 
@@ -218,6 +221,92 @@ namespace Aseguranza.Clases
                 comando.ExecuteNonQuery();
             }
 
+            comando.CommandText = File.ReadAllText(rutaScript);
+            comando.ExecuteNonQuery();
+            transaccion.Commit();
+        }
+
+        public static void ActualizarEsquemaConciliacion()
+        {
+            string rutaBaseDatos = ConfiguracionSistema.ObtenerRutaSqlite();
+            if (!File.Exists(rutaBaseDatos))
+            {
+                throw new FileNotFoundException(
+                    "No se encontró la base SQLite configurada. No se creó una nueva.",
+                    rutaBaseDatos);
+            }
+
+            string rutaScript = Path.Combine(
+                AppContext.BaseDirectory, RutaRelativaConciliacion);
+            if (!File.Exists(rutaScript))
+            {
+                throw new FileNotFoundException(
+                    "Falta la migración SQLite de conciliación HDC.", rutaScript);
+            }
+
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteCommand comando = conexion.CreateCommand();
+            comando.CommandText =
+                "SELECT COUNT(*) FROM SchemaVersion WHERE Version = 10;";
+            if (Convert.ToInt64(comando.ExecuteScalar()) == 0)
+            {
+                throw new InvalidOperationException(
+                    "La conciliación HDC requiere la versión SQLite 10.");
+            }
+
+            comando.CommandText =
+                "SELECT COUNT(*) FROM SchemaVersion WHERE Version = 11;";
+            bool versionAplicada = Convert.ToInt64(comando.ExecuteScalar()) > 0;
+            bool conciliarExiste = false;
+            bool huellaExiste = false;
+            comando.CommandText = "PRAGMA table_info('ImportacionHdc');";
+            using (SqliteDataReader lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    conciliarExiste |= string.Equals(
+                        lector.GetString(1), "ConciliarAusencias",
+                        StringComparison.OrdinalIgnoreCase);
+                    huellaExiste |= string.Equals(
+                        lector.GetString(1), "HuellaSha256",
+                        StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            comando.CommandText = "SELECT COUNT(*) FROM sqlite_master " +
+                "WHERE type='table' AND name='ImportacionHdcAlcance';";
+            bool alcanceExiste = Convert.ToInt64(comando.ExecuteScalar()) > 0;
+            if (versionAplicada)
+            {
+                if (!conciliarExiste || !huellaExiste || !alcanceExiste)
+                {
+                    throw new InvalidOperationException(
+                        "La versión SQLite 11 está registrada, pero su esquema HDC está incompleto.");
+                }
+                return;
+            }
+            if (conciliarExiste || huellaExiste || alcanceExiste)
+            {
+                throw new InvalidOperationException(
+                    "La migración SQLite 11 está parcialmente aplicada. No se modificó la base.");
+            }
+
+            string rutaRespaldo = rutaBaseDatos +
+                ".pre-hdc-v11-" + Guid.NewGuid().ToString("N") + ".bak";
+            SqliteConnectionStringBuilder cadenaRespaldo = new()
+            {
+                DataSource = rutaRespaldo,
+                Mode = SqliteOpenMode.ReadWriteCreate
+            };
+            using (SqliteConnection respaldo =
+                new SqliteConnection(cadenaRespaldo.ToString()))
+            {
+                respaldo.Open();
+                conexion.BackupDatabase(respaldo);
+            }
+
+            using SqliteTransaction transaccion = conexion.BeginTransaction();
+            comando.Transaction = transaccion;
             comando.CommandText = File.ReadAllText(rutaScript);
             comando.ExecuteNonQuery();
             transaccion.Commit();

@@ -11,6 +11,64 @@ namespace Aseguranza.Data.SQLite
     public sealed class SqliteHdcImportacionRepository
         : IHdcImportacionRepository
     {
+        public EstadoConciliacionHdc ConsultarEstadoConciliacion()
+        {
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteTransaction transaccion = conexion.BeginTransaction();
+            EstadoConciliacionHdc estado =
+                CargarEstadoConciliacion(conexion, transaccion);
+            transaccion.Commit();
+            return estado;
+        }
+
+        private static EstadoConciliacionHdc CargarEstadoConciliacion(
+            SqliteConnection conexion, SqliteTransaction? transaccion)
+        {
+            EstadoConciliacionHdc estado = new();
+            using SqliteCommand comando = conexion.CreateCommand();
+            comando.Transaction = transaccion;
+            comando.CommandText = """
+                SELECT T.Id, T.NoReloj, T.Nombre, T.Activo,
+                       P.EmpleadoHdc, P.LocalidadHdc, P.IdImportacionHdc,
+                       P.EncontradoUltimoHdc
+                FROM Trabajador AS T
+                INNER JOIN PerfilHdcTrabajador AS P ON P.IdTrabajador = T.Id
+                ORDER BY T.Id;
+                """;
+            using (SqliteDataReader lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    estado.Perfiles.Add(new PerfilConciliacionHdc(
+                        lector.GetInt32(0), lector.GetString(1),
+                        lector.GetString(2), lector.GetInt64(3) != 0,
+                        lector.IsDBNull(4) ? string.Empty : lector.GetString(4),
+                        lector.IsDBNull(5) ? string.Empty : lector.GetString(5),
+                        lector.IsDBNull(6) ? null : lector.GetInt32(6),
+                        lector.GetInt64(7) != 0));
+                }
+            }
+            comando.CommandText = """
+                SELECT E.CodigoLocalidadHdc, E.Accion, E.IdPlanta,
+                       E.Activo, COALESCE(P.Nombre, '')
+                FROM EquivalenciaPlantaHdc AS E
+                LEFT JOIN Planta AS P ON P.Id = E.IdPlanta
+                ORDER BY E.CodigoLocalidadHdc;
+                """;
+            using (SqliteDataReader lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    estado.Plantas.Add(new PlantaConciliacionHdc(
+                        lector.GetString(0), lector.GetString(1),
+                        lector.IsDBNull(2) ? null : lector.GetInt32(2),
+                        lector.GetInt64(3) != 0, lector.GetString(4)));
+                }
+            }
+            return estado;
+        }
+
         public ResultadoImportacionHdc Importar(
             string rutaArchivo,
             ResultadoAnalisisHdc resultado)
@@ -29,6 +87,9 @@ namespace Aseguranza.Data.SQLite
                     nameof(rutaArchivo));
             }
 
+            using FileStream fuente =
+                HdcConciliacionAusencias.AbrirFuenteVerificada(rutaArchivo, resultado);
+
             List<RegistroHdc> preparados =
                 resultado.Registros
                     .Where(EsRegistroPreparado)
@@ -45,6 +106,8 @@ namespace Aseguranza.Data.SQLite
             int reactivados =
                 preparados.Count(
                     item => EstadoEs(item, "Reactivar"));
+            int inactivados = resultado.ConciliarAusencias
+                ? resultado.Inactivados : 0;
 
             int sinCambios =
                 preparados.Count(
@@ -57,11 +120,11 @@ namespace Aseguranza.Data.SQLite
             int excluidos =
                 Math.Max(
                     0,
-                    resultado.Registros.Count -
+                    resultado.TotalRegistros -
                     preparados.Count -
                     ignorados);
 
-            if (preparados.Count == 0)
+            if (preparados.Count == 0 && inactivados == 0)
             {
                 throw new InvalidOperationException(
                     "No hay registros preparados para importar.");
@@ -90,9 +153,20 @@ namespace Aseguranza.Data.SQLite
                         nuevos,
                         actualizados,
                         reactivados,
+                        inactivados,
                         sinCambios,
                         excluidos,
                         ignorados);
+
+                PlanConciliacionHdc plan = resultado.ConciliarAusencias
+                    ? HdcConciliacionAusencias.CalcularPlan(
+                        resultado, CargarEstadoConciliacion(conexion, transaccion))
+                    : new PlanConciliacionHdc(
+                        string.Empty, string.Empty,
+                        Array.Empty<PerfilConciliacionHdc>());
+                HdcConciliacionAusencias.ValidarPlanImportacion(resultado, plan);
+
+                GuardarAlcance(conexion, transaccion, idImportacion, resultado);
 
                 foreach (RegistroHdc registro
                          in preparados)
@@ -189,6 +263,9 @@ namespace Aseguranza.Data.SQLite
                         registro);
                 }
 
+                InactivarCandidatos(
+                    conexion, transaccion, idImportacion, plan);
+
                 transaccion.Commit();
 
                 return new ResultadoImportacionHdc
@@ -197,7 +274,7 @@ namespace Aseguranza.Data.SQLite
                         idImportacion,
 
                     TotalRegistrosArchivo =
-                        resultado.Registros.Count,
+                        resultado.TotalRegistros,
 
                     NuevosInsertados =
                         nuevos,
@@ -207,6 +284,8 @@ namespace Aseguranza.Data.SQLite
 
                     Reactivados =
                         reactivados,
+                    Inactivados =
+                        inactivados,
 
                     SinCambios =
                         sinCambios,
@@ -366,6 +445,7 @@ namespace Aseguranza.Data.SQLite
             int nuevos,
             int actualizados,
             int reactivados,
+            int inactivados,
             int sinCambios,
             int excluidos,
             int ignorados)
@@ -387,6 +467,8 @@ namespace Aseguranza.Data.SQLite
                     Actualizados,
                     SinCambios,
                     ConAdvertencias,
+                    ConciliarAusencias,
+                    HuellaSha256,
                     Observaciones
                 )
                 VALUES
@@ -399,6 +481,8 @@ namespace Aseguranza.Data.SQLite
                     @Actualizados,
                     @SinCambios,
                     @ConAdvertencias,
+                    @ConciliarAusencias,
+                    @HuellaSha256,
                     @Observaciones
                 );
                 """;
@@ -416,7 +500,7 @@ namespace Aseguranza.Data.SQLite
 
             comando.Parameters.AddWithValue(
                 "@TotalRegistros",
-                resultado.Registros.Count);
+                resultado.TotalRegistros);
 
             comando.Parameters.AddWithValue(
                 "@Nuevos",
@@ -433,11 +517,16 @@ namespace Aseguranza.Data.SQLite
             comando.Parameters.AddWithValue(
                 "@ConAdvertencias",
                 excluidos);
+            comando.Parameters.AddWithValue(
+                "@ConciliarAusencias", resultado.ConciliarAusencias ? 1 : 0);
+            comando.Parameters.AddWithValue(
+                "@HuellaSha256", resultado.HuellaSha256);
 
             comando.Parameters.AddWithValue(
                 "@Observaciones",
                 "Importación transaccional HDC. " +
                 $"Reactivados: {reactivados:N0}. " +
+                $"Inactivados: {inactivados:N0}. " +
                 $"Excluidos por equivalencias/revisión: {excluidos:N0}. " +
                 $"Ignorados: {ignorados:N0}.");
 
@@ -446,6 +535,58 @@ namespace Aseguranza.Data.SQLite
             return ObtenerUltimoId(
                 conexion,
                 transaccion);
+        }
+
+        private static void GuardarAlcance(
+            SqliteConnection conexion, SqliteTransaction transaccion,
+            int idImportacion, ResultadoAnalisisHdc resultado)
+        {
+            if (!resultado.ConciliarAusencias) return;
+            foreach (string codigo in resultado.LocalidadesCompletas)
+            {
+                using SqliteCommand comando = conexion.CreateCommand();
+                comando.Transaction = transaccion;
+                comando.CommandText = """
+                    INSERT INTO ImportacionHdcAlcance
+                        (IdImportacionHdc, CodigoLocalidadHdc)
+                    VALUES (@IdImportacion, @Codigo);
+                    """;
+                comando.Parameters.AddWithValue("@IdImportacion", idImportacion);
+                comando.Parameters.AddWithValue(
+                    "@Codigo", HdcConciliacionAusencias.Normalizar(codigo));
+                comando.ExecuteNonQuery();
+            }
+        }
+
+        private static void InactivarCandidatos(
+            SqliteConnection conexion, SqliteTransaction transaccion,
+            int idImportacion, PlanConciliacionHdc plan)
+        {
+            foreach (PerfilConciliacionHdc perfil in plan.Candidatos)
+            {
+                string motivo = "Ausente de la población HDC completa de " +
+                    HdcConciliacionAusencias.Normalizar(perfil.LocalidadHdc) + ".";
+                if (!SqliteTrabajadorRepository.CambiarEstadoEnTransaccion(
+                    conexion, transaccion, perfil.IdTrabajador,
+                    false, "HDC", idImportacion, motivo))
+                {
+                    throw new InvalidOperationException(
+                        "El estado del trabajador cambió durante la conciliación HDC.");
+                }
+                using SqliteCommand comando = conexion.CreateCommand();
+                comando.Transaction = transaccion;
+                comando.CommandText = """
+                    UPDATE PerfilHdcTrabajador
+                    SET EncontradoUltimoHdc = 0
+                    WHERE IdTrabajador = @Id;
+                    """;
+                comando.Parameters.AddWithValue("@Id", perfil.IdTrabajador);
+                if (comando.ExecuteNonQuery() != 1)
+                {
+                    throw new InvalidOperationException(
+                        "Cambió el perfil HDC durante la conciliación. Se revirtió la importación.");
+                }
+            }
         }
 
         private static (int Id, bool Activo) ObtenerIdTrabajador(

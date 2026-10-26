@@ -74,6 +74,7 @@ namespace Aseguranza
                 try
                 {
                     InicializadorSqlite.ActualizarEsquemaExistente();
+                    InicializadorSqlite.ActualizarEsquemaConciliacion();
                 }
                 catch (Exception ex)
                 {

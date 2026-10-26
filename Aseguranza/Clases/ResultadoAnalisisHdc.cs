@@ -5,6 +5,14 @@ namespace Aseguranza.Clases
     public sealed class ResultadoAnalisisHdc
     {
         public string NombreHoja { get; set; } = "HDC";
+        public string HuellaSha256 { get; set; } = string.Empty;
+        public bool ConciliarAusencias { get; set; }
+        public HashSet<string> LocalidadesCompletas { get; } =
+            new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        public List<LocalidadHdcOpcion> OpcionesLocalidad { get; } =
+            new List<LocalidadHdcOpcion>();
+        public string HuellaEstadoConciliacion { get; set; } = string.Empty;
+        public string AlcanceAnalizado { get; set; } = string.Empty;
 
         public List<RegistroHdc> Registros { get; } =
             new List<RegistroHdc>();
@@ -13,6 +21,7 @@ namespace Aseguranza.Clases
         public int Nuevos { get; set; }
         public int Actualizados { get; set; }
         public int Reactivados { get; set; }
+        public int Inactivados { get; set; }
         public int SinCambios { get; set; }
 
         // Compatibilidad con el análisis anterior.

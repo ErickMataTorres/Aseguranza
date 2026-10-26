@@ -187,6 +187,10 @@ CREATE TABLE [dbo].[ImportacionHdc](
 	[Actualizados] [int] NOT NULL,
 	[SinCambios] [int] NOT NULL,
 	[ConAdvertencias] [int] NOT NULL,
+	[ConciliarAusencias] [bit] NOT NULL CONSTRAINT [DF_ImportacionHdc_ConciliarAusencias] DEFAULT (0),
+
+	[HuellaSha256] [varchar](64) NULL,
+
 	[Observaciones] [varchar](1000) NULL,
  CONSTRAINT [PK_ImportacionHdc] PRIMARY KEY CLUSTERED 
 (
@@ -194,7 +198,18 @@ CREATE TABLE [dbo].[ImportacionHdc](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[Linea] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
+CREATE TABLE [dbo].[ImportacionHdcAlcance](
+    [IdImportacionHdc] [int] NOT NULL,
+    [CodigoLocalidadHdc] [varchar](50) NOT NULL,
+    CONSTRAINT [PK_ImportacionHdcAlcance] PRIMARY KEY
+        ([IdImportacionHdc], [CodigoLocalidadHdc]),
+    CONSTRAINT [FK_ImportacionHdcAlcance_Importacion]
+        FOREIGN KEY ([IdImportacionHdc]) REFERENCES [dbo].[ImportacionHdc]([Id])
+);
+GO
+
+/****** Objeto: Table [dbo].[Linea] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -354,6 +369,9 @@ CREATE INDEX [IX_TrabajadorEstadoHistorial_Trabajador_Fecha]
 GO
 INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
 VALUES (10, SYSUTCDATETIME(), 'Estado activo de trabajador e historial de cambios');
+GO
+INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
+VALUES (11, SYSUTCDATETIME(), 'Conciliacion de ausencias HDC con alcance y huella de origen');
 GO
 /****** Objeto: Table [dbo].[Turno] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
 SET ANSI_NULLS ON
