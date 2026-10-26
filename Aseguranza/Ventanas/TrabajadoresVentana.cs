@@ -1709,11 +1709,23 @@ namespace Aseguranza.Ventanas
                 nuevoAncho,
                 nuevoAlto);
 
-            imagenFinal.Save(
-                rutaDestino,
-                System.Drawing.Imaging
-                    .ImageFormat
-                    .Jpeg);
+            bool archivoCreado = false;
+            try
+            {
+                using (FileStream archivoNuevo = new FileStream(
+                    rutaDestino, FileMode.CreateNew, FileAccess.Write))
+                {
+                    archivoCreado = true;
+                    imagenFinal.Save(archivoNuevo,
+                        System.Drawing.Imaging.ImageFormat.Jpeg);
+                }
+            }
+            catch
+            {
+                if (archivoCreado)
+                    File.Delete(rutaDestino);
+                throw;
+            }
         }
 
         private static Image CargarImagenSinBloquearArchivo(
@@ -1854,14 +1866,16 @@ namespace Aseguranza.Ventanas
                 trabajadorActual.IdPlanta,
                 trabajadorActual.IdLinea);
 
-            if (!string.IsNullOrEmpty(
-                    trabajadorActual.RutaFoto) &&
-                File.Exists(
-                    trabajadorActual.RutaFoto))
+            string? rutaFotoFisica =
+                Clases.RutasArchivos.ResolverFotoPerfil(
+                    trabajadorActual.RutaFoto,
+                    trabajadorActual.NoReloj);
+
+            if (rutaFotoFisica is not null)
             {
                 MostrarImagenEnPictureBox(
                     CargarImagenSinBloquearArchivo(
-                        trabajadorActual.RutaFoto));
+                        rutaFotoFisica));
 
                 rutaFotoSeleccionada =
                     trabajadorActual.RutaFoto;
@@ -2080,20 +2094,15 @@ namespace Aseguranza.Ventanas
             MostrarEstado(
                 "Guardando trabajador...");
 
+            string? rutaNuevaFoto = null;
+            string? rutaFotoAnterior = trabajadorActual?.RutaFoto;
+            bool fotoPersistida = false;
+
             try
             {
                 Clases.Trabajador trabajador =
                     trabajadorActual ??
                     new Clases.Trabajador();
-
-                /*
-                 * trabajador y trabajadorActual apuntan al mismo objeto
-                 * cuando estamos modificando. Guardamos la ruta anterior
-                 * antes de cambiar RutaFoto para poder eliminar el archivo
-                 * físico únicamente después de confirmar el guardado.
-                 */
-                string? rutaFotoAnterior =
-                    trabajadorActual?.RutaFoto;
 
                 trabajador.NoReloj =
                     txtNoReloj.Text.Trim();
@@ -2107,11 +2116,6 @@ namespace Aseguranza.Ventanas
                     .CrearCarpetasTrabajador(
                         trabajador.NoReloj!);
 
-                string rutaDestino =
-                    Clases.RutasArchivos
-                        .ObtenerRutaFotoPerfil(
-                            trabajador.NoReloj!);
-
                 // ===============================================
                 // FOTOGRAFÍA
                 // ===============================================
@@ -2119,30 +2123,33 @@ namespace Aseguranza.Ventanas
                 if (capturaDesdeCamara &&
                     fotoCapturada is not null)
                 {
+                    string rutaDestinoFoto = Path.Combine(
+                        Clases.RutasArchivos.ObtenerCarpetaFotoPerfil(trabajador.NoReloj!),
+                        $"perfil_{Guid.NewGuid():N}.jpg");
                     GuardarImagenComoJpgConFondoBlanco(
                         fotoCapturada,
-                        rutaDestino);
+                        rutaDestinoFoto);
+                    rutaNuevaFoto = rutaDestinoFoto;
 
                     trabajador.RutaFoto =
-                        rutaDestino;
+                        Clases.RutasArchivos.ObtenerReferenciaGestionada(rutaNuevaFoto);
                 }
-                else if (!string.IsNullOrEmpty(
-                    rutaFotoSeleccionada))
+                else if (!string.IsNullOrEmpty(rutaFotoSeleccionada) &&
+                    rutaFotoSeleccionada != rutaFotoAnterior)
                 {
-                    if (rutaFotoSeleccionada !=
-                        rutaDestino)
-                    {
-                        using Image imagenSeleccionada =
-                            CargarImagenSinBloquearArchivo(
-                                rutaFotoSeleccionada);
+                    string rutaDestinoFoto = Path.Combine(
+                        Clases.RutasArchivos.ObtenerCarpetaFotoPerfil(trabajador.NoReloj!),
+                        $"perfil_{Guid.NewGuid():N}.jpg");
+                    using Image imagenSeleccionada =
+                        CargarImagenSinBloquearArchivo(rutaFotoSeleccionada);
 
-                        GuardarImagenComoJpgConFondoBlanco(
-                            imagenSeleccionada,
-                            rutaDestino);
-                    }
+                    GuardarImagenComoJpgConFondoBlanco(
+                        imagenSeleccionada,
+                        rutaDestinoFoto);
+                    rutaNuevaFoto = rutaDestinoFoto;
 
                     trabajador.RutaFoto =
-                        rutaDestino;
+                        Clases.RutasArchivos.ObtenerReferenciaGestionada(rutaNuevaFoto);
                 }
                 else if (eliminarFotoPendiente)
                 {
@@ -2189,6 +2196,10 @@ namespace Aseguranza.Ventanas
                 if (respuesta.Id == 1 ||
                     respuesta.Id == 3)
                 {
+                    bool fotoReemplazada = rutaNuevaFoto is not null;
+                    fotoPersistida = true;
+                    // Desde este punto la base de datos ya referencia la foto.
+                    rutaNuevaFoto = null;
                     string? advertenciaFoto =
                         null;
 
@@ -2198,22 +2209,27 @@ namespace Aseguranza.Ventanas
                      * Así no se pierde la fotografía si la operación de
                      * base de datos falla.
                      */
-                    if (eliminarFotoPendiente &&
-                        !string.IsNullOrWhiteSpace(
-                            rutaFotoAnterior) &&
-                        File.Exists(
-                            rutaFotoAnterior))
+                    string? rutaAnteriorFisica =
+                        Clases.RutasArchivos.ResolverFotoPerfil(
+                            rutaFotoAnterior,
+                            trabajador.NoReloj);
+                    if ((eliminarFotoPendiente || fotoReemplazada) &&
+                        rutaAnteriorFisica is not null &&
+                        Clases.RutasArchivos.EsFotoPerfilGestionada(
+                            rutaAnteriorFisica,
+                            trabajador.NoReloj!) &&
+                        !string.Equals(rutaAnteriorFisica, rutaNuevaFoto,
+                            StringComparison.OrdinalIgnoreCase))
                     {
                         try
                         {
                             File.Delete(
-                                rutaFotoAnterior);
+                                rutaAnteriorFisica);
                         }
                         catch (Exception exFoto)
                         {
                             advertenciaFoto =
-                                "Los datos se guardaron correctamente y la fotografía " +
-                                "fue retirada del registro, pero no se pudo eliminar " +
+                                "Los datos se guardaron correctamente, pero no se pudo eliminar " +
                                 "el archivo físico anterior.\n\n" +
                                 "Detalle: " +
                                 exFoto.Message;
@@ -2279,6 +2295,23 @@ namespace Aseguranza.Ventanas
             {
                 if (!guardadoCorrectamente)
                 {
+                    if (!fotoPersistida && trabajadorActual is not null)
+                        trabajadorActual.RutaFoto = rutaFotoAnterior;
+
+                    if (rutaNuevaFoto is not null)
+                    {
+                        try
+                        {
+                            File.Delete(rutaNuevaFoto);
+                        }
+                        catch (Exception exFoto)
+                        {
+                            AppDialog.ShowWarning(this, "Limpieza de fotografía",
+                                "No se pudo eliminar la nueva fotografía después del error de guardado. " +
+                                "Revise la carpeta de fotos del trabajador.\n\nDetalle: " + exFoto.Message);
+                        }
+                    }
+
                     guardando =
                         false;
 
