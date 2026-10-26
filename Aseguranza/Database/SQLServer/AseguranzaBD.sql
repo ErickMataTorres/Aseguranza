@@ -373,6 +373,9 @@ GO
 INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
 VALUES (11, SYSUTCDATETIME(), 'Conciliacion de ausencias HDC con alcance y huella de origen');
 GO
+INSERT INTO [dbo].[SchemaVersion]([Version], [FechaAplicacion], [Descripcion])
+VALUES (12, SYSUTCDATETIME(), 'Filtros de personal activo e inactivo en listas operativas');
+GO
 /****** Objeto: Table [dbo].[Turno] Fecha de script: 20/09/2026 05:35:11 p. m. ******/
 SET ANSI_NULLS ON
 GO
