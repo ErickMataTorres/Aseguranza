@@ -309,6 +309,69 @@ namespace Aseguranza.Data.SqlServer
             return tabla;
         }
 
+        public CertificationPageResult ConsultarEstadoCertificacionPaginado(
+            CertificationPageRequest request)
+        {
+            using SqlConnection conexion = Conexion.Conectar();
+            conexion.Open();
+            using (SqlCommand validar = conexion.CreateCommand())
+            {
+                validar.CommandText = """
+                    IF OBJECT_ID(N'dbo.SchemaVersion', N'U') IS NULL
+                        SELECT 0;
+                    ELSE
+                        SELECT CASE WHEN EXISTS
+                            (SELECT 1 FROM dbo.SchemaVersion WHERE Version = 14)
+                            THEN 1 ELSE 0 END;
+                    """;
+                if (Convert.ToInt32(validar.ExecuteScalar()) != 1)
+                    throw new InvalidOperationException(
+                        "La base SQL Server requiere la migración " +
+                        "14_PaginacionCertificaciones.sql antes de abrir Certificaciones.");
+            }
+
+            using SqlCommand comando = new SqlCommand(
+                "spConsultarTrabajadoresEstadoCertificacion", conexion)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            comando.Parameters.Add("@MostrarPor", SqlDbType.VarChar, 20).Value =
+                request.CertificationStatus ?? "Todas";
+            comando.Parameters.Add("@TextoBuscar", SqlDbType.VarChar, 100).Value =
+                request.Search ?? string.Empty;
+            comando.Parameters.Add("@Activo", SqlDbType.Bit).Value =
+                request.Active.HasValue ? request.Active.Value : DBNull.Value;
+            // Preserve the existing SQL Server GETDATE() calendar semantics;
+            // the procedure captures that date once for all three results.
+            comando.Parameters.Add("@AsOfDate", SqlDbType.Date).Value =
+                DBNull.Value;
+            SqlParameter pageNumber = comando.Parameters.Add("@PageNumber", SqlDbType.Int);
+            pageNumber.Direction = ParameterDirection.InputOutput;
+            pageNumber.Value = request.ValidPageNumber;
+            comando.Parameters.Add("@PageSize", SqlDbType.Int).Value =
+                request.ValidPageSize;
+            SqlParameter totalCount = comando.Parameters.Add("@TotalCount", SqlDbType.Int);
+            totalCount.Direction = ParameterDirection.Output;
+
+            DataSet data = new DataSet();
+            using (SqlDataAdapter adaptador = new SqlDataAdapter(comando))
+                adaptador.Fill(data);
+            if (data.Tables.Count != 2 || data.Tables[0].Rows.Count != 1)
+                throw new InvalidOperationException(
+                    "La consulta paginada de certificaciones devolvió un resultado inesperado.");
+
+            DataRow resumen = data.Tables[0].Rows[0];
+            CertificationSummary summary = new CertificationSummary(
+                Convert.ToInt32(resumen["Total"]),
+                Convert.ToInt32(resumen["Vigentes"]),
+                Convert.ToInt32(resumen["PorVencer"]),
+                Convert.ToInt32(resumen["Vencidas"]),
+                Convert.ToInt32(resumen["SinCertificar"]));
+            return new CertificationPageResult(
+                data.Tables[1], Convert.ToInt32(totalCount.Value),
+                Convert.ToInt32(pageNumber.Value), request.ValidPageSize, summary);
+        }
+
         public Mensaje Guardar(
             Trabajador trabajador)
         {

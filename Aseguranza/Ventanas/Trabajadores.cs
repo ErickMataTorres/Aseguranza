@@ -40,6 +40,14 @@ namespace Aseguranza.Ventanas
             AplicarEstiloVisual();
         }
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            // Release the bound rows before WinForms tears down the grid handle.
+            _actualizandoPagina = true;
+            dgvTrabajadores.DataSource = null;
+            base.OnFormClosed(e);
+        }
+
         // =========================================================
         // CARGA
         // =========================================================
@@ -1375,26 +1383,30 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            dgvTrabajadores.ClearSelection();
-
-            dgvTrabajadores.Rows[e.RowIndex]
-                .Selected =
-                    true;
-
-            DataGridViewCell? primeraCeldaVisible =
-                dgvTrabajadores.Rows[e.RowIndex]
-                    .Cells
-                    .Cast<DataGridViewCell>()
-                    .FirstOrDefault(
-                        celda =>
-                            celda.Visible);
-
-            if (primeraCeldaVisible is not null)
+            _actualizandoPagina = true;
+            try
             {
-                dgvTrabajadores.CurrentCell =
-                    primeraCeldaVisible;
+                dgvTrabajadores.ClearSelection();
+
+                DataGridViewRow fila = dgvTrabajadores.Rows[e.RowIndex];
+                fila.Selected = true;
+
+                DataGridViewCell? primeraCeldaVisible =
+                    fila.Cells
+                        .Cast<DataGridViewCell>()
+                        .FirstOrDefault(celda => celda.Visible);
+
+                if (primeraCeldaVisible is not null)
+                {
+                    dgvTrabajadores.CurrentCell = primeraCeldaVisible;
+                }
+            }
+            finally
+            {
+                _actualizandoPagina = false;
             }
 
+            ValidarBotones();
             btnModificar_Click(
                 sender,
                 e);

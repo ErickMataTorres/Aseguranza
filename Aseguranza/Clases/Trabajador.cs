@@ -70,6 +70,14 @@ namespace Aseguranza.Clases
                     activo);
         }
 
+        public static CertificationPageResult ConsultarEstadoCertificacionPaginado(
+            CertificationPageRequest request)
+        {
+            return RepositorioFactory
+                .CrearTrabajadorRepository()
+                .ConsultarEstadoCertificacionPaginado(request);
+        }
+
         public static DataTable
             ConsultarTrabajadoresParaImportacionHdc()
         {
