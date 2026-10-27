@@ -41,6 +41,14 @@ namespace Aseguranza.Clases
                     textoBuscar ?? string.Empty);
         }
 
+        public static ExpirationDashboardResult ConsultarVencimientos(
+            ExpirationDashboardRequest request)
+        {
+            return RepositorioFactory
+                .CrearCertificacionRepository()
+                .ConsultarVencimientos(request);
+        }
+
         public Mensaje GuardarCertificacion()
         {
             return RepositorioFactory

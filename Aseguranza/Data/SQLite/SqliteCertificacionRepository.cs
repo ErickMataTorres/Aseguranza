@@ -2,6 +2,7 @@ using Aseguranza.Clases;
 using Aseguranza.Data.Interfaces;
 using Microsoft.Data.Sqlite;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 
@@ -10,6 +11,158 @@ namespace Aseguranza.Data.SQLite
     public sealed class SqliteCertificacionRepository
         : ICertificacionRepository
     {
+        private const string ExpirationEventsSql = """
+            WITH Eventos AS
+            (
+                SELECT C.Id AS CertificationId,
+                       T.Id AS WorkerId, T.NoReloj AS WorkerNumber,
+                       T.Nombre AS WorkerName, T.Activo AS Active,
+                       T.IdPlanta AS PlantId, Pl.Nombre AS PlantName,
+                       Li.Id AS LineId, Li.Nombre AS LineName,
+                       T.IdTurno AS ShiftId, Tu.Nombre AS ShiftName,
+                       Pr.Id AS ProcessId, Pr.Nombre AS ProcessName,
+                       date(C.FechaCertificacion) AS CertificationDate,
+                       date(C.FechaVencimiento) AS ExpirationDate,
+                       CAST(julianday(date(C.FechaVencimiento)) -
+                            julianday(date(@AsOfDate)) AS INTEGER)
+                           AS DaysUntilExpiration,
+                       CASE WHEN date(C.FechaVencimiento) < date(@AsOfDate)
+                            THEN 1 ELSE 2 END AS EventState
+                FROM Certificacion AS C
+                INNER JOIN Trabajador AS T ON T.Id = C.IdTrabajador
+                INNER JOIN Planta AS Pl ON Pl.Id = T.IdPlanta
+                INNER JOIN Turno AS Tu ON Tu.Id = T.IdTurno
+                LEFT JOIN Linea AS Li ON Li.Id = T.IdLinea
+                    AND Li.IdPlanta = T.IdPlanta
+                INNER JOIN Proceso AS Pr ON Pr.Id = C.IdProceso
+                WHERE date(C.FechaVencimiento) <= date(@HorizonEnd)
+                  AND NOT EXISTS
+                  (
+                      SELECT 1 FROM CertificacionAnulacion AS CA
+                      WHERE CA.IdCertificacion = C.Id AND CA.Activa = 1
+                        AND (CA.EsPermanente = 1 OR CA.FechaFin IS NULL
+                             OR date(CA.FechaFin) >= date(@AsOfDate))
+                  )
+                  AND (@Active IS NULL OR T.Activo = @Active)
+                  AND (@PlantId IS NULL OR T.IdPlanta = @PlantId)
+                  AND (@LineId IS NULL OR Li.Id = @LineId)
+                  AND (@ShiftId IS NULL OR T.IdTurno = @ShiftId)
+                  AND (@ProcessId IS NULL OR C.IdProceso = @ProcessId)
+                  AND (T.NoReloj LIKE @Search COLLATE NOCASE
+                       OR T.Nombre LIKE @Search COLLATE NOCASE
+                       OR Pr.Nombre LIKE @Search COLLATE NOCASE
+                       OR Pl.Nombre LIKE @Search COLLATE NOCASE
+                       OR COALESCE(Li.Nombre, '') LIKE @Search COLLATE NOCASE
+                       OR Tu.Nombre LIKE @Search COLLATE NOCASE)
+            )
+            """;
+
+        public ExpirationDashboardResult ConsultarVencimientos(
+            ExpirationDashboardRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            request.Validate();
+            DateTime asOfDate = request.AsOfDate?.Date ?? DateTime.Today;
+            string asOf = asOfDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            string horizonEnd = asOfDate.AddDays(request.HorizonDays)
+                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            int pageSize = request.ValidPageSize;
+            int pageNumber = request.ValidPageNumber;
+
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteTransaction transaccion = conexion.BeginTransaction(deferred: true);
+
+            SqliteCommand CrearComando(string sql)
+            {
+                SqliteCommand comando = conexion.CreateCommand();
+                comando.Transaction = transaccion;
+                comando.CommandText = ExpirationEventsSql + "\n" + sql;
+                comando.Parameters.AddWithValue("@AsOfDate", asOf);
+                comando.Parameters.AddWithValue("@HorizonEnd", horizonEnd);
+                comando.Parameters.AddWithValue("@Active", request.Active.HasValue
+                    ? (object)(request.Active.Value ? 1 : 0) : DBNull.Value);
+                comando.Parameters.AddWithValue("@PlantId",
+                    request.PlantId.HasValue ? request.PlantId.Value : DBNull.Value);
+                comando.Parameters.AddWithValue("@LineId",
+                    request.LineId.HasValue ? request.LineId.Value : DBNull.Value);
+                comando.Parameters.AddWithValue("@ShiftId",
+                    request.ShiftId.HasValue ? request.ShiftId.Value : DBNull.Value);
+                comando.Parameters.AddWithValue("@ProcessId",
+                    request.ProcessId.HasValue ? request.ProcessId.Value : DBNull.Value);
+                comando.Parameters.AddWithValue("@Search",
+                    $"%{(request.Search ?? string.Empty).Trim()}%");
+                comando.Parameters.AddWithValue("@Category", (int)request.Category);
+                return comando;
+            }
+
+            ExpirationDashboardSummary summary;
+            using (SqliteCommand comando = CrearComando("""
+                SELECT COALESCE(SUM(EventState = 1), 0),
+                       COALESCE(SUM(EventState = 2), 0),
+                       COUNT(DISTINCT WorkerId), COUNT(DISTINCT ProcessId)
+                FROM Eventos;
+                """))
+            using (SqliteDataReader lector = comando.ExecuteReader())
+            {
+                lector.Read();
+                summary = new ExpirationDashboardSummary(
+                    Convert.ToInt32(lector.GetInt64(0)),
+                    Convert.ToInt32(lector.GetInt64(1)),
+                    Convert.ToInt32(lector.GetInt64(2)),
+                    Convert.ToInt32(lector.GetInt64(3)));
+            }
+
+            int totalCount;
+            using (SqliteCommand comando = CrearComando("""
+                SELECT COUNT(*) FROM Eventos
+                WHERE @Category = 0 OR EventState = @Category;
+                """))
+                totalCount = Convert.ToInt32(comando.ExecuteScalar());
+
+            int totalPages = totalCount == 0 ? 0 : (totalCount - 1) / pageSize + 1;
+            pageNumber = Math.Min(pageNumber, Math.Max(1, totalPages));
+            using SqliteCommand pagina = CrearComando("""
+                SELECT CertificationId, WorkerId, WorkerNumber, WorkerName,
+                       PlantId, PlantName, LineId, LineName, ShiftId, ShiftName,
+                       ProcessId, ProcessName, CertificationDate, ExpirationDate,
+                       DaysUntilExpiration, EventState, Active
+                FROM Eventos
+                WHERE @Category = 0 OR EventState = @Category
+                ORDER BY EventState, ExpirationDate, WorkerName COLLATE NOCASE,
+                         WorkerId, ProcessId, CertificationId
+                LIMIT @PageSize OFFSET @Offset;
+                """);
+            pagina.Parameters.AddWithValue("@PageSize", pageSize);
+            pagina.Parameters.AddWithValue("@Offset", (long)(pageNumber - 1) * pageSize);
+            List<ExpirationEventRow> items = new();
+            using (SqliteDataReader lector = pagina.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    items.Add(new ExpirationEventRow(
+                        Convert.ToInt32(lector.GetInt64(0)),
+                        Convert.ToInt32(lector.GetInt64(1)),
+                        lector.GetString(2), lector.GetString(3),
+                        Convert.ToInt32(lector.GetInt64(4)), lector.GetString(5),
+                        lector.IsDBNull(6) ? null : Convert.ToInt32(lector.GetInt64(6)),
+                        lector.IsDBNull(7) ? null : lector.GetString(7),
+                        Convert.ToInt32(lector.GetInt64(8)), lector.GetString(9),
+                        Convert.ToInt32(lector.GetInt64(10)), lector.GetString(11),
+                        DateTime.ParseExact(lector.GetString(12), "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture),
+                        DateTime.ParseExact(lector.GetString(13), "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture),
+                        Convert.ToInt32(lector.GetInt64(14)),
+                        (ExpirationEventState)lector.GetInt64(15),
+                        lector.GetInt64(16) != 0));
+                }
+            }
+            transaccion.Commit();
+            return new ExpirationDashboardResult(
+                items, totalCount, pageNumber, pageSize, summary);
+        }
+
         public DataTable ConsultarVerificacionNoReloj(
             string noReloj)
         {
