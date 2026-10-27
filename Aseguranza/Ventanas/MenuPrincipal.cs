@@ -17,6 +17,15 @@ namespace Aseguranza
             AplicarEstiloVisual();
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            // WinForms selects the first tab-stop button when the form opens.
+            // Leave navigation available while waiting for an intentional Tab or click.
+            ActiveControl = null;
+        }
+
         // =========================================================
         // INTERFAZ PRINCIPAL
         // =========================================================

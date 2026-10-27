@@ -48,6 +48,14 @@ namespace Aseguranza.Clases
                 .Consultar(textoBuscar ?? string.Empty, activo);
         }
 
+        public static PagedTableResult ConsultarTrabajadoresPaginados(
+            WorkerPageRequest request)
+        {
+            return RepositorioFactory
+                .CrearTrabajadorRepository()
+                .ConsultarPaginado(request);
+        }
+
         public static DataTable
             ConsultarTrabajadoresEstadoCertificacion(
                 string mostrarPor,
@@ -60,6 +68,14 @@ namespace Aseguranza.Clases
                     mostrarPor ?? string.Empty,
                     textoBuscar ?? string.Empty,
                     activo);
+        }
+
+        public static CertificationPageResult ConsultarEstadoCertificacionPaginado(
+            CertificationPageRequest request)
+        {
+            return RepositorioFactory
+                .CrearTrabajadorRepository()
+                .ConsultarEstadoCertificacionPaginado(request);
         }
 
         public static DataTable

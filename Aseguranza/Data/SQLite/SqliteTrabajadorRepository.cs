@@ -9,6 +9,51 @@ namespace Aseguranza.Data.SQLite
     public sealed class SqliteTrabajadorRepository
         : ITrabajadorRepository
     {
+        private const string CertificationClassificationSql = """
+            WITH TrabajadoresEstado AS
+            (
+                SELECT T.Id, T.NoReloj, T.Nombre, T.Activo, T.RutaFoto,
+                       T.IdLocalidad, Lo.Nombre AS NombreLocalidad,
+                       T.IdTurno, Tu.Nombre AS NombreTurno,
+                       T.IdPlanta, P.Nombre AS NombrePlanta,
+                       T.IdLinea, COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea,
+                       CASE
+                           WHEN COUNT(C.Id) = 0 THEN 'Sin certificar'
+                           WHEN SUM(CASE WHEN date(C.FechaVencimiento) < date(@AsOfDate)
+                                         THEN 1 ELSE 0 END) > 0 THEN 'Vencida'
+                           WHEN SUM(CASE WHEN date(C.FechaVencimiento)
+                                              BETWEEN date(@AsOfDate)
+                                              AND date(@AsOfDate, '+30 days')
+                                         THEN 1 ELSE 0 END) > 0 THEN 'Por vencer'
+                           ELSE 'Vigente'
+                       END AS EstadoCertificacion
+                FROM Trabajador AS T
+                LEFT JOIN Localidad AS Lo ON Lo.Id = T.IdLocalidad
+                INNER JOIN Turno AS Tu ON Tu.Id = T.IdTurno
+                INNER JOIN Planta AS P ON P.Id = T.IdPlanta
+                LEFT JOIN Linea AS Li ON Li.Id = T.IdLinea
+                LEFT JOIN Certificacion AS C ON C.IdTrabajador = T.Id
+                    AND NOT EXISTS
+                    (
+                        SELECT 1 FROM CertificacionAnulacion AS CA
+                        WHERE CA.IdCertificacion = C.Id AND CA.Activa = 1
+                          AND (CA.EsPermanente = 1 OR CA.FechaFin IS NULL
+                               OR date(CA.FechaFin) >= date(@AsOfDate))
+                    )
+                WHERE (@Activo IS NULL OR T.Activo = @Activo)
+                  AND (T.NoReloj LIKE @TextoBuscar COLLATE NOCASE
+                       OR T.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                       OR COALESCE(Lo.Nombre, '') LIKE @TextoBuscar COLLATE NOCASE
+                       OR Tu.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                       OR P.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                       OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
+                          LIKE @TextoBuscar COLLATE NOCASE)
+                GROUP BY T.Id, T.NoReloj, T.Nombre, T.Activo, T.RutaFoto,
+                         T.IdLocalidad, Lo.Nombre, T.IdTurno, Tu.Nombre,
+                         T.IdPlanta, P.Nombre, T.IdLinea, Li.Nombre
+            )
+            """;
+
         public Trabajador? ConsultarPorNumeroReloj(
             string noReloj)
         {
@@ -136,6 +181,81 @@ namespace Aseguranza.Data.SQLite
             }
 
             return tabla;
+        }
+
+        public PagedTableResult ConsultarPaginado(
+            WorkerPageRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            const string filtros = """
+                FROM Trabajador AS T
+                LEFT JOIN Localidad AS Lo ON Lo.Id = T.IdLocalidad
+                INNER JOIN Turno AS Tu ON Tu.Id = T.IdTurno
+                INNER JOIN Planta AS P ON P.Id = T.IdPlanta
+                LEFT JOIN Linea AS Li ON Li.Id = T.IdLinea
+                WHERE (@Activo IS NULL OR T.Activo = @Activo)
+                  AND (T.NoReloj LIKE @TextoBuscar COLLATE NOCASE
+                   OR T.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                   OR COALESCE(Lo.Nombre, '') LIKE @TextoBuscar COLLATE NOCASE
+                   OR Tu.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                   OR P.Nombre LIKE @TextoBuscar COLLATE NOCASE
+                   OR COALESCE(Li.Nombre, 'SIN ASIGNAR')
+                          LIKE @TextoBuscar COLLATE NOCASE)
+                """;
+
+            int pageSize = request.ValidPageSize;
+            string searchPattern = $"%{request.Search?.Trim() ?? string.Empty}%";
+            object activeValue = request.Active.HasValue
+                ? (request.Active.Value ? 1 : 0)
+                : DBNull.Value;
+
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteTransaction transaccion = conexion.BeginTransaction();
+
+            using SqliteCommand contar = conexion.CreateCommand();
+            contar.Transaction = transaccion;
+            contar.CommandText = "SELECT COUNT(*) " + filtros;
+            contar.Parameters.AddWithValue("@TextoBuscar", searchPattern);
+            contar.Parameters.AddWithValue("@Activo", activeValue);
+            int totalCount = Convert.ToInt32(contar.ExecuteScalar());
+            int totalPages = totalCount == 0
+                ? 0
+                : (totalCount - 1) / pageSize + 1;
+            int pageNumber = Math.Min(
+                request.ValidPageNumber,
+                Math.Max(1, totalPages));
+            long offset = ((long)pageNumber - 1) * pageSize;
+
+            using SqliteCommand pagina = conexion.CreateCommand();
+            pagina.Transaction = transaccion;
+            pagina.CommandText = """
+                SELECT
+                    T.Id, T.NoReloj, T.Nombre, T.RutaFoto,
+                    T.IdTurno, Tu.Nombre AS NombreTurno,
+                    T.IdPlanta, P.Nombre AS NombrePlanta,
+                    T.IdLinea, COALESCE(Li.Nombre, 'SIN ASIGNAR') AS NombreLinea,
+                    T.Activo
+                """ + "\n" + filtros + "\n" + """
+                ORDER BY T.Nombre, T.Id
+                LIMIT @PageSize OFFSET @Offset;
+                """;
+            pagina.Parameters.AddWithValue("@TextoBuscar", searchPattern);
+            pagina.Parameters.AddWithValue("@Activo", activeValue);
+            pagina.Parameters.AddWithValue("@PageSize", pageSize);
+            pagina.Parameters.AddWithValue("@Offset", offset);
+
+            DataTable tabla = new DataTable();
+            PrepararTablaTrabajadores(tabla);
+            using (SqliteDataReader lector = pagina.ExecuteReader())
+            {
+                while (lector.Read())
+                    AgregarFilaTrabajador(tabla, lector);
+            }
+
+            transaccion.Commit();
+            return new PagedTableResult(tabla, totalCount, pageNumber, pageSize);
         }
 
         public DataTable ConsultarParaImportacionHdc()
@@ -434,6 +554,95 @@ namespace Aseguranza.Data.SQLite
             }
 
             return tabla;
+        }
+
+        public CertificationPageResult ConsultarEstadoCertificacionPaginado(
+            CertificationPageRequest request)
+        {
+            int pageSize = request.ValidPageSize;
+            int pageNumber = request.ValidPageNumber;
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteTransaction transaccion = conexion.BeginTransaction(deferred: true);
+
+            SqliteCommand CrearComando(string sql)
+            {
+                SqliteCommand comando = conexion.CreateCommand();
+                comando.Transaction = transaccion;
+                comando.CommandText = CertificationClassificationSql + "\n" + sql;
+                comando.Parameters.AddWithValue("@AsOfDate",
+                    request.AsOfDate.Date.ToString("yyyy-MM-dd"));
+                comando.Parameters.AddWithValue("@Activo",
+                    request.Active.HasValue
+                        ? (object)(request.Active.Value ? 1 : 0) : DBNull.Value);
+                comando.Parameters.AddWithValue("@TextoBuscar",
+                    $"%{request.Search ?? string.Empty}%");
+                comando.Parameters.AddWithValue("@MostrarPor",
+                    request.CertificationStatus ?? "Todas");
+                return comando;
+            }
+
+            CertificationSummary summary;
+            using (SqliteCommand comando = CrearComando("""
+                SELECT COUNT(*),
+                       COALESCE(SUM(EstadoCertificacion = 'Vigente'), 0),
+                       COALESCE(SUM(EstadoCertificacion = 'Por vencer'), 0),
+                       COALESCE(SUM(EstadoCertificacion = 'Vencida'), 0),
+                       COALESCE(SUM(EstadoCertificacion = 'Sin certificar'), 0)
+                FROM TrabajadoresEstado;
+                """))
+            using (SqliteDataReader lector = comando.ExecuteReader())
+            {
+                lector.Read();
+                summary = new CertificationSummary(
+                    Convert.ToInt32(lector.GetInt64(0)),
+                    Convert.ToInt32(lector.GetInt64(1)),
+                    Convert.ToInt32(lector.GetInt64(2)),
+                    Convert.ToInt32(lector.GetInt64(3)),
+                    Convert.ToInt32(lector.GetInt64(4)));
+            }
+
+            int totalCount;
+            using (SqliteCommand comando = CrearComando("""
+                SELECT COUNT(*) FROM TrabajadoresEstado
+                WHERE @MostrarPor = 'Todas' OR EstadoCertificacion = @MostrarPor;
+                """))
+            {
+                totalCount = Convert.ToInt32(comando.ExecuteScalar());
+            }
+
+            int totalPages = totalCount == 0 ? 0 : (totalCount - 1) / pageSize + 1;
+            pageNumber = Math.Min(pageNumber, Math.Max(1, totalPages));
+            using SqliteCommand pagina = CrearComando("""
+                SELECT * FROM TrabajadoresEstado
+                WHERE @MostrarPor = 'Todas' OR EstadoCertificacion = @MostrarPor
+                ORDER BY Nombre, Id
+                LIMIT @PageSize OFFSET @Offset;
+                """);
+            pagina.Parameters.AddWithValue("@PageSize", pageSize);
+            pagina.Parameters.AddWithValue("@Offset", (long)(pageNumber - 1) * pageSize);
+            DataTable items = new DataTable();
+            PrepararTablaEstadoCertificacion(items);
+            items.Columns.Add("IdLocalidad", typeof(int));
+            items.Columns.Add("NombreLocalidad", typeof(string));
+            using (SqliteDataReader lector = pagina.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    DataRow fila = items.NewRow();
+                    foreach (DataColumn columna in items.Columns)
+                    {
+                        object valor = lector[columna.ColumnName];
+                        fila[columna] = columna.ColumnName == "Activo"
+                            ? Convert.ToInt64(valor) != 0
+                            : valor;
+                    }
+                    items.Rows.Add(fila);
+                }
+            }
+            transaccion.Commit();
+            return new CertificationPageResult(
+                items, totalCount, pageNumber, pageSize, summary);
         }
 
         public Mensaje Guardar(

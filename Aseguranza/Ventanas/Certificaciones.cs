@@ -23,6 +23,14 @@ namespace Aseguranza.Ventanas
 
         private Panel? _pnlAcciones;
         private readonly ComboBox _cbPersonal = new ComboBox();
+        private readonly Label _lblRango = new Label();
+        private readonly Label _lblPagina = new Label();
+        private readonly Button _btnAnterior = new Button();
+        private readonly Button _btnSiguiente = new Button();
+        private int _paginaActual = 1;
+        private int _totalPaginas;
+        private string _busquedaAplicada = string.Empty;
+        private bool _actualizandoPagina;
 
         // =========================================================
         // COLORES DE ESTADO
@@ -103,6 +111,14 @@ namespace Aseguranza.Ventanas
             AplicarEstiloVisual();
         }
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            // Release the bound rows before WinForms tears down the grid handle.
+            _actualizandoPagina = true;
+            dgvTrabajadores.DataSource = null;
+            base.OnFormClosed(e);
+        }
+
         // =========================================================
         // LOAD
         // =========================================================
@@ -141,7 +157,7 @@ namespace Aseguranza.Ventanas
 
             ConfigurarToolTips();
 
-            CargarTrabajadores();
+            CargarTrabajadores(seleccionarPrimero: true);
         }
 
         // =========================================================
@@ -265,7 +281,12 @@ namespace Aseguranza.Ventanas
             pnlPersonal.Controls.Add(_cbPersonal);
             _cbPersonal.SelectedIndex = 0;
             _cbPersonal.SelectedIndexChanged +=
-                (_, _) => CargarTrabajadores();
+                (_, _) =>
+                {
+                    _busquedaAplicada = txtBuscar.Text.Trim();
+                    _paginaActual = 1;
+                    CargarTrabajadores();
+                };
 
             // =====================================================
             // MOSTRAR POR
@@ -846,18 +867,13 @@ namespace Aseguranza.Ventanas
             int yTabla =
                 201;
 
-            /*
-             * Con ClientSize 1180 x 800:
-             * 40 px de encabezado + 10 filas de 36 px = 400 px.
-             * El panel queda en 402 px porque usa Padding(1).
-             * Así se muestran 10 trabajadores completos sin reducir
-             * la altura ni la legibilidad de las filas.
-             */
+            // Reservamos espacio entre la tabla y la barra de acciones
+            // para los controles de paginación.
             int altoTabla =
                 pnlContenido.ClientSize.Height -
                 yTabla -
                 _pnlAcciones.Height -
-                10;
+                58;
 
             if (altoTabla < 100)
             {
@@ -936,6 +952,50 @@ namespace Aseguranza.Ventanas
             pnlTabla.Controls.Add(
                 dgvTrabajadores);
 
+            Panel pnlPaginacion = new Panel
+            {
+                Name = "pnlPaginacion",
+                Dock = DockStyle.Bottom,
+                Size = new Size(pnlContenido.ClientSize.Width, 48),
+                BackColor = Color.White
+            };
+            const int yPaginacion = 7;
+            _lblRango.Text = "Mostrando 0 de 0";
+            _lblRango.Location = new Point(20, yPaginacion);
+            _lblRango.Size = new Size(350, 34);
+            _lblRango.TextAlign = ContentAlignment.MiddleLeft;
+            _lblRango.ForeColor = AppColors.TextSecondary;
+            _lblRango.Font = AppFonts.Regular(9.5F);
+            _lblRango.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+
+            ButtonStyler.Apply(_btnAnterior, "Anterior", AppColors.Neutral,
+                icon: null, width: 110, height: 34);
+            _btnAnterior.Location = new Point(
+                pnlPaginacion.ClientSize.Width - 390, yPaginacion);
+            _btnAnterior.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnAnterior.Click += (_, _) => CambiarPagina(_paginaActual - 1);
+
+            _lblPagina.Text = "Sin páginas";
+            _lblPagina.Location = new Point(
+                pnlPaginacion.ClientSize.Width - 270, yPaginacion);
+            _lblPagina.Size = new Size(130, 34);
+            _lblPagina.TextAlign = ContentAlignment.MiddleCenter;
+            _lblPagina.ForeColor = AppColors.TextPrimary;
+            _lblPagina.Font = AppFonts.Regular(9.5F, FontStyle.Bold);
+            _lblPagina.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+            ButtonStyler.Apply(_btnSiguiente, "Siguiente", AppColors.Neutral,
+                icon: null, width: 110, height: 34);
+            _btnSiguiente.Location = new Point(
+                pnlPaginacion.ClientSize.Width - 130, yPaginacion);
+            _btnSiguiente.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnSiguiente.Click += (_, _) => CambiarPagina(_paginaActual + 1);
+
+            pnlPaginacion.Controls.Add(_lblRango);
+            pnlPaginacion.Controls.Add(_btnAnterior);
+            pnlPaginacion.Controls.Add(_lblPagina);
+            pnlPaginacion.Controls.Add(_btnSiguiente);
+
             // =====================================================
             // AGREGAR CONTROLES A TARJETA
             // =====================================================
@@ -954,13 +1014,14 @@ namespace Aseguranza.Ventanas
 
             pnlContenido.Controls.Add(
                 pnlTabla);
+            pnlContenido.Controls.Add(pnlPaginacion);
 
-            /*
-             * La barra siempre debe quedar por encima
-             * de cualquier otro control.
-             */
+            // El orden de acoplamiento mantiene el paginador
+            // encima de la barra de acciones inferior.
 
             _pnlAcciones.BringToFront();
+
+            pnlPaginacion.BringToFront();
 
             pnlFiltros.BringToFront();
 
@@ -1302,7 +1363,7 @@ namespace Aseguranza.Ventanas
                             : 100F,
 
                     SortMode =
-                        DataGridViewColumnSortMode.Automatic
+                        DataGridViewColumnSortMode.NotSortable
                 };
 
             columna.DefaultCellStyle.Alignment =
@@ -1320,7 +1381,9 @@ namespace Aseguranza.Ventanas
         // =========================================================
 
         private void CargarTrabajadores(
-            string noRelojSeleccionar = "")
+            string noRelojSeleccionar = "",
+            bool seleccionarPrimero = false,
+            bool enfocarBusqueda = true)
         {
             string mostrarPor =
                 cbMostrarPor
@@ -1328,63 +1391,71 @@ namespace Aseguranza.Ventanas
                     .ToString()
                 ?? "Todas";
 
-            string textoBuscar =
-                txtBuscar.Text.Trim();
+            Clases.CertificationPageResult resultado =
+                Clases.Trabajador.ConsultarEstadoCertificacionPaginado(
+                    new Clases.CertificationPageRequest
+                    {
+                        Search = _busquedaAplicada,
+                        Active = _cbPersonal.SelectedIndex switch
+                        {
+                            0 => true,
+                            1 => false,
+                            _ => null
+                        },
+                        CertificationStatus = mostrarPor,
+                        PageNumber = _paginaActual,
+                        AsOfDate = DateTime.Today
+                    });
+
+            _paginaActual = resultado.PageNumber;
+            _totalPaginas = resultado.TotalPages;
+            _actualizandoPagina = true;
 
             dgvTrabajadores.SuspendLayout();
 
             try
             {
-                dgvTrabajadores.DataSource =
-                    Clases.Trabajador
-                        .ConsultarTrabajadoresEstadoCertificacion(
-                            mostrarPor,
-                            textoBuscar,
-                            _cbPersonal.SelectedIndex switch
-                            {
-                                0 => true,
-                                1 => false,
-                                _ => null
-                            });
+                dgvTrabajadores.DataSource = resultado.Items;
 
                 OcultarColumnas();
 
                 ConfigurarEncabezados();
 
-                if (!string.IsNullOrWhiteSpace(
-                        noRelojSeleccionar))
+                dgvTrabajadores.ClearSelection();
+                dgvTrabajadores.CurrentCell = null;
+                if (!string.IsNullOrWhiteSpace(noRelojSeleccionar))
                 {
                     SeleccionarTrabajadorPorNoReloj(
                         noRelojSeleccionar);
                 }
-                else
+                else if (seleccionarPrimero)
                 {
                     SeleccionarPrimero();
                 }
-
-                ActualizarResumenEstados();
-
-                ActualizarAvisoLimiteRegistros();
-
-                SincronizarSeleccionUI();
             }
             finally
             {
                 dgvTrabajadores.ResumeLayout();
+                _actualizandoPagina = false;
             }
 
-            /*
-             * Algunos cambios de selección de DataGridView
-             * terminan de procesarse después de asignar el
-             * DataSource. Esta segunda sincronización evita
-             * que los botones queden deshabilitados aunque
-             * visualmente exista una fila seleccionada.
-             */
+            ActualizarResumenEstados(resultado.Summary);
+            ActualizarPaginacion(resultado);
+            lblAvisoLimite.Visible = false;
+            SincronizarSeleccionUI();
 
-            ProgramarSincronizacionSeleccion();
-
-            if (!_cbPersonal.Focused && !cbMostrarPor.Focused)
+            if (enfocarBusqueda && !_cbPersonal.Focused && !cbMostrarPor.Focused)
                 txtBuscar.Focus();
+        }
+
+        private void CambiarPagina(int numeroPagina)
+        {
+            if (numeroPagina < 1 || numeroPagina > _totalPaginas ||
+                numeroPagina == _paginaActual)
+                return;
+
+            _paginaActual = numeroPagina;
+            CargarTrabajadores(enfocarBusqueda: false);
         }
 
         // =========================================================
@@ -1504,74 +1575,32 @@ namespace Aseguranza.Ventanas
         }
 
         // =========================================================
-        // AVISO DE CANTIDAD / LÍMITE
+        // PAGINACIÓN
         // =========================================================
 
-        private void ActualizarAvisoLimiteRegistros()
+        private void ActualizarPaginacion(Clases.CertificationPageResult resultado)
         {
-            int total =
-                dgvTrabajadores.Rows.Count;
+            _lblRango.Text = resultado.TotalCount == 0
+                ? "Mostrando 0 de 0"
+                : $"Mostrando {(_paginaActual - 1) * resultado.PageSize + 1}-" +
+                  $"{(_paginaActual - 1) * resultado.PageSize + resultado.Items.Rows.Count} " +
+                  $"de {resultado.TotalCount:N0}";
+            _lblPagina.Text = _totalPaginas == 0
+                ? "Sin páginas"
+                : $"Página {_paginaActual} de {_totalPaginas}";
 
-            string textoBuscar =
-                txtBuscar.Text.Trim();
-
-            if (total >= 300 &&
-                string.IsNullOrWhiteSpace(
-                    textoBuscar))
+            bool anteriorDisponible = _paginaActual > 1;
+            bool siguienteDisponible = _paginaActual < _totalPaginas;
+            if (_btnAnterior.Enabled != anteriorDisponible)
             {
-                lblAvisoLimite.Text =
-                    "Aviso: se muestran los primeros 300 trabajadores. " +
-                    "Use Buscar para localizar trabajadores fuera de esta lista.";
-
-                lblAvisoLimite.ForeColor =
-                    Color.FromArgb(
-                        180,
-                        100,
-                        0);
-
-                lblAvisoLimite.Visible =
-                    true;
-
-                return;
+                _btnAnterior.Enabled = anteriorDisponible;
+                ButtonStyler.UpdateEnabledState(_btnAnterior, AppColors.Neutral);
             }
-
-            if (total >= 300 &&
-                !string.IsNullOrWhiteSpace(
-                    textoBuscar))
+            if (_btnSiguiente.Enabled != siguienteDisponible)
             {
-                lblAvisoLimite.Text =
-                    $"Mostrando hasta 300 resultados para la búsqueda: \"{textoBuscar}\".";
-
-                lblAvisoLimite.ForeColor =
-                    Color.FromArgb(
-                        180,
-                        100,
-                        0);
-
-                lblAvisoLimite.Visible =
-                    true;
-
-                return;
+                _btnSiguiente.Enabled = siguienteDisponible;
+                ButtonStyler.UpdateEnabledState(_btnSiguiente, AppColors.Neutral);
             }
-
-            lblAvisoLimite.Text =
-                total switch
-                {
-                    0 =>
-                        "No se encontraron trabajadores.",
-
-                    1 =>
-                        "Mostrando 1 trabajador.",
-
-                    _ =>
-                        $"Mostrando {total} trabajadores."
-                };
-
-            lblAvisoLimite.ForeColor =
-                AppColors.TextSecondary;
-
-            lblAvisoLimite.Visible =
-                true;
         }
 
         // =========================================================
@@ -1625,16 +1654,12 @@ namespace Aseguranza.Ventanas
             if (string.IsNullOrWhiteSpace(
                     noReloj))
             {
-                SeleccionarPrimero();
-
                 return;
             }
 
             if (!dgvTrabajadores.Columns.Contains(
                     "NoReloj"))
             {
-                SeleccionarPrimero();
-
                 return;
             }
 
@@ -1684,13 +1709,8 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            AppDialog.ShowInfo(
-                this,
-                "Aviso",
-                "No se encontró el trabajador en la lista actual.\n\n" +
-                $"No. Reloj buscado: {noReloj}");
-
-            SeleccionarPrimero();
+            // El trabajador pudo cambiar de estado o salir de esta página.
+            // Dejamos la selección vacía para evitar acciones sobre otra fila.
         }
 
         // =========================================================
@@ -1707,6 +1727,7 @@ namespace Aseguranza.Ventanas
              */
 
             if (dgvTrabajadores.CurrentRow is not null &&
+                dgvTrabajadores.CurrentRow.Selected &&
                 !dgvTrabajadores.CurrentRow.IsNewRow)
             {
                 return dgvTrabajadores.CurrentRow;
@@ -1735,42 +1756,6 @@ namespace Aseguranza.Ventanas
             ActualizarTrabajadorSeleccionado();
 
             ActualizarBotonesTrabajador();
-        }
-
-        private void ProgramarSincronizacionSeleccion()
-        {
-            if (!IsHandleCreated ||
-                IsDisposed ||
-                Disposing)
-            {
-                return;
-            }
-
-            try
-            {
-                BeginInvoke(
-                    new Action(
-                        () =>
-                        {
-                            if (IsDisposed ||
-                                Disposing)
-                            {
-                                return;
-                            }
-
-                            SincronizarSeleccionUI();
-
-                            dgvTrabajadores.Invalidate();
-                        }));
-            }
-            catch
-            {
-                /*
-                 * Puede ocurrir únicamente si la ventana
-                 * está cerrándose mientras existe un
-                 * BeginInvoke pendiente.
-                 */
-            }
         }
 
         // =========================================================
@@ -2025,6 +2010,10 @@ namespace Aseguranza.Ventanas
                 dgvTrabajadores.Rows[
                     e.RowIndex];
 
+            DataGridViewCellStyle estilo =
+                e.CellStyle ?? new DataGridViewCellStyle();
+            e.CellStyle = estilo;
+
             /*
              * Reiniciamos siempre la apariencia antes
              * de aplicar un estado. Esto evita que el
@@ -2032,21 +2021,21 @@ namespace Aseguranza.Ventanas
              * colores incorrectos en otras filas.
              */
 
-            fila.DefaultCellStyle.BackColor =
+            estilo.BackColor =
                 e.RowIndex % 2 == 0
                     ? Color.White
                     : AppColors.AlternateRow;
 
-            fila.DefaultCellStyle.ForeColor =
+            estilo.ForeColor =
                 AppColors.TextPrimary;
 
-            fila.DefaultCellStyle.SelectionBackColor =
+            estilo.SelectionBackColor =
                 AppColors.Selection;
 
-            fila.DefaultCellStyle.SelectionForeColor =
+            estilo.SelectionForeColor =
                 AppColors.TextPrimary;
 
-            fila.DefaultCellStyle.Font =
+            estilo.Font =
                 _boldFont;
 
             if (dgvTrabajadores.Columns[e.ColumnIndex].Name == "Activo" &&
@@ -2074,64 +2063,64 @@ namespace Aseguranza.Ventanas
             {
                 case "Vigente":
 
-                    fila.DefaultCellStyle.BackColor =
+                    estilo.BackColor =
                         VigenteFondo;
 
-                    fila.DefaultCellStyle.ForeColor =
+                    estilo.ForeColor =
                         VigenteTexto;
 
-                    fila.DefaultCellStyle.SelectionBackColor =
+                    estilo.SelectionBackColor =
                         VigenteSeleccion;
 
-                    fila.DefaultCellStyle.SelectionForeColor =
+                    estilo.SelectionForeColor =
                         Color.White;
 
                     break;
 
                 case "Por vencer":
 
-                    fila.DefaultCellStyle.BackColor =
+                    estilo.BackColor =
                         PorVencerFondo;
 
-                    fila.DefaultCellStyle.ForeColor =
+                    estilo.ForeColor =
                         PorVencerTexto;
 
-                    fila.DefaultCellStyle.SelectionBackColor =
+                    estilo.SelectionBackColor =
                         PorVencerSeleccion;
 
-                    fila.DefaultCellStyle.SelectionForeColor =
+                    estilo.SelectionForeColor =
                         Color.Black;
 
                     break;
 
                 case "Vencida":
 
-                    fila.DefaultCellStyle.BackColor =
+                    estilo.BackColor =
                         VencidaFondo;
 
-                    fila.DefaultCellStyle.ForeColor =
+                    estilo.ForeColor =
                         VencidaTexto;
 
-                    fila.DefaultCellStyle.SelectionBackColor =
+                    estilo.SelectionBackColor =
                         VencidaSeleccion;
 
-                    fila.DefaultCellStyle.SelectionForeColor =
+                    estilo.SelectionForeColor =
                         Color.White;
 
                     break;
 
                 case "Sin certificar":
 
-                    fila.DefaultCellStyle.BackColor =
+                    estilo.BackColor =
                         SinCertificarFondo;
 
-                    fila.DefaultCellStyle.ForeColor =
+                    estilo.ForeColor =
                         AppColors.TextPrimary;
 
-                    fila.DefaultCellStyle.SelectionBackColor =
+                    estilo.SelectionBackColor =
                         SinCertificarSeleccion;
 
-                    fila.DefaultCellStyle.SelectionForeColor =
+                    estilo.SelectionForeColor =
                         Color.White;
 
                     break;
@@ -2142,77 +2131,14 @@ namespace Aseguranza.Ventanas
         // RESUMEN DE ESTADOS
         // =========================================================
 
-        private void ActualizarResumenEstados()
+        private void ActualizarResumenEstados(Clases.CertificationSummary resumen)
         {
-            int total =
-                dgvTrabajadores.Rows.Count;
-
-            int vigentes =
-                0;
-
-            int porVencer =
-                0;
-
-            int vencidas =
-                0;
-
-            int sinCertificar =
-                0;
-
-            foreach (DataGridViewRow fila in
-                dgvTrabajadores.Rows)
-            {
-                if (fila.IsNewRow)
-                {
-                    continue;
-                }
-
-                if (!dgvTrabajadores.Columns.Contains(
-                        "EstadoCertificacion"))
-                {
-                    continue;
-                }
-
-                string estado =
-                    fila.Cells["EstadoCertificacion"]
-                        .Value?
-                        .ToString()
-                    ?? string.Empty;
-
-                switch (estado)
-                {
-                    case "Vigente":
-
-                        vigentes++;
-
-                        break;
-
-                    case "Por vencer":
-
-                        porVencer++;
-
-                        break;
-
-                    case "Vencida":
-
-                        vencidas++;
-
-                        break;
-
-                    case "Sin certificar":
-
-                        sinCertificar++;
-
-                        break;
-                }
-            }
-
             lblResumenEstados.Text =
-                $"Total: {total}   |   " +
-                $"Vigentes: {vigentes}   |   " +
-                $"Por vencer: {porVencer}   |   " +
-                $"Vencidas: {vencidas}   |   " +
-                $"Sin certificar: {sinCertificar}";
+                $"Total: {resumen.Total:N0}   |   " +
+                $"Vigentes: {resumen.Vigentes:N0}   |   " +
+                $"Por vencer: {resumen.PorVencer:N0}   |   " +
+                $"Vencidas: {resumen.Vencidas:N0}   |   " +
+                $"Sin certificar: {resumen.SinCertificar:N0}";
         }
 
         // =========================================================
@@ -2223,6 +2149,8 @@ namespace Aseguranza.Ventanas
             object? sender,
             EventArgs e)
         {
+            _busquedaAplicada = txtBuscar.Text.Trim();
+            _paginaActual = 1;
             CargarTrabajadores();
         }
 
@@ -2232,6 +2160,11 @@ namespace Aseguranza.Ventanas
 
         private void EjecutarBusqueda()
         {
+            string nuevaBusqueda = txtBuscar.Text.Trim();
+            if (!string.Equals(_busquedaAplicada, nuevaBusqueda,
+                    StringComparison.Ordinal))
+                _paginaActual = 1;
+            _busquedaAplicada = nuevaBusqueda;
             CargarTrabajadores();
         }
 
@@ -2291,6 +2224,8 @@ namespace Aseguranza.Ventanas
         private void RestablecerBusqueda()
         {
             txtBuscar.Clear();
+            _busquedaAplicada = string.Empty;
+            _paginaActual = 1;
 
             cbMostrarPor.SelectedIndexChanged -=
                 cbMostrarPor_SelectedIndexChanged;
@@ -2321,7 +2256,8 @@ namespace Aseguranza.Ventanas
             object? sender,
             EventArgs e)
         {
-            SincronizarSeleccionUI();
+            if (!_actualizandoPagina)
+                SincronizarSeleccionUI();
         }
 
         // =========================================================
@@ -2337,26 +2273,27 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            dgvTrabajadores.ClearSelection();
-
-            DataGridViewRow fila =
-                dgvTrabajadores.Rows[
-                    e.RowIndex];
-
-            fila.Selected =
-                true;
-
-            DataGridViewCell? primeraCeldaVisible =
-                fila.Cells
-                    .Cast<DataGridViewCell>()
-                    .FirstOrDefault(
-                        celda =>
-                            celda.Visible);
-
-            if (primeraCeldaVisible is not null)
+            _actualizandoPagina = true;
+            try
             {
-                dgvTrabajadores.CurrentCell =
-                    primeraCeldaVisible;
+                dgvTrabajadores.ClearSelection();
+
+                DataGridViewRow fila = dgvTrabajadores.Rows[e.RowIndex];
+                fila.Selected = true;
+
+                DataGridViewCell? primeraCeldaVisible =
+                    fila.Cells
+                        .Cast<DataGridViewCell>()
+                        .FirstOrDefault(celda => celda.Visible);
+
+                if (primeraCeldaVisible is not null)
+                {
+                    dgvTrabajadores.CurrentCell = primeraCeldaVisible;
+                }
+            }
+            finally
+            {
+                _actualizandoPagina = false;
             }
 
             SincronizarSeleccionUI();
@@ -2410,7 +2347,8 @@ namespace Aseguranza.Ventanas
                 this);
 
             CargarTrabajadores(
-                noReloj);
+                noReloj,
+                enfocarBusqueda: false);
         }
 
         // =========================================================
@@ -2448,16 +2386,13 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            /*
-             * El trabajador recién agregado podría quedar
-             * fuera de los primeros 300 registros.
-             *
-             * Por eso lo buscamos directamente por
-             * su número de reloj.
-             */
+            // Buscamos directamente al trabajador recién agregado
+            // por su número de reloj para seleccionarlo.
 
             txtBuscar.Text =
                 noRelojNuevo;
+            _busquedaAplicada = noRelojNuevo;
+            _paginaActual = 1;
 
             cbMostrarPor.SelectedIndexChanged -=
                 cbMostrarPor_SelectedIndexChanged;
