@@ -1,6 +1,7 @@
 ﻿using Aseguranza.Clases;
 using Aseguranza.UI;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,6 +31,15 @@ namespace Aseguranza.Ventanas
 
         private readonly DataGridView dgvRegistros =
             new DataGridView();
+        private const int TamanoPaginaVistaPrevia = 100;
+        private readonly List<RegistroHdc> registrosFiltradosVistaPrevia = new();
+        private readonly Button btnAnteriorVistaPrevia = new Button();
+        private readonly Button btnSiguienteVistaPrevia = new Button();
+        private readonly Label lblRangoVistaPrevia = new Label();
+        private readonly Label lblPaginaVistaPrevia = new Label();
+        private readonly Font fuenteEstadoVistaPrevia =
+            AppFonts.Regular(9F, FontStyle.Bold);
+        private int paginaVistaPrevia = 1;
         private readonly CheckBox chkConciliarAusencias = new CheckBox();
         private readonly CheckedListBox lstLocalidadesCompletas = new CheckedListBox();
         private bool actualizandoAlcance;
@@ -92,6 +102,16 @@ namespace Aseguranza.Ventanas
                 null);
 
             ConfigurarFiltrosResumen();
+
+            InvalidarVistaPrevia(reiniciarPagina: true);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                fuenteEstadoVistaPrevia.Dispose();
+
+            base.Dispose(disposing);
         }
 
         private void ConfigurarFiltrosResumen()
@@ -175,7 +195,7 @@ namespace Aseguranza.Ventanas
             EventArgs e)
         {
             if (sender is not Label label ||
-                resultadoActual is null)
+                resultadoActual is null || analizando)
             {
                 return;
             }
@@ -190,22 +210,18 @@ namespace Aseguranza.Ventanas
                     ? null
                     : valor;
 
+            paginaVistaPrevia = 1;
             AplicarFiltroActual();
         }
 
         private void AplicarFiltroActual()
         {
+            registrosFiltradosVistaPrevia.Clear();
             if (resultadoActual is null)
             {
-                dgvRegistros.DataSource =
-                    null;
-
+                MostrarPaginaVistaPrevia();
                 return;
             }
-
-            var registros =
-                resultadoActual.Registros
-                    .AsEnumerable();
 
             string descripcionFiltro =
                 "Todos";
@@ -216,62 +232,118 @@ namespace Aseguranza.Ventanas
                 if (filtroEstadoActual ==
                     "__REVISAR__")
                 {
-                    registros =
-                        registros.Where(
-                            item =>
-                                string.Equals(
-                                    item.Estado,
-                                    "Revisar",
-                                    StringComparison.OrdinalIgnoreCase) ||
-                                string.Equals(
-                                    item.Estado,
-                                    "Duplicado",
-                                    StringComparison.OrdinalIgnoreCase));
-
                     descripcionFiltro =
                         "Revisar / Duplicados";
                 }
                 else
                 {
-                    registros =
-                        registros.Where(
-                            item =>
-                                string.Equals(
-                                    item.Estado,
-                                    filtroEstadoActual,
-                                    StringComparison.OrdinalIgnoreCase));
-
                     descripcionFiltro =
                         filtroEstadoActual;
                 }
             }
 
-            var lista =
-                registros.ToList();
-
-            dgvRegistros.DataSource =
-                null;
-
-            dgvRegistros.DataSource =
-                lista;
-
-            if (dgvRegistros.Rows.Count > 0)
+            foreach (RegistroHdc registro in resultadoActual.Registros)
             {
-                dgvRegistros.ClearSelection();
-
-                dgvRegistros.Rows[0]
-                    .Selected =
-                        true;
-
-                dgvRegistros.CurrentCell =
-                    dgvRegistros.Rows[0]
-                        .Cells[0];
+                bool coincide = string.IsNullOrWhiteSpace(filtroEstadoActual) ||
+                    (filtroEstadoActual == "__REVISAR__"
+                        ? string.Equals(registro.Estado, "Revisar",
+                              StringComparison.OrdinalIgnoreCase) ||
+                          string.Equals(registro.Estado, "Duplicado",
+                              StringComparison.OrdinalIgnoreCase)
+                        : string.Equals(registro.Estado, filtroEstadoActual,
+                              StringComparison.OrdinalIgnoreCase));
+                if (coincide)
+                    registrosFiltradosVistaPrevia.Add(registro);
             }
+
+            MostrarPaginaVistaPrevia();
 
             lblEstado.Text =
                 $"Filtro: {descripcionFiltro}. " +
-                $"Mostrando {lista.Count:N0} de " +
+                $"Mostrando {registrosFiltradosVistaPrevia.Count:N0} de " +
                 $"{resultadoActual.TotalRegistros + resultadoActual.Inactivados:N0} registros.";
+        }
+
+        private void MostrarPaginaVistaPrevia()
+        {
+            int total = registrosFiltradosVistaPrevia.Count;
+            int totalPaginas = total == 0
+                ? 0
+                : (total - 1) / TamanoPaginaVistaPrevia + 1;
+            paginaVistaPrevia = Math.Min(paginaVistaPrevia, Math.Max(1, totalPaginas));
+            int inicio = (paginaVistaPrevia - 1) * TamanoPaginaVistaPrevia;
+            List<RegistroHdc> pagina = registrosFiltradosVistaPrevia
+                .Skip(inicio)
+                .Take(TamanoPaginaVistaPrevia)
+                .ToList();
+
+            dgvRegistros.SuspendLayout();
+            try
+            {
+                dgvRegistros.DataSource = pagina;
+                dgvRegistros.ClearSelection();
+                dgvRegistros.CurrentCell = null;
+                if (dgvRegistros.Rows.Count > 0)
+                {
+                    dgvRegistros.Rows[0].Selected = true;
+                    dgvRegistros.CurrentCell = dgvRegistros.Rows[0].Cells[0];
+                }
+            }
+            finally
+            {
+                dgvRegistros.ResumeLayout();
+            }
+
+            lblRangoVistaPrevia.Text = total == 0
+                ? "Mostrando 0 de 0"
+                : $"Mostrando {inicio + 1:N0}-{inicio + pagina.Count:N0} de {total:N0}";
+            lblPaginaVistaPrevia.Text = totalPaginas == 0
+                ? "Página 0 de 0"
+                : $"Página {paginaVistaPrevia:N0} de {totalPaginas:N0}";
+            bool anteriorDisponible = paginaVistaPrevia > 1;
+            bool siguienteDisponible = paginaVistaPrevia < totalPaginas;
+            if (btnAnteriorVistaPrevia.Enabled != anteriorDisponible)
+            {
+                btnAnteriorVistaPrevia.Enabled = anteriorDisponible;
+                ButtonStyler.UpdateEnabledState(btnAnteriorVistaPrevia, AppColors.Neutral);
+            }
+            if (btnSiguienteVistaPrevia.Enabled != siguienteDisponible)
+            {
+                btnSiguienteVistaPrevia.Enabled = siguienteDisponible;
+                ButtonStyler.UpdateEnabledState(btnSiguienteVistaPrevia, AppColors.Neutral);
+            }
+        }
+
+        private void CambiarPaginaVistaPrevia(int numeroPagina)
+        {
+            int totalPaginas = (registrosFiltradosVistaPrevia.Count +
+                TamanoPaginaVistaPrevia - 1) / TamanoPaginaVistaPrevia;
+            if (analizando || numeroPagina < 1 || numeroPagina > totalPaginas ||
+                numeroPagina == paginaVistaPrevia)
+                return;
+
+            paginaVistaPrevia = numeroPagina;
+            MostrarPaginaVistaPrevia();
+        }
+
+        private void InvalidarVistaPrevia(bool reiniciarPagina = false)
+        {
+            dgvRegistros.DataSource = null;
+            registrosFiltradosVistaPrevia.Clear();
+            if (reiniciarPagina)
+                paginaVistaPrevia = 1;
+            lblRangoVistaPrevia.Text = "Mostrando 0 de 0";
+            lblPaginaVistaPrevia.Text = "Página 0 de 0";
+            if (btnAnteriorVistaPrevia.Enabled)
+            {
+                btnAnteriorVistaPrevia.Enabled = false;
+                ButtonStyler.UpdateEnabledState(btnAnteriorVistaPrevia, AppColors.Neutral);
+            }
+            if (btnSiguienteVistaPrevia.Enabled)
+            {
+                btnSiguienteVistaPrevia.Enabled = false;
+                ButtonStyler.UpdateEnabledState(btnSiguienteVistaPrevia, AppColors.Neutral);
+            }
         }
 
         private void ConfigurarVentana()
@@ -696,7 +768,7 @@ namespace Aseguranza.Ventanas
                     Size =
                         new Size(
                             pnlContenido.ClientSize.Width - 40,
-                            pnlContenido.ClientSize.Height - 477),
+                            pnlContenido.ClientSize.Height - 522),
 
                     BackColor =
                         Color.White,
@@ -718,6 +790,50 @@ namespace Aseguranza.Ventanas
 
             dgvRegistros.Dock =
                 DockStyle.Fill;
+
+            Panel pnlPaginacion = new Panel
+            {
+                Location = new Point(20, pnlContenido.ClientSize.Height - 112),
+                Size = new Size(pnlContenido.ClientSize.Width - 40, 38),
+                BackColor = Color.White,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            lblRangoVistaPrevia.Location = new Point(14, 4);
+            lblRangoVistaPrevia.Size = new Size(350, 34);
+            lblRangoVistaPrevia.TextAlign = ContentAlignment.MiddleLeft;
+            lblRangoVistaPrevia.ForeColor = AppColors.TextSecondary;
+            lblRangoVistaPrevia.Font = AppFonts.Regular(9.5F);
+            lblRangoVistaPrevia.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+
+            ButtonStyler.Apply(btnAnteriorVistaPrevia, "Anterior", AppColors.Neutral,
+                icon: null, width: 110, height: 34);
+            btnAnteriorVistaPrevia.Location =
+                new Point(pnlPaginacion.ClientSize.Width - 390, 4);
+            btnAnteriorVistaPrevia.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnAnteriorVistaPrevia.Click +=
+                (_, _) => CambiarPaginaVistaPrevia(paginaVistaPrevia - 1);
+
+            lblPaginaVistaPrevia.Location =
+                new Point(pnlPaginacion.ClientSize.Width - 270, 4);
+            lblPaginaVistaPrevia.Size = new Size(130, 34);
+            lblPaginaVistaPrevia.TextAlign = ContentAlignment.MiddleCenter;
+            lblPaginaVistaPrevia.ForeColor = AppColors.TextPrimary;
+            lblPaginaVistaPrevia.Font = AppFonts.Regular(9.5F, FontStyle.Bold);
+            lblPaginaVistaPrevia.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+            ButtonStyler.Apply(btnSiguienteVistaPrevia, "Siguiente", AppColors.Neutral,
+                icon: null, width: 110, height: 34);
+            btnSiguienteVistaPrevia.Location =
+                new Point(pnlPaginacion.ClientSize.Width - 130, 4);
+            btnSiguienteVistaPrevia.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnSiguienteVistaPrevia.Click +=
+                (_, _) => CambiarPaginaVistaPrevia(paginaVistaPrevia + 1);
+
+            pnlPaginacion.Controls.Add(lblRangoVistaPrevia);
+            pnlPaginacion.Controls.Add(btnAnteriorVistaPrevia);
+            pnlPaginacion.Controls.Add(lblPaginaVistaPrevia);
+            pnlPaginacion.Controls.Add(btnSiguienteVistaPrevia);
 
             pnlTabla.Controls.Add(
                 dgvRegistros);
@@ -804,6 +920,7 @@ namespace Aseguranza.Ventanas
 
             pnlContenido.Controls.Add(
                 pnlTabla);
+            pnlContenido.Controls.Add(pnlPaginacion);
 
             pnlContenido.Controls.Add(
                 lblEstado);
@@ -973,7 +1090,7 @@ namespace Aseguranza.Ventanas
                         ancho,
 
                     SortMode =
-                        DataGridViewColumnSortMode.Automatic
+                        DataGridViewColumnSortMode.NotSortable
                 };
 
             dgvRegistros.Columns.Add(
@@ -1095,8 +1212,7 @@ namespace Aseguranza.Ventanas
             filtroEstadoActual =
                 null;
 
-            dgvRegistros.DataSource =
-                null;
+            InvalidarVistaPrevia(reiniciarPagina: true);
 
             btnEquivalencias.Enabled =
                 false;
@@ -1160,6 +1276,7 @@ namespace Aseguranza.Ventanas
             btnImportar.Enabled = false;
             chkConciliarAusencias.Enabled = false;
             lstLocalidadesCompletas.Enabled = false;
+            InvalidarVistaPrevia();
             try
             {
                 await Task.Run(() => AnalizadorHdcSistema.Clasificar(resultado));
@@ -1168,7 +1285,7 @@ namespace Aseguranza.Ventanas
             catch (Exception ex)
             {
                 resultadoActual = null;
-                dgvRegistros.DataSource = null;
+                InvalidarVistaPrevia(reiniciarPagina: true);
                 ActualizarResumen(null);
                 AppDialog.ShowError(this, "Conciliación HDC",
                     ex.Message + Environment.NewLine +
@@ -1227,6 +1344,9 @@ namespace Aseguranza.Ventanas
             btnCerrar.Enabled =
                 false;
 
+            chkConciliarAusencias.Enabled = false;
+            lstLocalidadesCompletas.Enabled = false;
+            InvalidarVistaPrevia(reiniciarPagina: true);
             Cursor =
                 Cursors.WaitCursor;
 
@@ -1278,8 +1398,7 @@ namespace Aseguranza.Ventanas
                 filtroEstadoActual =
                     null;
 
-                dgvRegistros.DataSource =
-                    null;
+                InvalidarVistaPrevia(reiniciarPagina: true);
 
                 ActualizarResumen(
                     null);
@@ -1312,6 +1431,9 @@ namespace Aseguranza.Ventanas
                         true;
                 }
 
+                chkConciliarAusencias.Enabled = resultadoActual is not null;
+                lstLocalidadesCompletas.Enabled =
+                    resultadoActual?.ConciliarAusencias == true;
                 ActualizarDisponibilidadImportar();
 
                 Cursor =
@@ -1343,6 +1465,7 @@ namespace Aseguranza.Ventanas
                 lblEstado.Text =
                     "Actualizando clasificación con las equivalencias...";
 
+                InvalidarVistaPrevia();
                 AnalizadorHdcSistema
                     .Clasificar(
                         resultadoActual);
@@ -1558,6 +1681,7 @@ namespace Aseguranza.Ventanas
 
                     filtroEstadoActual =
                         null;
+                    paginaVistaPrevia = 1;
 
                     MostrarResultado(
                         resultadoNuevo);
@@ -1690,15 +1814,10 @@ namespace Aseguranza.Ventanas
                 resultado.Reactivados +
                 resultado.SinCambios;
 
-            if (string.IsNullOrWhiteSpace(
-                    filtroEstadoActual))
+            AplicarFiltroActual();
+
+            if (string.IsNullOrWhiteSpace(filtroEstadoActual))
             {
-                dgvRegistros.DataSource =
-                    null;
-
-                dgvRegistros.DataSource =
-                    resultado.Registros;
-
                 lblEstado.Text =
                     $"Análisis completado. Hoja: {resultado.NombreHoja}. " +
                     $"Preparados: {preparados:N0}. " +
@@ -1706,20 +1825,7 @@ namespace Aseguranza.Ventanas
                     $"Pendientes: {pendientes:N0}. " +
                     $"Ignorados: {resultado.Ignorados:N0}. " +
                     "No se realizó ningún cambio en Trabajador.";
-
-                if (dgvRegistros.Rows.Count > 0)
-                {
-                    dgvRegistros.ClearSelection();
-
-                    dgvRegistros.Rows[0]
-                        .Selected =
-                            true;
-                }
-
-                return;
             }
-
-            AplicarFiltroActual();
         }
 
         private void ActualizarResumen(
@@ -1825,9 +1931,7 @@ namespace Aseguranza.Ventanas
                 cellStyle;
 
             cellStyle.Font =
-                AppFonts.Regular(
-                    9F,
-                    FontStyle.Bold);
+                fuenteEstadoVistaPrevia;
 
             if (estado == "Nuevo")
             {
