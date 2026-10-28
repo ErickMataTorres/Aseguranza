@@ -204,37 +204,43 @@ namespace Aseguranza.Ventanas
             txtNoReloj.Parent =
                 pnlNoReloj;
 
-            txtNoReloj.AutoSize =
+            // El control heredado del Designer conserva un mínimo de 433x37
+            // que no cabe en el contenedor moderno de 160x40.
+            txtNoReloj.MinimumSize =
+                Size.Empty;
+
+            txtNoReloj.Multiline =
                 false;
-
-            txtNoReloj.Location =
-                new Point(
-                    12,
-                    8);
-
-            txtNoReloj.Size =
-                new Size(
-                    pnlNoReloj.ClientSize.Width - 24,
-                    24);
-
-            txtNoReloj.Margin =
-                Padding.Empty;
 
             txtNoReloj.BorderStyle =
                 BorderStyle.None;
 
-            txtNoReloj.Multiline =
-                false;
+            txtNoReloj.Font =
+                AppFonts.Regular(
+                    11F);
+
+            txtNoReloj.AutoSize =
+                true;
+
+            txtNoReloj.Width =
+                pnlNoReloj.ClientSize.Width - 24;
+
+            txtNoReloj.Location =
+                new Point(
+                    12,
+                    (pnlNoReloj.ClientSize.Height - txtNoReloj.Height) / 2);
+
+            txtNoReloj.Anchor =
+                AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
+            txtNoReloj.Margin =
+                Padding.Empty;
 
             txtNoReloj.BackColor =
                 Color.White;
 
             txtNoReloj.ForeColor =
                 AppColors.TextPrimary;
-
-            txtNoReloj.Font =
-                AppFonts.Regular(
-                    11F);
 
             InputStyler.ApplyOutlinedInput(
                 pnlNoReloj,
