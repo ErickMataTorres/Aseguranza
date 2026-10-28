@@ -110,7 +110,7 @@ namespace Aseguranza
             pnlContenido.Controls.Add(
                 CrearTarjetaNavegacion(
                     "Trabajadores",
-                    "Administra los datos generales, asignaciones y fotografía del personal.",
+                    "Administra datos y fotografías del personal.",
                     new Point(
                         26,
                         82),
@@ -123,9 +123,9 @@ namespace Aseguranza
             pnlContenido.Controls.Add(
                 CrearTarjetaNavegacion(
                     "Certificaciones",
-                    "Consulta el estado del personal y administra sus certificaciones.",
+                    "Consulta y administra certificaciones.",
                     new Point(
-                        350,
+                        265,
                         82),
                     btnCertificaciones_Click));
 
@@ -136,11 +136,22 @@ namespace Aseguranza
             pnlContenido.Controls.Add(
                 CrearTarjetaNavegacion(
                     "Verificaciones",
-                    "Consulta certificaciones individuales y visualiza credenciales.",
+                    "Consulta certificaciones y credenciales.",
                     new Point(
-                        674,
+                        504,
                         82),
                     verificadorToolStripMenuItem_Click));
+
+            pnlContenido.Controls.Add(
+                CrearTarjetaNavegacion(
+                    "Vencimientos",
+                    "Consulta vencimientos y próximos eventos.",
+                    new Point(743, 82),
+                    (_, _) =>
+                    {
+                        using Ventanas.Vencimientos ventana = new();
+                        ventana.ShowDialog(this);
+                    }));
 
             // =====================================================
             // ADMINISTRACIÓN
@@ -429,7 +440,7 @@ namespace Aseguranza
 
                     Size =
                         new Size(
-                            292,
+                            225,
                             125),
 
                     BackColor =
@@ -523,7 +534,7 @@ namespace Aseguranza
 
                     Size =
                         new Size(
-                            228,
+                            180,
                             55),
 
                     ForeColor =

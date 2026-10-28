@@ -12,6 +12,9 @@ namespace Aseguranza.Data.Interfaces
             int idTrabajador,
             string textoBuscar);
 
+        ExpirationDashboardResult ConsultarVencimientos(
+            ExpirationDashboardRequest request);
+
         Mensaje Guardar(
             Certificacion certificacion);
 
