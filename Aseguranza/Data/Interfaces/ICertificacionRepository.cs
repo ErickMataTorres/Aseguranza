@@ -15,6 +15,9 @@ namespace Aseguranza.Data.Interfaces
         ExpirationDashboardResult ConsultarVencimientos(
             ExpirationDashboardRequest request);
 
+        ExpirationReportResult ObtenerVencimientosParaReporte(
+            ExpirationReportRequest request);
+
         Mensaje Guardar(
             Certificacion certificacion);
 
