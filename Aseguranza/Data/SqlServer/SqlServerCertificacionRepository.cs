@@ -83,7 +83,76 @@ namespace Aseguranza.Data.SqlServer
             List<ExpirationEventRow> items = new();
             foreach (DataRow fila in data.Tables[1].Rows)
             {
-                items.Add(new ExpirationEventRow(
+                items.Add(LeerFilaVencimiento(fila));
+            }
+            return new ExpirationDashboardResult(items,
+                Convert.ToInt32(totalCount.Value),
+                Convert.ToInt32(pageNumber.Value),
+                request.ValidPageSize, summary);
+        }
+
+        public ExpirationReportResult ObtenerVencimientosParaReporte(
+            ExpirationReportRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            request.Validate();
+            using SqlConnection conexion = Conexion.Conectar();
+            conexion.Open();
+            using (SqlCommand validar = conexion.CreateCommand())
+            {
+                validar.CommandText = """
+                    IF OBJECT_ID(N'dbo.SchemaVersion', N'U') IS NULL
+                        SELECT 0;
+                    ELSE
+                        SELECT CASE WHEN EXISTS
+                            (SELECT 1 FROM dbo.SchemaVersion WHERE Version = 16)
+                            THEN 1 ELSE 0 END;
+                    """;
+                if (Convert.ToInt32(validar.ExecuteScalar()) != 1)
+                    throw new InvalidOperationException(
+                        "La base SQL Server requiere la migración " +
+                        "16_ReporteVencimientosCertificaciones.sql antes de exportar vencimientos.");
+            }
+            using SqlCommand comando = new(
+                "spExportarVencimientosCertificaciones", conexion)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            comando.Parameters.Add("@Activo", SqlDbType.Bit).Value =
+                request.Active.HasValue ? request.Active.Value : DBNull.Value;
+            comando.Parameters.Add("@Categoria", SqlDbType.Int).Value = (int)request.Category;
+            comando.Parameters.Add("@HorizonteDias", SqlDbType.Int).Value = request.HorizonDays;
+            comando.Parameters.Add("@IdPlanta", SqlDbType.Int).Value =
+                request.PlantId.HasValue ? request.PlantId.Value : DBNull.Value;
+            comando.Parameters.Add("@IdLinea", SqlDbType.Int).Value =
+                request.LineId.HasValue ? request.LineId.Value : DBNull.Value;
+            comando.Parameters.Add("@IdTurno", SqlDbType.Int).Value =
+                request.ShiftId.HasValue ? request.ShiftId.Value : DBNull.Value;
+            comando.Parameters.Add("@IdProceso", SqlDbType.Int).Value =
+                request.ProcessId.HasValue ? request.ProcessId.Value : DBNull.Value;
+            comando.Parameters.Add("@TextoBuscar", SqlDbType.VarChar, 100).Value =
+                (request.Search ?? string.Empty).Trim();
+            comando.Parameters.Add("@FechaReferencia", SqlDbType.Date).Value =
+                request.AsOfDate.Date;
+
+            DataSet data = new();
+            using (SqlDataAdapter adaptador = new(comando)) adaptador.Fill(data);
+            if (data.Tables.Count != 2 || data.Tables[0].Rows.Count != 1)
+                throw new InvalidOperationException(
+                    "La exportación de vencimientos devolvió un resultado inesperado.");
+            DataRow resumen = data.Tables[0].Rows[0];
+            ExpirationDashboardSummary summary = new(
+                Convert.ToInt32(resumen["ExpiredEvents"]),
+                Convert.ToInt32(resumen["UpcomingEvents"]),
+                Convert.ToInt32(resumen["AffectedWorkers"]),
+                Convert.ToInt32(resumen["AffectedProcesses"]));
+            List<ExpirationEventRow> items = new();
+            foreach (DataRow fila in data.Tables[1].Rows)
+                items.Add(LeerFilaVencimiento(fila));
+            return new ExpirationReportResult(items, summary, request.AsOfDate.Date);
+        }
+
+        private static ExpirationEventRow LeerFilaVencimiento(DataRow fila) => new(
                     Convert.ToInt32(fila["CertificationId"]),
                     Convert.ToInt32(fila["WorkerId"]),
                     Convert.ToString(fila["WorkerNumber"]) ?? string.Empty,
@@ -102,13 +171,7 @@ namespace Aseguranza.Data.SqlServer
                     Convert.ToDateTime(fila["ExpirationDate"]),
                     Convert.ToInt32(fila["DaysUntilExpiration"]),
                     (ExpirationEventState)Convert.ToInt32(fila["EventState"]),
-                    Convert.ToBoolean(fila["Active"])));
-            }
-            return new ExpirationDashboardResult(items,
-                Convert.ToInt32(totalCount.Value),
-                Convert.ToInt32(pageNumber.Value),
-                request.ValidPageSize, summary);
-        }
+                    Convert.ToBoolean(fila["Active"]));
 
         public DataTable ConsultarVerificacionNoReloj(
             string noReloj)

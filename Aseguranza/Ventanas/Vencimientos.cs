@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Aseguranza.Ventanas
@@ -32,6 +33,8 @@ namespace Aseguranza.Ventanas
         private readonly Button _anterior = new();
         private readonly Button _siguiente = new();
         private readonly Button _detalle = new();
+        private readonly Button _generarPdf = new();
+        private bool _generandoPdf;
         private bool _inicializando = true;
         private bool _vinculando;
         private int _paginaActual = 1;
@@ -52,6 +55,7 @@ namespace Aseguranza.Ventanas
             ConstruirPaginador(contenido);
             ResumeLayout(false);
             Load += (_, _) => Inicializar();
+            FormClosing += (_, e) => { if (_generandoPdf) e.Cancel = true; };
             Shown += (_, _) =>
             {
                 if (Controls["lblAppFooter"] is Label pie)
@@ -279,12 +283,78 @@ namespace Aseguranza.Ventanas
             _detalle.Location = new Point(20, 620);
             _detalle.Enabled = false;
             _detalle.Click += (_, _) => AbrirDetalle();
+            ButtonStyler.Apply(_generarPdf, "Generar PDF", AppColors.Primary,
+                null, 160, 40);
+            _generarPdf.Location = new Point(230, 620);
+            _generarPdf.Click += async (_, _) => await GenerarPdfAsync();
             Button regresar = new();
             ButtonStyler.Apply(regresar, "Regresar", AppColors.Neutral, null, 125, 40);
             regresar.Location = new Point(995, 620);
             regresar.Click += (_, _) => Close();
             contenido.Controls.AddRange(new Control[]
-                { _rango, _anterior, _pagina, _siguiente, _detalle, regresar });
+                { _rango, _anterior, _pagina, _siguiente, _detalle, _generarPdf, regresar });
+        }
+
+        private async Task GenerarPdfAsync()
+        {
+            if (_generandoPdf || _inicializando) return;
+            // Capture every visible filter before the first await. Page number is absent.
+            DateTime referenceDate = DateTime.Today;
+            ExpirationReportRequest request = new(
+                _personal.SelectedIndex switch { 1 => false, 2 => null, _ => true },
+                (ExpirationEventCategory)Math.Max(0, _mostrar.SelectedIndex),
+                new[] { 7, 15, 30, 60, 90 }[Math.Max(0, _horizonte.SelectedIndex)],
+                IdSeleccionado(_planta), IdSeleccionado(_linea),
+                IdSeleccionado(_turno), IdSeleccionado(_proceso),
+                _buscar.Text.Trim(), referenceDate);
+            ExpirationReportLabels labels = new(
+                _personal.Text, _mostrar.Text, _horizonte.Text,
+                _planta.Text, _linea.Text, _turno.Text, _proceso.Text,
+                string.IsNullOrWhiteSpace(request.Search) ? "—" : request.Search);
+            DateTime generatedAt = DateTime.Now;
+            Cursor originalCursor = Cursor;
+            _generandoPdf = true;
+            _generarPdf.Enabled = false;
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                ExpirationReportResult report = await Task.Run(() =>
+                    Certificacion.ObtenerVencimientosParaReporte(request));
+                if (report.Items.Count == 0)
+                {
+                    AppDialog.ShowInfo(this, "Sin resultados",
+                        "No hay vencimientos que coincidan con los filtros seleccionados.");
+                    return;
+                }
+                using SaveFileDialog dialog = new()
+                {
+                    Title = "Guardar reporte de vencimientos",
+                    Filter = "Archivo PDF (*.pdf)|*.pdf",
+                    DefaultExt = "pdf",
+                    AddExtension = true,
+                    FileName = $"Vencimientos_{referenceDate:yyyy-MM-dd}.pdf"
+                };
+                Cursor = originalCursor;
+                if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                Cursor = Cursors.WaitCursor;
+                string html = await Task.Run(() =>
+                    ExpirationReportHtmlRenderer.Render(report, labels, generatedAt));
+                await ExpirationReportPdfWriter.WriteAsync(this, html, dialog.FileName);
+                AppDialog.ShowInfo(this, "Reporte generado",
+                    $"El reporte se guardó correctamente.\n\nArchivo: {dialog.FileName}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex);
+                AppDialog.ShowError(this, "Error",
+                    "No se pudo generar el PDF. Verifique el destino y que WebView2 esté disponible.");
+            }
+            finally
+            {
+                Cursor = originalCursor;
+                _generarPdf.Enabled = true;
+                _generandoPdf = false;
+            }
         }
 
         private void Inicializar()

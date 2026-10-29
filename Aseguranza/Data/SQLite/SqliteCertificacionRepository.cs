@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 
 namespace Aseguranza.Data.SQLite
 {
@@ -73,28 +74,9 @@ namespace Aseguranza.Data.SQLite
             conexion.Open();
             using SqliteTransaction transaccion = conexion.BeginTransaction(deferred: true);
 
-            SqliteCommand CrearComando(string sql)
-            {
-                SqliteCommand comando = conexion.CreateCommand();
-                comando.Transaction = transaccion;
-                comando.CommandText = ExpirationEventsSql + "\n" + sql;
-                comando.Parameters.AddWithValue("@AsOfDate", asOf);
-                comando.Parameters.AddWithValue("@HorizonEnd", horizonEnd);
-                comando.Parameters.AddWithValue("@Active", request.Active.HasValue
-                    ? (object)(request.Active.Value ? 1 : 0) : DBNull.Value);
-                comando.Parameters.AddWithValue("@PlantId",
-                    request.PlantId.HasValue ? request.PlantId.Value : DBNull.Value);
-                comando.Parameters.AddWithValue("@LineId",
-                    request.LineId.HasValue ? request.LineId.Value : DBNull.Value);
-                comando.Parameters.AddWithValue("@ShiftId",
-                    request.ShiftId.HasValue ? request.ShiftId.Value : DBNull.Value);
-                comando.Parameters.AddWithValue("@ProcessId",
-                    request.ProcessId.HasValue ? request.ProcessId.Value : DBNull.Value);
-                comando.Parameters.AddWithValue("@Search",
-                    $"%{(request.Search ?? string.Empty).Trim()}%");
-                comando.Parameters.AddWithValue("@Category", (int)request.Category);
-                return comando;
-            }
+            SqliteCommand CrearComando(string sql) =>
+                CrearComandoVencimientos(conexion, transaccion, request, asOf,
+                    horizonEnd, sql);
 
             ExpirationDashboardSummary summary;
             using (SqliteCommand comando = CrearComando("""
@@ -140,28 +122,95 @@ namespace Aseguranza.Data.SQLite
             {
                 while (lector.Read())
                 {
-                    items.Add(new ExpirationEventRow(
-                        Convert.ToInt32(lector.GetInt64(0)),
-                        Convert.ToInt32(lector.GetInt64(1)),
-                        lector.GetString(2), lector.GetString(3),
-                        Convert.ToInt32(lector.GetInt64(4)), lector.GetString(5),
-                        lector.IsDBNull(6) ? null : Convert.ToInt32(lector.GetInt64(6)),
-                        lector.IsDBNull(7) ? null : lector.GetString(7),
-                        Convert.ToInt32(lector.GetInt64(8)), lector.GetString(9),
-                        Convert.ToInt32(lector.GetInt64(10)), lector.GetString(11),
-                        DateTime.ParseExact(lector.GetString(12), "yyyy-MM-dd",
-                            CultureInfo.InvariantCulture),
-                        DateTime.ParseExact(lector.GetString(13), "yyyy-MM-dd",
-                            CultureInfo.InvariantCulture),
-                        Convert.ToInt32(lector.GetInt64(14)),
-                        (ExpirationEventState)lector.GetInt64(15),
-                        lector.GetInt64(16) != 0));
+                    items.Add(LeerFilaVencimiento(lector));
                 }
             }
             transaccion.Commit();
             return new ExpirationDashboardResult(
                 items, totalCount, pageNumber, pageSize, summary);
         }
+
+        public ExpirationReportResult ObtenerVencimientosParaReporte(
+            ExpirationReportRequest report)
+        {
+            ArgumentNullException.ThrowIfNull(report);
+            report.Validate();
+            DateTime asOfDate = report.AsOfDate.Date;
+            ExpirationDashboardRequest filters = new()
+            {
+                Active = report.Active, Category = report.Category,
+                HorizonDays = report.HorizonDays, PlantId = report.PlantId,
+                LineId = report.LineId, ShiftId = report.ShiftId,
+                ProcessId = report.ProcessId, Search = report.Search,
+                AsOfDate = asOfDate
+            };
+            string asOf = asOfDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            string horizonEnd = asOfDate.AddDays(report.HorizonDays)
+                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            using SqliteConnection conexion = ConexionSqlite.Crear();
+            conexion.Open();
+            using SqliteTransaction transaccion = conexion.BeginTransaction(deferred: true);
+            using SqliteCommand comando = CrearComandoVencimientos(
+                conexion, transaccion, filters, asOf, horizonEnd, """
+                SELECT CertificationId, WorkerId, WorkerNumber, WorkerName,
+                       PlantId, PlantName, LineId, LineName, ShiftId, ShiftName,
+                       ProcessId, ProcessName, CertificationDate, ExpirationDate,
+                       DaysUntilExpiration, EventState, Active
+                FROM Eventos
+                WHERE @Category = 0 OR EventState = @Category
+                ORDER BY EventState, ExpirationDate, WorkerName COLLATE NOCASE,
+                         WorkerId, ProcessId, CertificationId;
+                """);
+            List<ExpirationEventRow> items = new();
+            using (SqliteDataReader lector = comando.ExecuteReader())
+                while (lector.Read()) items.Add(LeerFilaVencimiento(lector));
+            transaccion.Commit();
+            ExpirationDashboardSummary summary = new(
+                items.FindAll(x => x.EventState == ExpirationEventState.Vencida).Count,
+                items.FindAll(x => x.EventState == ExpirationEventState.ProximaAVencer).Count,
+                items.Select(x => x.WorkerId).Distinct().Count(),
+                items.Select(x => x.ProcessId).Distinct().Count());
+            return new ExpirationReportResult(items, summary, asOfDate);
+        }
+
+        private static SqliteCommand CrearComandoVencimientos(
+            SqliteConnection conexion, SqliteTransaction transaccion,
+            ExpirationDashboardRequest request, string asOf,
+            string horizonEnd, string sql)
+        {
+            SqliteCommand comando = conexion.CreateCommand();
+            comando.Transaction = transaccion;
+            comando.CommandText = ExpirationEventsSql + "\n" + sql;
+            comando.Parameters.AddWithValue("@AsOfDate", asOf);
+            comando.Parameters.AddWithValue("@HorizonEnd", horizonEnd);
+            comando.Parameters.AddWithValue("@Active", request.Active.HasValue
+                ? (object)(request.Active.Value ? 1 : 0) : DBNull.Value);
+            comando.Parameters.AddWithValue("@PlantId",
+                request.PlantId.HasValue ? request.PlantId.Value : DBNull.Value);
+            comando.Parameters.AddWithValue("@LineId",
+                request.LineId.HasValue ? request.LineId.Value : DBNull.Value);
+            comando.Parameters.AddWithValue("@ShiftId",
+                request.ShiftId.HasValue ? request.ShiftId.Value : DBNull.Value);
+            comando.Parameters.AddWithValue("@ProcessId",
+                request.ProcessId.HasValue ? request.ProcessId.Value : DBNull.Value);
+            comando.Parameters.AddWithValue("@Search",
+                $"%{(request.Search ?? string.Empty).Trim()}%");
+            comando.Parameters.AddWithValue("@Category", (int)request.Category);
+            return comando;
+        }
+
+        private static ExpirationEventRow LeerFilaVencimiento(SqliteDataReader lector) => new(
+            Convert.ToInt32(lector.GetInt64(0)), Convert.ToInt32(lector.GetInt64(1)),
+            lector.GetString(2), lector.GetString(3),
+            Convert.ToInt32(lector.GetInt64(4)), lector.GetString(5),
+            lector.IsDBNull(6) ? null : Convert.ToInt32(lector.GetInt64(6)),
+            lector.IsDBNull(7) ? null : lector.GetString(7),
+            Convert.ToInt32(lector.GetInt64(8)), lector.GetString(9),
+            Convert.ToInt32(lector.GetInt64(10)), lector.GetString(11),
+            DateTime.ParseExact(lector.GetString(12), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+            DateTime.ParseExact(lector.GetString(13), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+            Convert.ToInt32(lector.GetInt64(14)),
+            (ExpirationEventState)lector.GetInt64(15), lector.GetInt64(16) != 0);
 
         public DataTable ConsultarVerificacionNoReloj(
             string noReloj)
