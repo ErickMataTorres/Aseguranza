@@ -11,6 +11,7 @@
         public string Empleado { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string LocalidadHdc { get; set; } = string.Empty;
+        public string LocalidadAnteriorHdc { get; set; } = string.Empty;
         public string TurnoHdc { get; set; } = string.Empty;
         public string FechaServicio { get; set; } = string.Empty;
         public string DepartamentoHdc { get; set; } = string.Empty;

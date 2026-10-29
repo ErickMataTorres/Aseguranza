@@ -256,13 +256,35 @@ namespace Aseguranza.Clases
                     trabajadores);
             }
 
+            EstadoConciliacionHdc? estadoConciliacion = null;
+            if (resultado.Registros.Any(r => r.Estado == "Actualizar" &&
+                r.ExisteTrabajador && r.IdPlantaSistema != r.IdPlantaActualSistema) ||
+                (resultado.ConciliarAusencias && resultado.LocalidadesCompletas.Count > 0))
+            {
+                estadoConciliacion = RepositorioFactory
+                    .CrearHdcImportacionRepository().ConsultarEstadoConciliacion();
+                var perfiles = estadoConciliacion.Perfiles.ToDictionary(p => p.IdTrabajador);
+                foreach (RegistroHdc registro in resultado.Registros.Where(r =>
+                    r.Estado == "Actualizar" && r.ExisteTrabajador &&
+                    r.IdPlantaSistema != r.IdPlantaActualSistema))
+                {
+                    if (perfiles.TryGetValue(registro.IdTrabajadorSistema, out var perfil) &&
+                        perfil.IdImportacionHdc.GetValueOrDefault() > 0 &&
+                        Normalizar(perfil.LocalidadHdc).Length > 0 &&
+                        Normalizar(perfil.LocalidadHdc) != Normalizar(registro.LocalidadHdc))
+                    {
+                        registro.LocalidadAnteriorHdc = perfil.LocalidadHdc;
+                        registro.Estado = "Transferir";
+                        registro.Observacion = "Cambio de planta " +
+                            registro.PlantaActualSistema + " → " + registro.PlantaSistema + ".";
+                    }
+                }
+            }
+
             if (resultado.ConciliarAusencias &&
                 resultado.LocalidadesCompletas.Count > 0)
             {
-                EstadoConciliacionHdc estado = RepositorioFactory
-                    .CrearHdcImportacionRepository()
-                    .ConsultarEstadoConciliacion();
-                HdcConciliacionAusencias.AplicarAnalisis(resultado, estado);
+                HdcConciliacionAusencias.AplicarAnalisis(resultado, estadoConciliacion!);
             }
             else
             {
@@ -474,6 +496,7 @@ namespace Aseguranza.Clases
             registro.IdLineaActualSistema = 0;
             registro.LineaActualSistema = string.Empty;
             registro.CambiosDetectados = string.Empty;
+            registro.LocalidadAnteriorHdc = string.Empty;
 
             if (registro.EstadoArchivo == "Listo")
             {
@@ -503,11 +526,14 @@ namespace Aseguranza.Clases
             resultado.Actualizados = Contar(resultado, "Actualizar");
             resultado.Reactivados = Contar(resultado, "Reactivar");
             resultado.Inactivados = Contar(resultado, "Inactivar");
+            resultado.Transferidos = Contar(resultado, "Transferir");
+            resultado.FueraDeAlcance = Contar(resultado, "Fuera de alcance");
             resultado.SinCambios = Contar(resultado, "Sin cambios");
 
             resultado.Existentes =
                 resultado.Actualizados +
                 resultado.Reactivados +
+                resultado.Transferidos +
                 resultado.SinCambios;
 
             resultado.SinEquivalenciaPlanta =

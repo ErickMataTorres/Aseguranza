@@ -10,7 +10,8 @@ namespace Aseguranza.Clases
 {
     public sealed record PlanConciliacionHdc(
         string Alcance, string HuellaEstado,
-        IReadOnlyList<PerfilConciliacionHdc> Candidatos);
+        IReadOnlyList<PerfilConciliacionHdc> Candidatos,
+        IReadOnlyList<(PerfilConciliacionHdc Perfil, RegistroHdc Registro)> FueraDeAlcance);
 
     public static class HdcConciliacionAusencias
     {
@@ -56,7 +57,8 @@ namespace Aseguranza.Clases
             {
                 return new PlanConciliacionHdc(
                     string.Empty, string.Empty,
-                    Array.Empty<PerfilConciliacionHdc>());
+                    Array.Empty<PerfilConciliacionHdc>(),
+                    Array.Empty<(PerfilConciliacionHdc, RegistroHdc)>());
             }
 
             string[] alcance = resultado.LocalidadesCompletas
@@ -127,6 +129,9 @@ namespace Aseguranza.Clases
 
             var presentes = crudos.Select(r => Normalizar(r.Empleado))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var porEmpleado = crudos.GroupBy(r => Normalizar(r.Empleado),
+                StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key,
+                g => g.ToArray(), StringComparer.OrdinalIgnoreCase);
             var perfiles = estado.Perfiles
                 .Where(p => seleccionadas.Contains(Normalizar(p.LocalidadHdc)))
                 .OrderBy(p => p.IdTrabajador)
@@ -144,11 +149,34 @@ namespace Aseguranza.Clases
                     !presentes.Contains(Normalizar(p.NoReloj)))
                 .ToArray();
 
-            string serializado = JsonSerializer.Serialize(new { perfiles, plantas });
+            var fuera = perfiles
+                .Where(p => p.Activo && p.IdImportacionHdc.GetValueOrDefault() > 0 &&
+                    Normalizar(p.NoReloj).Length is > 0 and <= 10 &&
+                    Normalizar(p.EmpleadoHdc) == Normalizar(p.NoReloj))
+                .Select(p => (Perfil: p, Filas: porEmpleado.GetValueOrDefault(Normalizar(p.NoReloj))))
+                .Where(x => x.Filas is { Length: 1 } &&
+                    x.Filas[0].EstadoArchivo == "Listo" &&
+                    Normalizar(x.Filas[0].LocalidadHdc).Length > 0 &&
+                    Normalizar(x.Filas[0].LocalidadHdc) != Normalizar(x.Perfil.LocalidadHdc) &&
+                    !estado.Plantas.Any(m =>
+                        Normalizar(m.Codigo) == Normalizar(x.Filas[0].LocalidadHdc) &&
+                        m.Activo && Normalizar(m.Accion) == "MAPEAR" &&
+                        m.IdPlanta.GetValueOrDefault() > 0 &&
+                        !string.IsNullOrWhiteSpace(m.Nombre)) &&
+                    !estado.Plantas.Any(m =>
+                        Normalizar(m.Codigo) == Normalizar(x.Filas[0].LocalidadHdc) &&
+                        Normalizar(m.Accion) == "IGNORAR"))
+                .Select(x => (x.Perfil, Registro: x.Filas![0]))
+                .ToArray();
+
+            string serializado = JsonSerializer.Serialize(new { perfiles, plantas,
+                EquivalenciasDestino = estado.Plantas, Fuera = fuera.Select(x => new {
+                    x.Perfil.IdTrabajador, x.Registro.Empleado,
+                    x.Registro.LocalidadHdc }).ToArray() });
             string huellaEstado = Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(serializado)));
             return new PlanConciliacionHdc(
-                string.Join("|", alcance), huellaEstado, candidatos);
+                string.Join("|", alcance), huellaEstado, candidatos, fuera);
         }
 
         public static void AplicarAnalisis(
@@ -183,6 +211,17 @@ namespace Aseguranza.Clases
                     Observacion = "Ausente de localidad HDC declarada con población completa."
                 });
             }
+            foreach (var (perfil, registro) in plan.FueraDeAlcance)
+            {
+                registro.Estado = "Fuera de alcance";
+                registro.ExisteTrabajador = true;
+                registro.IdTrabajadorSistema = perfil.IdTrabajador;
+                registro.ActivoActualSistema = true;
+                registro.CambiosDetectados = "Estado activo, localidad HDC";
+                registro.Observacion = "Cambio de localidad " +
+                    Normalizar(perfil.LocalidadHdc) + " → " +
+                    Normalizar(registro.LocalidadHdc) + " sin equivalencia.";
+            }
         }
 
         public static void ValidarPlanImportacion(
@@ -194,10 +233,17 @@ namespace Aseguranza.Clases
                 .Select(r => r.IdTrabajadorSistema).OrderBy(id => id).ToArray();
             int[] actuales = plan.Candidatos
                 .Select(p => p.IdTrabajador).OrderBy(id => id).ToArray();
+            int[] fueraAprobados = resultado.Registros
+                .Where(r => r.Estado == "Fuera de alcance")
+                .Select(r => r.IdTrabajadorSistema).OrderBy(id => id).ToArray();
+            int[] fueraActuales = plan.FueraDeAlcance
+                .Select(x => x.Perfil.IdTrabajador).OrderBy(id => id).ToArray();
             if (resultado.AlcanceAnalizado != plan.Alcance ||
                 resultado.HuellaEstadoConciliacion != plan.HuellaEstado ||
                 resultado.Inactivados != actuales.Length ||
-                !aprobados.SequenceEqual(actuales))
+                resultado.FueraDeAlcance != fueraActuales.Length ||
+                !aprobados.SequenceEqual(actuales) ||
+                !fueraAprobados.SequenceEqual(fueraActuales))
             {
                 throw new InvalidOperationException(
                     "Cambió el alcance o la población HDC desde el análisis. Analice de nuevo antes de importar.");

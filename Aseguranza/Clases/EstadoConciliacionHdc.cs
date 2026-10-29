@@ -12,7 +12,8 @@ namespace Aseguranza.Clases
     public sealed record PerfilConciliacionHdc(
         int IdTrabajador, string NoReloj, string Nombre, bool Activo,
         string EmpleadoHdc, string LocalidadHdc,
-        int? IdImportacionHdc, bool EncontradoUltimoHdc);
+        int? IdImportacionHdc, bool EncontradoUltimoHdc,
+        int IdPlanta, int IdTurno, int? IdLinea);
 
     public sealed record PlantaConciliacionHdc(
         string Codigo, string Accion, int? IdPlanta, bool Activo, string Nombre);

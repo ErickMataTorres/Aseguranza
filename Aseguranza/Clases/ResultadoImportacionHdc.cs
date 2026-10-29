@@ -12,6 +12,8 @@ namespace Aseguranza.Clases
 
         public int Reactivados { get; set; }
         public int Inactivados { get; set; }
+        public int Transferidos { get; set; }
+        public int FueraDeAlcance { get; set; }
 
         public int SinCambios { get; set; }
 
@@ -27,6 +29,8 @@ namespace Aseguranza.Clases
             Actualizados +
             Reactivados +
             Inactivados +
+            Transferidos +
+            FueraDeAlcance +
             SinCambios;
     }
 }

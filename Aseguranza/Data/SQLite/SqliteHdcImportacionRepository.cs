@@ -31,7 +31,8 @@ namespace Aseguranza.Data.SQLite
             comando.CommandText = """
                 SELECT T.Id, T.NoReloj, T.Nombre, T.Activo,
                        P.EmpleadoHdc, P.LocalidadHdc, P.IdImportacionHdc,
-                       P.EncontradoUltimoHdc
+                       P.EncontradoUltimoHdc,
+                       T.IdPlanta, T.IdTurno, T.IdLinea
                 FROM Trabajador AS T
                 INNER JOIN PerfilHdcTrabajador AS P ON P.IdTrabajador = T.Id
                 ORDER BY T.Id;
@@ -46,7 +47,9 @@ namespace Aseguranza.Data.SQLite
                         lector.IsDBNull(4) ? string.Empty : lector.GetString(4),
                         lector.IsDBNull(5) ? string.Empty : lector.GetString(5),
                         lector.IsDBNull(6) ? null : lector.GetInt32(6),
-                        lector.GetInt64(7) != 0));
+                        lector.GetInt64(7) != 0,
+                        lector.GetInt32(8), lector.GetInt32(9),
+                        lector.IsDBNull(10) ? null : lector.GetInt32(10)));
                 }
             }
             comando.CommandText = """
@@ -108,6 +111,9 @@ namespace Aseguranza.Data.SQLite
                     item => EstadoEs(item, "Reactivar"));
             int inactivados = resultado.ConciliarAusencias
                 ? resultado.Inactivados : 0;
+            int fueraDeAlcance = resultado.ConciliarAusencias
+                ? resultado.FueraDeAlcance : 0;
+            int transferidos = preparados.Count(item => EstadoEs(item, "Transferir"));
 
             int sinCambios =
                 preparados.Count(
@@ -122,9 +128,10 @@ namespace Aseguranza.Data.SQLite
                     0,
                     resultado.TotalRegistros -
                     preparados.Count -
+                    fueraDeAlcance -
                     ignorados);
 
-            if (preparados.Count == 0 && inactivados == 0)
+            if (preparados.Count == 0 && inactivados == 0 && fueraDeAlcance == 0)
             {
                 throw new InvalidOperationException(
                     "No hay registros preparados para importar.");
@@ -153,7 +160,7 @@ namespace Aseguranza.Data.SQLite
                         nuevos,
                         actualizados,
                         reactivados,
-                        inactivados,
+                        inactivados + fueraDeAlcance,
                         sinCambios,
                         excluidos,
                         ignorados);
@@ -163,7 +170,8 @@ namespace Aseguranza.Data.SQLite
                         resultado, CargarEstadoConciliacion(conexion, transaccion))
                     : new PlanConciliacionHdc(
                         string.Empty, string.Empty,
-                        Array.Empty<PerfilConciliacionHdc>());
+                        Array.Empty<PerfilConciliacionHdc>(),
+                        Array.Empty<(PerfilConciliacionHdc, RegistroHdc)>());
                 HdcConciliacionAusencias.ValidarPlanImportacion(resultado, plan);
 
                 GuardarAlcance(conexion, transaccion, idImportacion, resultado);
@@ -218,9 +226,15 @@ namespace Aseguranza.Data.SQLite
                                 "Vuelva a analizar antes de importar.");
                         }
 
+                        if (EstadoEs(registro, "Transferir"))
+                        {
+                            ValidarTransferenciaActual(
+                                conexion, transaccion, idTrabajador, registro);
+                        }
+
                         if (EstadoEs(
                                 registro,
-                                "Actualizar") ||
+                                "Actualizar") || EstadoEs(registro, "Transferir") ||
                             (EstadoEs(registro, "Reactivar") &&
                              !string.IsNullOrWhiteSpace(registro.CambiosDetectados)))
                         {
@@ -265,6 +279,8 @@ namespace Aseguranza.Data.SQLite
 
                 InactivarCandidatos(
                     conexion, transaccion, idImportacion, plan);
+                InactivarFueraDeAlcance(
+                    conexion, transaccion, idImportacion, plan);
 
                 transaccion.Commit();
 
@@ -286,6 +302,8 @@ namespace Aseguranza.Data.SQLite
                         reactivados,
                     Inactivados =
                         inactivados,
+                    Transferidos = transferidos,
+                    FueraDeAlcance = fueraDeAlcance,
 
                     SinCambios =
                         sinCambios,
@@ -321,6 +339,7 @@ namespace Aseguranza.Data.SQLite
             return
                 EstadoEs(registro, "Nuevo") ||
                 EstadoEs(registro, "Actualizar") ||
+                EstadoEs(registro, "Transferir") ||
                 EstadoEs(registro, "Reactivar") ||
                 EstadoEs(registro, "Sin cambios");
         }
@@ -555,6 +574,60 @@ namespace Aseguranza.Data.SQLite
                 comando.Parameters.AddWithValue(
                     "@Codigo", HdcConciliacionAusencias.Normalizar(codigo));
                 comando.ExecuteNonQuery();
+            }
+        }
+
+        private static void ValidarTransferenciaActual(
+            SqliteConnection conexion, SqliteTransaction transaccion,
+            int idTrabajador, RegistroHdc registro)
+        {
+            using SqliteCommand comando = conexion.CreateCommand();
+            comando.Transaction = transaccion;
+            comando.CommandText = """
+                SELECT T.Nombre, T.IdPlanta, T.IdTurno, T.IdLinea,
+                       P.LocalidadHdc, E.IdPlanta, E.Accion, E.Activo
+                FROM Trabajador AS T
+                INNER JOIN PerfilHdcTrabajador AS P ON P.IdTrabajador = T.Id
+                LEFT JOIN EquivalenciaPlantaHdc AS E
+                    ON UPPER(TRIM(E.CodigoLocalidadHdc)) = @Localidad
+                WHERE T.Id = @Id;
+                """;
+            comando.Parameters.AddWithValue("@Id", idTrabajador);
+            comando.Parameters.AddWithValue("@Localidad",
+                HdcConciliacionAusencias.Normalizar(registro.LocalidadHdc));
+            using SqliteDataReader lector = comando.ExecuteReader();
+            if (!lector.Read() ||
+                !string.Equals(lector.GetString(0).Trim(),
+                    registro.NombreActualSistema.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                lector.GetInt32(1) != registro.IdPlantaActualSistema ||
+                lector.GetInt32(2) != registro.IdTurnoActualSistema ||
+                (lector.IsDBNull(3) ? 0 : lector.GetInt32(3)) != registro.IdLineaActualSistema ||
+                HdcConciliacionAusencias.Normalizar(lector.GetString(4)) !=
+                    HdcConciliacionAusencias.Normalizar(registro.LocalidadAnteriorHdc) ||
+                lector.IsDBNull(5) || lector.GetInt32(5) != registro.IdPlantaSistema ||
+                lector.IsDBNull(6) || lector.GetString(6).Trim().ToUpperInvariant() != "MAPEAR" ||
+                lector.GetInt64(7) == 0)
+                throw CrearErrorFila(registro,
+                    "Cambió el trabajador, su localidad HDC o la equivalencia de planta. Vuelva a analizar.");
+        }
+
+        private static void InactivarFueraDeAlcance(
+            SqliteConnection conexion, SqliteTransaction transaccion,
+            int idImportacion, PlanConciliacionHdc plan)
+        {
+            foreach (var (perfil, registro) in plan.FueraDeAlcance)
+            {
+                string motivo = "Cambio de localidad " +
+                    HdcConciliacionAusencias.Normalizar(perfil.LocalidadHdc) + " -> " +
+                    HdcConciliacionAusencias.Normalizar(registro.LocalidadHdc) +
+                    " sin equivalencia; fuera del alcance administrado.";
+                if (!SqliteTrabajadorRepository.CambiarEstadoEnTransaccion(
+                    conexion, transaccion, perfil.IdTrabajador,
+                    false, "HDC", idImportacion, motivo))
+                    throw CrearErrorFila(registro,
+                        "El estado del trabajador cambió. Vuelva a analizar el HDC.");
+                GuardarPerfilHdc(conexion, transaccion, perfil.IdTrabajador,
+                    idImportacion, registro);
             }
         }
 

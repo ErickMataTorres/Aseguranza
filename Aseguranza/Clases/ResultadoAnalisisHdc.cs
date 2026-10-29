@@ -22,6 +22,8 @@ namespace Aseguranza.Clases
         public int Actualizados { get; set; }
         public int Reactivados { get; set; }
         public int Inactivados { get; set; }
+        public int Transferidos { get; set; }
+        public int FueraDeAlcance { get; set; }
         public int SinCambios { get; set; }
 
         // Compatibilidad con el análisis anterior.

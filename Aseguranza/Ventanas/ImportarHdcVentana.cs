@@ -57,6 +57,8 @@ namespace Aseguranza.Ventanas
             CrearLabelResumen();
         private readonly Label lblInactivar =
             CrearLabelResumen();
+        private readonly Label lblTransferir = CrearLabelResumen();
+        private readonly Label lblFueraDeAlcance = CrearLabelResumen();
 
         private readonly Label lblSinCambios =
             CrearLabelResumen();
@@ -139,6 +141,10 @@ namespace Aseguranza.Ventanas
                 lblInactivar,
                 "Inactivar",
                 "Mostrar solo trabajadores ausentes de localidades declaradas completas");
+            ConfigurarFiltroResumen(lblTransferir, "Transferir",
+                "Mostrar solo cambios a una planta conocida");
+            ConfigurarFiltroResumen(lblFueraDeAlcance, "Fuera de alcance",
+                "Mostrar cambios a localidades sin equivalencia desde una localidad completa");
 
             ConfigurarFiltroResumen(
                 lblSinCambios,
@@ -754,6 +760,14 @@ namespace Aseguranza.Ventanas
                 BeginInvoke(new Action(async () => await ActualizarAlcanceAsync()));
             };
             pnlAlcance.Controls.Add(chkConciliarAusencias);
+            lblTransferir.Location = new Point(18, 43);
+            lblTransferir.Size = new Size(205, 35);
+            lblFueraDeAlcance.Location = new Point(18, 92);
+            lblFueraDeAlcance.Size = new Size(205, 35);
+            pnlAlcance.Controls.Add(new Label { Text = "Transferir", Location = new Point(18, 29), AutoSize = true });
+            pnlAlcance.Controls.Add(lblTransferir);
+            pnlAlcance.Controls.Add(new Label { Text = "Fuera de alcance", Location = new Point(18, 78), AutoSize = true });
+            pnlAlcance.Controls.Add(lblFueraDeAlcance);
             pnlAlcance.Controls.Add(lblAlcance);
             pnlAlcance.Controls.Add(lstLocalidadesCompletas);
 
@@ -1519,7 +1533,9 @@ namespace Aseguranza.Ventanas
                 nuevos +
                 actualizados +
                 reactivados +
-                inactivados;
+                inactivados +
+                resultadoActual.Transferidos +
+                resultadoActual.FueraDeAlcance;
 
             int pendientes =
                 resultadoActual.SinEquivalenciaPlanta +
@@ -1563,7 +1579,11 @@ namespace Aseguranza.Ventanas
                     Environment.NewLine +
                     $"Reactivar: {reactivados:N0}" +
                     Environment.NewLine +
-                    $"Inactivar: {inactivados:N0}" +
+                    $"Inactivar por ausencia: {inactivados:N0}" +
+                    Environment.NewLine +
+                    $"Transferir: {resultadoActual.Transferidos:N0}" +
+                    Environment.NewLine +
+                    $"Fuera de alcance: {resultadoActual.FueraDeAlcance:N0}" +
                     Environment.NewLine +
                     $"Sin cambios: {sinCambios:N0}" +
                     Environment.NewLine +
@@ -1589,17 +1609,21 @@ namespace Aseguranza.Ventanas
                 return;
             }
 
-            if (inactivados > 0 &&
+            if ((inactivados > 0 || resultadoActual.FueraDeAlcance > 0) &&
                 !AppDialog.Confirm(
                     this,
-                    "Confirmar inactivación por ausencia",
-                    "La conciliación de ausencias está ACTIVADA." +
+                    "Confirmar conciliación de localidades",
+                    "La conciliación de ausencias y cambios de localidad está ACTIVADA." +
                     Environment.NewLine +
                     "Localidades HDC declaradas con población completa: " +
                     string.Join(", ", resultadoActual.LocalidadesCompletas
                         .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)) +
                     Environment.NewLine +
-                    $"Trabajadores que quedarán inactivos: {inactivados:N0}." +
+                    $"Ausentes a inactivar: {inactivados:N0}." +
+                    Environment.NewLine +
+                    $"Fuera de alcance a inactivar: {resultadoActual.FueraDeAlcance:N0}." +
+                    Environment.NewLine +
+                    $"Transferencias: {resultadoActual.Transferidos:N0}." +
                     Environment.NewLine +
                     Environment.NewLine +
                     "No se borrará ningún trabajador. Se conservarán certificaciones, " +
@@ -1721,7 +1745,11 @@ namespace Aseguranza.Ventanas
                     Environment.NewLine +
                     $"Reactivados: {importacion.Reactivados:N0}" +
                     Environment.NewLine +
-                    $"Inactivados: {importacion.Inactivados:N0}" +
+                    $"Inactivados por ausencia: {importacion.Inactivados:N0}" +
+                    Environment.NewLine +
+                    $"Fuera de alcance: {importacion.FueraDeAlcance:N0}" +
+                    Environment.NewLine +
+                    $"Transferidos: {importacion.Transferidos:N0}" +
                     Environment.NewLine +
                     $"Sin cambios: {importacion.SinCambios:N0}" +
                     Environment.NewLine +
@@ -1784,7 +1812,9 @@ namespace Aseguranza.Ventanas
                 resultadoActual.Nuevos +
                 resultadoActual.Actualizados +
                 resultadoActual.Reactivados +
-                resultadoActual.Inactivados;
+                resultadoActual.Inactivados +
+                resultadoActual.Transferidos +
+                resultadoActual.FueraDeAlcance;
 
             btnImportar.Enabled =
                 cambiosPendientes > 0 &&
@@ -1812,6 +1842,7 @@ namespace Aseguranza.Ventanas
                 resultado.Nuevos +
                 resultado.Actualizados +
                 resultado.Reactivados +
+                resultado.Transferidos +
                 resultado.SinCambios;
 
             AplicarFiltroActual();
@@ -1838,6 +1869,8 @@ namespace Aseguranza.Ventanas
                 lblActualizar.Text = "0";
                 lblReactivar.Text = "0";
                 lblInactivar.Text = "0";
+                lblTransferir.Text = "0";
+                lblFueraDeAlcance.Text = "0";
                 lblSinCambios.Text = "0";
                 lblSinPlanta.Text = "0";
                 lblSinTurno.Text = "0";
@@ -1863,6 +1896,8 @@ namespace Aseguranza.Ventanas
                 resultado.Reactivados
                     .ToString("N0");
 
+            lblTransferir.Text = resultado.Transferidos.ToString("N0");
+            lblFueraDeAlcance.Text = resultado.FueraDeAlcance.ToString("N0");
             lblInactivar.Text =
                 resultado.Inactivados
                     .ToString("N0");
@@ -1950,6 +1985,14 @@ namespace Aseguranza.Ventanas
             {
                 cellStyle.ForeColor =
                     Color.DarkOrange;
+            }
+            else if (estado == "Transferir")
+            {
+                cellStyle.ForeColor = AppColors.Primary;
+            }
+            else if (estado == "Fuera de alcance")
+            {
+                cellStyle.ForeColor = Color.FromArgb(155, 72, 22);
             }
             else if (estado == "Inactivar")
             {
