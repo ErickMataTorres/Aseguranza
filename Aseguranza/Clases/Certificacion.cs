@@ -49,6 +49,14 @@ namespace Aseguranza.Clases
                 .ConsultarVencimientos(request);
         }
 
+        public static ExpirationReportResult ObtenerVencimientosParaReporte(
+            ExpirationReportRequest request)
+        {
+            return RepositorioFactory
+                .CrearCertificacionRepository()
+                .ObtenerVencimientosParaReporte(request);
+        }
+
         public Mensaje GuardarCertificacion()
         {
             return RepositorioFactory
